@@ -37,6 +37,7 @@ import {
   ArrowUpDown,
   Minimize2,
   Pencil,
+  AlertCircle,
 } from 'lucide-react'
 
 const rewriteExamples = [
@@ -53,6 +54,13 @@ const rewriteOptions = [
   { icon: <Briefcase size={16} strokeWidth={1.8} />, label: 'Formalize' },
   { icon: <ArrowUpDown size={16} strokeWidth={1.8} />, label: 'Elaborate' },
   { icon: <Minimize2 size={16} strokeWidth={1.8} />, label: 'Shorten' },
+]
+
+const aiRewrittenSteps = [
+  { n: 1, main: 'Click New',          sub: 'Tap New to open the account creation form.' },
+  { n: 2, main: 'Fill Account Name',  sub: 'Enter the company or contact name carefully.' },
+  { n: 3, main: 'Add Phone number',   sub: 'Input a valid number so the team can reach out.' },
+  { n: 4, main: 'Click Save',         sub: 'Hit Save — the account is now ready to use.' },
 ]
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -370,11 +378,55 @@ function FlowView({ onBack, onClose }: { onBack: () => void; onClose: () => void
   const [showDropdown, setShowDropdown] = useState(false)
   const [showDrawer, setShowDrawer] = useState(false)
   const [prompt, setPrompt] = useState('')
+  const [showError, setShowError] = useState(false)
   const exampleIndexRef = useRef(0)
+
+  // Per-step animation state
+  const [stepSubTexts, setStepSubTexts] = useState(flowSteps.map(s => s.sub))
+  const [stepPhases, setStepPhases] = useState<('idle' | 'erasing' | 'typing')[]>(['idle', 'idle', 'idle', 'idle'])
 
   const handleTryExample = () => {
     setPrompt(rewriteExamples[exampleIndexRef.current % rewriteExamples.length])
     exampleIndexRef.current += 1
+    setShowError(false)
+  }
+
+  const rewriteStep = (i: number, originalText: string, newText: string) => {
+    const SPEED = 16
+    let len = originalText.length
+    setStepPhases(prev => prev.map((p, idx) => idx === i ? 'erasing' : p))
+    setStepSubTexts(prev => prev.map((t, idx) => idx === i ? originalText : t))
+
+    const eraseTimer = setInterval(() => {
+      len = Math.max(0, len - 3)
+      setStepSubTexts(prev => prev.map((t, idx) => idx === i ? originalText.slice(0, len) : t))
+      if (len === 0) {
+        clearInterval(eraseTimer)
+        let typed = 0
+        setStepPhases(prev => prev.map((p, idx) => idx === i ? 'typing' : p))
+        const typeTimer = setInterval(() => {
+          typed = Math.min(newText.length, typed + 3)
+          setStepSubTexts(prev => prev.map((t, idx) => idx === i ? newText.slice(0, typed) : t))
+          if (typed >= newText.length) {
+            clearInterval(typeTimer)
+            setStepPhases(prev => prev.map((p, idx) => idx === i ? 'idle' : p))
+          }
+        }, SPEED)
+      }
+    }, SPEED)
+  }
+
+  const handleSubmit = () => {
+    if (!rewriteExamples.includes(prompt.trim())) {
+      setShowError(true)
+      return
+    }
+    setShowDrawer(false)
+    setShowError(false)
+    setPrompt('')
+    aiRewrittenSteps.forEach((step, i) => {
+      setTimeout(() => rewriteStep(i, flowSteps[i].sub, step.sub), i * 700)
+    })
   }
 
   return (
@@ -476,33 +528,43 @@ function FlowView({ onBack, onClose }: { onBack: () => void; onClose: () => void
           </div>
 
           {/* Step cards */}
-          {flowSteps.map((step) => (
-            <div
-              key={step.n}
-              style={{
-                background: '#ffffff', borderRadius: 10, border: '1px solid #e8e8ee',
-                boxShadow: '0 1px 4px rgba(0,0,0,0.06)', padding: '12px 12px 12px 14px',
-                display: 'flex', alignItems: 'center', gap: 12,
-              }}
-            >
-              <div style={{
-                width: 34, height: 34, borderRadius: '50%', background: '#ffffff', border: '1.5px solid #d0d5dd',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 14, fontWeight: 500, color: '#344054', flexShrink: 0,
-              }}>
-                {step.n}
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <StepLabel text={step.main} />
-                <div style={{ fontSize: 12, color: '#98a2b3', marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {step.sub}
+          {flowSteps.map((step, i) => {
+            const phase = stepPhases[i]
+            const isAnimating = phase === 'erasing' || phase === 'typing'
+            return (
+              <div
+                key={step.n}
+                style={{
+                  background: '#ffffff', borderRadius: 10,
+                  border: `1px solid ${isAnimating ? '#93c5fd' : '#e8e8ee'}`,
+                  boxShadow: isAnimating ? '0 0 0 3px rgba(8,117,215,0.08)' : '0 1px 4px rgba(0,0,0,0.06)',
+                  padding: '12px 12px 12px 14px',
+                  display: 'flex', alignItems: 'center', gap: 12,
+                  transition: 'border-color 200ms, box-shadow 200ms',
+                }}
+              >
+                <div style={{
+                  width: 34, height: 34, borderRadius: '50%', background: isAnimating ? '#EFF8FF' : '#ffffff',
+                  border: `1.5px solid ${isAnimating ? '#0875D7' : '#d0d5dd'}`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 14, fontWeight: 500, color: isAnimating ? '#0875D7' : '#344054', flexShrink: 0,
+                  transition: 'all 200ms',
+                }}>
+                  {isAnimating ? <Sparkles size={14} strokeWidth={2} /> : step.n}
                 </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <StepLabel text={step.main} />
+                  <div style={{ fontSize: 12, color: '#98a2b3', marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {stepSubTexts[i]}
+                    {isAnimating && <span className="typing-cursor">|</span>}
+                  </div>
+                </div>
+                <button style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 2px', color: '#98a2b3', flexShrink: 0 }}>
+                  <MoreVertical size={16} strokeWidth={1.8} />
+                </button>
               </div>
-              <button style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 2px', color: '#98a2b3', flexShrink: 0 }}>
-                <MoreVertical size={16} strokeWidth={1.8} />
-              </button>
-            </div>
-          ))}
+            )
+          })}
 
           {/* Add Step — dashed orange border */}
           <button style={{
@@ -593,18 +655,28 @@ function FlowView({ onBack, onClose }: { onBack: () => void; onClose: () => void
               </div>
               <textarea
                 value={prompt}
-                onChange={e => setPrompt(e.target.value)}
+                onChange={e => { setPrompt(e.target.value); setShowError(false) }}
                 placeholder="Use a friendly and casual tone"
                 style={{
-                  width: '100%', height: 110, borderRadius: 8, border: '1px solid #d0d5dd',
+                  width: '100%', height: 110, borderRadius: 8,
+                  border: `1px solid ${showError ? '#FDA29B' : '#d0d5dd'}`,
                   padding: '10px 12px', fontSize: 14, color: '#344054', resize: 'none',
                   fontFamily: "'Inter', -apple-system, sans-serif", outline: 'none',
                   boxSizing: 'border-box', lineHeight: 1.5,
+                  transition: 'border-color 150ms',
                 }}
               />
               <p style={{ fontSize: 12, color: '#98a2b3', margin: '8px 0 0' }}>
                 AI will rewrite the text in each step based on the prompt
               </p>
+              {showError && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6 }}>
+                  <AlertCircle size={14} color="#F04438" strokeWidth={2} />
+                  <span style={{ fontSize: 12, color: '#F04438' }}>
+                    Invalid prompt. Try something like &apos;Use action verbs&apos;
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Drawer footer */}
@@ -616,6 +688,7 @@ function FlowView({ onBack, onClose }: { onBack: () => void; onClose: () => void
                 Cancel
               </button>
               <button
+                onClick={handleSubmit}
                 style={{ background: '#0875D7', border: 'none', borderRadius: 8, padding: '10px 28px', cursor: 'pointer', fontSize: 14, fontWeight: 600, color: '#ffffff' }}
               >
                 Submit

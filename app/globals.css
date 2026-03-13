@@ -124,3 +124,16 @@
 .overlay-fade-in {
   animation: fadeIn 200ms ease forwards;
 }
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
+.typing-cursor {
+  display: inline-block;
+  margin-left: 1px;
+  color: #0875D7;
+  font-weight: 300;
+  animation: blink 0.65s ease infinite;
+}
