@@ -198,13 +198,7 @@ function StudioIllustration() {
 function StudioLogo() {
   return (
     <div style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <svg width="18" height="22" viewBox="0 0 18 22" fill="none">
-        <path d="M10.5 1L2 12H8.5L7.5 21L16 10H9.5L10.5 1Z" fill="#F55800" />
-        <circle cx="1.5" cy="3.5" r="1.5" fill="#F55800" />
-        <circle cx="16" cy="16" r="1.5" fill="#F55800" />
-        <circle cx="15" cy="2.5" r="1.5" fill="#F55800" />
-        <circle cx="3" cy="19" r="1.5" fill="#F55800" />
-      </svg>
+      <img src="/brand/whatfix_symbol.svg" alt="Whatfix" width={20} height={20} style={{ objectFit: 'contain' }} />
     </div>
   )
 }
