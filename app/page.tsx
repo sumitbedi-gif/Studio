@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import {
   Plus,
   X,
@@ -32,7 +32,28 @@ import {
   Zap,
   Sparkles,
   Flag,
+  Wand2,
+  Briefcase,
+  ArrowUpDown,
+  Minimize2,
+  Pencil,
 } from 'lucide-react'
+
+const rewriteExamples = [
+  'Summarize each step in one line',
+  'Start every step with an action verb',
+  'Make the steps shorter and direct',
+  'Write for a non-technical audience',
+  'Condense all steps to 5 words max',
+  'Use formal language throughout',
+]
+
+const rewriteOptions = [
+  { icon: <Wand2 size={16} strokeWidth={1.8} />, label: 'Polish' },
+  { icon: <Briefcase size={16} strokeWidth={1.8} />, label: 'Formalize' },
+  { icon: <ArrowUpDown size={16} strokeWidth={1.8} />, label: 'Elaborate' },
+  { icon: <Minimize2 size={16} strokeWidth={1.8} />, label: 'Shorten' },
+]
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -346,8 +367,18 @@ function StepLabel({ text }: { text: string }) {
 // ─── Flow View ────────────────────────────────────────────────────────────────
 
 function FlowView({ onBack, onClose }: { onBack: () => void; onClose: () => void }) {
+  const [showDropdown, setShowDropdown] = useState(false)
+  const [showDrawer, setShowDrawer] = useState(false)
+  const [prompt, setPrompt] = useState('')
+  const exampleIndexRef = useRef(0)
+
+  const handleTryExample = () => {
+    setPrompt(rewriteExamples[exampleIndexRef.current % rewriteExamples.length])
+    exampleIndexRef.current += 1
+  }
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#F2F2F8' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#F2F2F8', position: 'relative' }}>
       {/* Header */}
       <div style={{ background: '#ffffff', borderBottom: '1px solid #ebebeb', padding: '0 10px 0 8px', height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
         <button
@@ -386,15 +417,63 @@ function FlowView({ onBack, onClose }: { onBack: () => void; onClose: () => void
         {/* Gray body — steps */}
         <div style={{ padding: '14px 16px 20px', display: 'flex', flexDirection: 'column', gap: 8 }}>
 
-          {/* Rewrite steps */}
-          <button style={{
-            width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-            background: '#0875D7', border: 'none', borderRadius: 8,
-            padding: '9px 14px', cursor: 'pointer', marginBottom: 4,
-          }}>
-            <Sparkles size={15} color="#ffffff" strokeWidth={2} />
-            <span style={{ fontSize: 14, fontWeight: 500, color: '#ffffff' }}>Rewrite steps</span>
-          </button>
+          {/* Rewrite steps button + dropdown */}
+          <div style={{ position: 'relative' }}>
+            <button
+              onClick={() => setShowDropdown(v => !v)}
+              style={{
+                width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                background: '#0875D7', border: 'none', borderRadius: 8,
+                padding: '9px 14px', cursor: 'pointer', marginBottom: 4,
+              }}
+            >
+              <Sparkles size={15} color="#ffffff" strokeWidth={2} />
+              <span style={{ fontSize: 14, fontWeight: 500, color: '#ffffff' }}>Rewrite steps</span>
+            </button>
+
+            {/* Dropdown */}
+            {showDropdown && (
+              <>
+                <div style={{ position: 'fixed', inset: 0, zIndex: 10 }} onClick={() => setShowDropdown(false)} />
+                <div style={{
+                  position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, zIndex: 20,
+                  background: '#ffffff', borderRadius: 12, border: '1px solid #e8e8ee',
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.12)', overflow: 'hidden', padding: '6px 0',
+                }}>
+                  {rewriteOptions.map((opt) => (
+                    <button
+                      key={opt.label}
+                      onClick={() => setShowDropdown(false)}
+                      style={{
+                        width: '100%', display: 'flex', alignItems: 'center', gap: 14,
+                        padding: '13px 18px', background: 'none', border: 'none', cursor: 'pointer',
+                        fontSize: 15, color: '#3D3C52', fontWeight: 400, textAlign: 'left',
+                      }}
+                      onMouseEnter={e => (e.currentTarget.style.background = '#f9f9fb')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+                    >
+                      <span style={{ color: '#6b7280' }}>{opt.icon}</span>
+                      {opt.label}
+                    </button>
+                  ))}
+                  <div style={{ height: 1, background: '#f0f0f0', margin: '4px 0' }} />
+                  <button
+                    onClick={() => { setShowDropdown(false); setShowDrawer(true) }}
+                    style={{
+                      width: '100%', display: 'flex', alignItems: 'center', gap: 14,
+                      padding: '13px 18px', background: 'none', border: 'none', cursor: 'pointer',
+                      fontSize: 15, color: '#3D3C52', fontWeight: 400, textAlign: 'left',
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.background = '#f9f9fb')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+                  >
+                    <span style={{ color: '#6b7280' }}><Pencil size={16} strokeWidth={1.8} /></span>
+                    Write your own
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
 
           {/* Step cards */}
           {flowSteps.map((step) => (
@@ -470,6 +549,80 @@ function FlowView({ onBack, onClose }: { onBack: () => void; onClose: () => void
           </button>
         </div>
       </div>
+
+      {/* Write your own — bottom drawer */}
+      {showDrawer && (
+        <>
+          {/* Overlay */}
+          <div
+            onClick={() => setShowDrawer(false)}
+            style={{
+              position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.35)',
+              backdropFilter: 'blur(3px)', zIndex: 30,
+            }}
+          />
+          {/* Drawer */}
+          <div style={{
+            position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 40,
+            background: '#ffffff', borderRadius: '16px 16px 0 0',
+            boxShadow: '0 -4px 32px rgba(0,0,0,0.15)',
+            display: 'flex', flexDirection: 'column',
+          }}>
+            {/* Drawer header */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '18px 20px 14px', borderBottom: '1px solid #f0f0f0' }}>
+              <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Pencil size={16} color="#6b7280" strokeWidth={1.8} />
+              </div>
+              <span style={{ fontSize: 17, fontWeight: 600, color: '#1F1F32', flex: 1 }}>Write your own</span>
+              <button onClick={() => setShowDrawer(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: '#6b7280' }}>
+                <X size={20} strokeWidth={2} />
+              </button>
+            </div>
+
+            {/* Drawer body */}
+            <div style={{ padding: '16px 20px 20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                <span style={{ fontSize: 14, fontWeight: 500, color: '#1F1F32' }}>What should the steps say?</span>
+                <button
+                  onClick={handleTryExample}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: '#0875D7', fontWeight: 500, padding: 0 }}
+                >
+                  Try an example
+                </button>
+              </div>
+              <textarea
+                value={prompt}
+                onChange={e => setPrompt(e.target.value)}
+                placeholder="Use a friendly and casual tone"
+                style={{
+                  width: '100%', height: 110, borderRadius: 8, border: '1px solid #d0d5dd',
+                  padding: '10px 12px', fontSize: 14, color: '#344054', resize: 'none',
+                  fontFamily: "'Inter', -apple-system, sans-serif", outline: 'none',
+                  boxSizing: 'border-box', lineHeight: 1.5,
+                }}
+              />
+              <p style={{ fontSize: 12, color: '#98a2b3', margin: '8px 0 0' }}>
+                AI will rewrite the text in each step based on the prompt
+              </p>
+            </div>
+
+            {/* Drawer footer */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, padding: '0 20px 24px' }}>
+              <button
+                onClick={() => setShowDrawer(false)}
+                style={{ background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: 8, padding: '10px 24px', cursor: 'pointer', fontSize: 14, fontWeight: 500, color: '#344054' }}
+              >
+                Cancel
+              </button>
+              <button
+                style={{ background: '#0875D7', border: 'none', borderRadius: 8, padding: '10px 28px', cursor: 'pointer', fontSize: 14, fontWeight: 600, color: '#ffffff' }}
+              >
+                Submit
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   )
 }
