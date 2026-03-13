@@ -30,6 +30,8 @@ import {
   Inbox,
   ChevronRight,
   Zap,
+  Sparkles,
+  Flag,
 } from 'lucide-react'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -52,6 +54,13 @@ const widgetCards: Card[] = [
   { icon: <AppWindow size={22} color="#374151" strokeWidth={1.8} />, label: 'Popup' },
   { icon: <PanelBottomOpen size={22} color="#374151" strokeWidth={1.8} />, label: 'Launcher' },
   { icon: <ClipboardList size={22} color="#374151" strokeWidth={1.8} />, label: 'Survey' },
+]
+
+const flowSteps = [
+  { n: 1, main: 'Click New', sub: 'A new account is needed every time you create a new prospect.' },
+  { n: 2, main: 'Fill Account Name', sub: 'Account name should not contain typos' },
+  { n: 3, main: 'Add Phone number', sub: 'Provide a valid phone number to ensure future communication.' },
+  { n: 4, main: 'Click Save', sub: 'Saving will store the new account and make it available for use.' },
 ]
 
 // ─── Dummy App Skeleton ───────────────────────────────────────────────────────
@@ -274,13 +283,14 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 
 // ─── Card grid ────────────────────────────────────────────────────────────────
 
-function CardGrid({ cards }: { cards: Card[] }) {
+function CardGrid({ cards, onCardClick }: { cards: Card[]; onCardClick?: (label: string) => void }) {
   const [hovered, setHovered] = useState<number | null>(null)
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, padding: '4px 16px 12px' }}>
       {cards.map((card, i) => (
         <div
           key={card.label}
+          onClick={() => onCardClick?.(card.label)}
           onMouseEnter={() => setHovered(i)}
           onMouseLeave={() => setHovered(null)}
           style={{
@@ -319,10 +329,157 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void 
   )
 }
 
+// ─── Flow View ────────────────────────────────────────────────────────────────
+
+function FlowView({ onBack, onClose }: { onBack: () => void; onClose: () => void }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#F2F2F8' }}>
+      {/* Header */}
+      <div style={{ background: '#ffffff', borderBottom: '1px solid #f0f0f0', padding: '0 8px 0 12px', height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+        <button
+          onClick={onBack}
+          style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', padding: '4px 6px', borderRadius: 6 }}
+        >
+          <ChevronLeft size={20} color="#1F1F32" strokeWidth={2} />
+          <span style={{ fontSize: 18, fontWeight: 600, color: '#1F1F32', letterSpacing: '-0.01em' }}>Flow</span>
+          <ChevronDown size={20} color="#1F1F32" strokeWidth={2} />
+        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <HeaderButton title="More options"><MoreVertical size={16} strokeWidth={2} /></HeaderButton>
+          <HeaderButton title="Close" onClick={onClose}><X size={16} strokeWidth={2} /></HeaderButton>
+        </div>
+      </div>
+
+      {/* Scrollable body */}
+      <div style={{ flex: 1, overflowY: 'auto' }}>
+        {/* Title section */}
+        <div style={{ background: '#ffffff', padding: '16px 24px 0', borderBottom: '1px solid #f0f0f0' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+            <div style={{ width: 36, height: 36, borderRadius: 8, background: '#EFF8FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <Signpost size={18} color="#0875D7" strokeWidth={1.8} />
+            </div>
+            <span style={{ fontSize: 16, fontWeight: 600, color: '#2B2B40', lineHeight: 1.4 }}>How to create a new account</span>
+          </div>
+          <button style={{
+            width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: 8,
+            padding: '10px 14px', cursor: 'pointer', marginBottom: 16,
+          }}>
+            <span style={{ fontSize: 14, fontWeight: 500, color: '#3D3C52' }}>Details</span>
+            <ChevronDown size={16} color="#6b7280" strokeWidth={2} />
+          </button>
+        </div>
+
+        {/* Body content */}
+        <div style={{ background: '#ffffff', margin: '8px 0', padding: '16px 24px' }}>
+          {/* AI Rewrite button */}
+          <button style={{
+            width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            background: '#0875D7', border: 'none', borderRadius: 6,
+            padding: '6px 12px', cursor: 'pointer', marginBottom: 20, height: 32,
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Sparkles size={14} color="#ffffff" strokeWidth={2} />
+              <span style={{ fontSize: 13, fontWeight: 500, color: '#ffffff' }}>Rewrite steps</span>
+            </div>
+            <ChevronDown size={14} color="rgba(255,255,255,0.7)" strokeWidth={2} />
+          </button>
+
+          {/* Steps */}
+          <div style={{ position: 'relative' }}>
+            {/* Vertical line */}
+            <div style={{ position: 'absolute', left: 13, top: 28, width: 2, height: `calc(100% - 88px)`, background: '#e5e7eb', zIndex: 0 }} />
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+              {flowSteps.map((step) => (
+                <div
+                  key={step.n}
+                  style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '12px 0', borderBottom: '1px solid #f9fafb', position: 'relative', zIndex: 1 }}
+                >
+                  {/* Badge */}
+                  <div style={{
+                    width: 28, height: 28, borderRadius: 6, background: '#F9FAFB', border: '1px solid #e5e7eb',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 13, fontWeight: 600, color: '#344054', flexShrink: 0,
+                  }}>
+                    {step.n}
+                  </div>
+                  {/* Text */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 14, fontWeight: 500, color: '#344054', marginBottom: 2 }}>{step.main}</div>
+                    <div style={{ fontSize: 12, color: '#667085', lineHeight: 1.5 }}>{step.sub}</div>
+                  </div>
+                  {/* Dots menu */}
+                  <button style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: '#9ca3af', flexShrink: 0 }}>
+                    <MoreVertical size={16} strokeWidth={1.8} />
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            {/* Add Step button */}
+            <button style={{
+              width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: 8,
+              padding: '10px 14px', cursor: 'pointer', marginTop: 8,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Plus size={18} color="#C74900" strokeWidth={2} />
+                <span style={{ fontSize: 14, fontWeight: 500, color: '#C74900' }}>Add Step</span>
+              </div>
+              <ChevronDown size={16} color="#9ca3af" strokeWidth={2} />
+            </button>
+
+            {/* End Message */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 0 4px', borderTop: '1px solid #f3f4f6', marginTop: 8 }}>
+              <div style={{
+                width: 28, height: 28, borderRadius: 6, background: '#F9FAFB', border: '1px solid #e5e7eb',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+              }}>
+                <Flag size={13} color="#667085" strokeWidth={1.8} />
+              </div>
+              <div style={{ flex: 1, display: 'flex', gap: 8, alignItems: 'center' }}>
+                <span style={{ fontSize: 14, fontWeight: 500, color: '#344054' }}>End Message</span>
+                <span style={{ fontSize: 12, color: '#667085' }}>This is a description.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div style={{
+        background: '#ffffff', borderTop: '1px solid #f0f0f0', padding: '12px 24px',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, height: 68,
+      }}>
+        <button style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, padding: '6px 10px', borderRadius: 6 }}>
+          <span style={{ fontSize: 14, fontWeight: 500, color: '#B3131D' }}>Discard</span>
+          <ChevronDown size={16} color="#B3131D" strokeWidth={2} />
+        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <button style={{ background: 'none', border: '1px solid #e5e7eb', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 8 }}>
+            <span style={{ fontSize: 14, fontWeight: 500, color: '#C74900' }}>Preview</span>
+            <ChevronDown size={14} color="#C74900" strokeWidth={2} />
+          </button>
+          <button style={{ background: '#C74900', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 8 }}>
+            <span style={{ fontSize: 14, fontWeight: 500, color: '#ffffff' }}>Save Flow</span>
+            <ChevronDown size={14} color="rgba(255,255,255,0.7)" strokeWidth={2} />
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── Studio Panel ─────────────────────────────────────────────────────────────
 
 function StudioPanel({ onClose }: { onClose: () => void }) {
   const [previewMode, setPreviewMode] = useState(false)
+  const [view, setView] = useState<'home' | 'flow'>('home')
+
+  const handleCardClick = (label: string) => {
+    if (label === 'Flow') setView('flow')
+  }
 
   return (
     <div style={{ display: 'flex', height: '100%', fontFamily: "'Inter', -apple-system, sans-serif" }}>
@@ -358,54 +515,60 @@ function StudioPanel({ onClose }: { onClose: () => void }) {
       </div>
 
       {/* Main panel */}
-      <div style={{ width: 383, background: '#F2F2F8', display: 'flex', flexDirection: 'column', overflowY: 'auto', overflowX: 'hidden' }}>
-        {/* Header / banner */}
-        <div style={{ background: '#FFF7F4', padding: '14px 16px 20px 24px', position: 'relative', minHeight: 130, overflow: 'hidden', flexShrink: 0 }}>
-          <div style={{ position: 'absolute', top: 10, right: 10, display: 'flex', gap: 2, zIndex: 2 }}>
-            <HeaderButton title="Collapse panel"><ChevronLeft size={14} strokeWidth={2} /></HeaderButton>
-            <HeaderButton title="More options"><MoreVertical size={14} strokeWidth={2} /></HeaderButton>
-            <HeaderButton title="Close" onClick={onClose}><X size={14} strokeWidth={2} /></HeaderButton>
-          </div>
-          <div style={{ maxWidth: 270, paddingTop: 2 }}>
-            <span style={{ fontSize: 22, fontWeight: 700, color: '#C74900', lineHeight: 1.4, letterSpacing: '-0.01em' }}>Studio: </span>
-            <span style={{ fontSize: 22, fontWeight: 700, color: '#3D3C52', lineHeight: 1.4, letterSpacing: '-0.01em' }}>Guide. Analyze. Collaborate. In context. All in one place.</span>
-          </div>
-          <div style={{ position: 'absolute', right: 14, bottom: 6, pointerEvents: 'none' }}>
-            <StudioIllustration />
-          </div>
-        </div>
+      <div style={{ width: 383, background: '#F2F2F8', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        {view === 'home' ? (
+          <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflowY: 'auto', overflowX: 'hidden' }}>
+            {/* Header / banner */}
+            <div style={{ background: '#FFF7F4', padding: '14px 16px 20px 24px', position: 'relative', minHeight: 130, overflow: 'hidden', flexShrink: 0 }}>
+              <div style={{ position: 'absolute', top: 10, right: 10, display: 'flex', gap: 2, zIndex: 2 }}>
+                <HeaderButton title="Collapse panel"><ChevronLeft size={14} strokeWidth={2} /></HeaderButton>
+                <HeaderButton title="More options"><MoreVertical size={14} strokeWidth={2} /></HeaderButton>
+                <HeaderButton title="Close" onClick={onClose}><X size={14} strokeWidth={2} /></HeaderButton>
+              </div>
+              <div style={{ maxWidth: 270, paddingTop: 2 }}>
+                <span style={{ fontSize: 22, fontWeight: 700, color: '#C74900', lineHeight: 1.4, letterSpacing: '-0.01em' }}>Studio: </span>
+                <span style={{ fontSize: 22, fontWeight: 700, color: '#3D3C52', lineHeight: 1.4, letterSpacing: '-0.01em' }}>Guide. Analyze. Collaborate. In context. All in one place.</span>
+              </div>
+              <div style={{ position: 'absolute', right: 14, bottom: 6, pointerEvents: 'none' }}>
+                <StudioIllustration />
+              </div>
+            </div>
 
-        {/* User row */}
-        <div style={{ background: '#ffffff', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #f3f4f6', flexShrink: 0 }}>
-          <span style={{ fontSize: 14, fontWeight: 600, color: '#1a2332' }}>Sumit_Bedi_Demo</span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 12, color: '#6b7280', fontWeight: 500 }}>Preview Mode</span>
-            <Toggle checked={previewMode} onChange={() => setPreviewMode(v => !v)} />
+            {/* User row */}
+            <div style={{ background: '#ffffff', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #f3f4f6', flexShrink: 0 }}>
+              <span style={{ fontSize: 14, fontWeight: 600, color: '#1a2332' }}>Sumit_Bedi_Demo</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 12, color: '#6b7280', fontWeight: 500 }}>Preview Mode</span>
+                <Toggle checked={previewMode} onChange={() => setPreviewMode(v => !v)} />
+              </div>
+            </div>
+
+            {/* Element analysis banner */}
+            <div style={{ background: '#fefce8', border: '1px solid #fef08a', margin: '10px 12px', borderRadius: 8, padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <ScanLine size={16} color="#713f12" />
+                <span style={{ fontSize: 13, fontWeight: 500, color: '#713f12' }}>Element analysis</span>
+              </div>
+              <span style={{ fontSize: 13, color: '#2563eb', fontWeight: 500, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 2 }}>View</span>
+            </div>
+
+            {/* Content section */}
+            <div style={{ flexShrink: 0 }}>
+              <SectionLabel>Content</SectionLabel>
+              <CardGrid cards={contentCards} onCardClick={handleCardClick} />
+            </div>
+
+            <div style={{ height: 1, background: '#e5e7eb', margin: '0 16px' }} />
+
+            {/* Widgets section */}
+            <div style={{ flexShrink: 0, paddingBottom: 20 }}>
+              <SectionLabel>Widgets</SectionLabel>
+              <CardGrid cards={widgetCards} onCardClick={handleCardClick} />
+            </div>
           </div>
-        </div>
-
-        {/* Element analysis banner */}
-        <div style={{ background: '#fefce8', border: '1px solid #fef08a', margin: '10px 12px', borderRadius: 8, padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <ScanLine size={16} color="#713f12" />
-            <span style={{ fontSize: 13, fontWeight: 500, color: '#713f12' }}>Element analysis</span>
-          </div>
-          <span style={{ fontSize: 13, color: '#2563eb', fontWeight: 500, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 2 }}>View</span>
-        </div>
-
-        {/* Content section */}
-        <div style={{ flexShrink: 0 }}>
-          <SectionLabel>Content</SectionLabel>
-          <CardGrid cards={contentCards} />
-        </div>
-
-        <div style={{ height: 1, background: '#e5e7eb', margin: '0 16px' }} />
-
-        {/* Widgets section */}
-        <div style={{ flexShrink: 0, paddingBottom: 20 }}>
-          <SectionLabel>Widgets</SectionLabel>
-          <CardGrid cards={widgetCards} />
-        </div>
+        ) : (
+          <FlowView onBack={() => setView('home')} onClose={onClose} />
+        )}
       </div>
     </div>
   )
