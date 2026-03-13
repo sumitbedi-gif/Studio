@@ -435,7 +435,7 @@ function FlowView({ onBack, onClose }: { onBack: () => void; onClose: () => void
             {showDropdown && (
               <>
                 <div style={{ position: 'fixed', inset: 0, zIndex: 10 }} onClick={() => setShowDropdown(false)} />
-                <div style={{
+                <div className="dropdown-fade-in" style={{
                   position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, zIndex: 20,
                   background: '#ffffff', borderRadius: 12, border: '1px solid #e8e8ee',
                   boxShadow: '0 8px 24px rgba(0,0,0,0.12)', overflow: 'hidden', padding: '6px 0',
@@ -556,13 +556,14 @@ function FlowView({ onBack, onClose }: { onBack: () => void; onClose: () => void
           {/* Overlay */}
           <div
             onClick={() => setShowDrawer(false)}
+            className="overlay-fade-in"
             style={{
               position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.35)',
               backdropFilter: 'blur(3px)', zIndex: 30,
             }}
           />
           {/* Drawer */}
-          <div style={{
+          <div className="drawer-slide-up" style={{
             position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 40,
             background: '#ffffff', borderRadius: '16px 16px 0 0',
             boxShadow: '0 -4px 32px rgba(0,0,0,0.15)',
