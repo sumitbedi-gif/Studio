@@ -329,141 +329,144 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void 
   )
 }
 
+// ─── Step bold label ──────────────────────────────────────────────────────────
+
+function StepLabel({ text }: { text: string }) {
+  // Bold the key word (second word)
+  const parts = text.split(' ')
+  if (parts.length < 2) return <span style={{ fontSize: 14, color: '#344054' }}>{text}</span>
+  return (
+    <span style={{ fontSize: 14, color: '#344054' }}>
+      {parts[0]}{' '}
+      <strong style={{ fontWeight: 700 }}>{parts.slice(1).join(' ')}</strong>
+    </span>
+  )
+}
+
 // ─── Flow View ────────────────────────────────────────────────────────────────
 
 function FlowView({ onBack, onClose }: { onBack: () => void; onClose: () => void }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#F2F2F8' }}>
       {/* Header */}
-      <div style={{ background: '#ffffff', borderBottom: '1px solid #f0f0f0', padding: '0 8px 0 12px', height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+      <div style={{ background: '#ffffff', borderBottom: '1px solid #ebebeb', padding: '0 10px 0 8px', height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
         <button
           onClick={onBack}
-          style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', padding: '4px 6px', borderRadius: 6 }}
+          style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px', borderRadius: 6 }}
         >
-          <ChevronLeft size={20} color="#1F1F32" strokeWidth={2} />
-          <span style={{ fontSize: 18, fontWeight: 600, color: '#1F1F32', letterSpacing: '-0.01em' }}>Flow</span>
-          <ChevronDown size={20} color="#1F1F32" strokeWidth={2} />
+          <ChevronLeft size={22} color="#1F1F32" strokeWidth={2.5} />
+          <span style={{ fontSize: 20, fontWeight: 700, color: '#1F1F32' }}>Flow</span>
         </button>
         <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <HeaderButton title="More options"><MoreVertical size={16} strokeWidth={2} /></HeaderButton>
-          <HeaderButton title="Close" onClick={onClose}><X size={16} strokeWidth={2} /></HeaderButton>
+          <HeaderButton title="More options"><MoreVertical size={18} strokeWidth={2} /></HeaderButton>
+          <HeaderButton title="Close" onClick={onClose}><X size={18} strokeWidth={2} /></HeaderButton>
         </div>
       </div>
 
       {/* Scrollable body */}
       <div style={{ flex: 1, overflowY: 'auto' }}>
-        {/* Title section */}
-        <div style={{ background: '#ffffff', padding: '16px 24px 0', borderBottom: '1px solid #f0f0f0' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-            <div style={{ width: 36, height: 36, borderRadius: 8, background: '#EFF8FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <Signpost size={18} color="#0875D7" strokeWidth={1.8} />
+
+        {/* Title section — white */}
+        <div style={{ background: '#ffffff', padding: '20px 20px 16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
+            <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#EFF8FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <Signpost size={20} color="#0875D7" strokeWidth={1.8} />
             </div>
             <span style={{ fontSize: 16, fontWeight: 600, color: '#2B2B40', lineHeight: 1.4 }}>How to create a new account</span>
           </div>
           <button style={{
-            width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: 8,
-            padding: '10px 14px', cursor: 'pointer', marginBottom: 16,
+            width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: 10,
+            padding: '12px 14px', cursor: 'pointer', boxSizing: 'border-box',
           }}>
-            <span style={{ fontSize: 14, fontWeight: 500, color: '#3D3C52' }}>Details</span>
-            <ChevronDown size={16} color="#6b7280" strokeWidth={2} />
+            <span style={{ fontSize: 14, fontWeight: 400, color: '#3D3C52' }}>Details</span>
           </button>
         </div>
 
-        {/* Body content */}
-        <div style={{ background: '#ffffff', margin: '8px 0', padding: '16px 24px' }}>
-          {/* AI Rewrite button */}
+        {/* Gray body — steps */}
+        <div style={{ padding: '14px 16px 20px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+
+          {/* Rewrite steps */}
           <button style={{
-            width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            background: '#0875D7', border: 'none', borderRadius: 6,
-            padding: '6px 12px', cursor: 'pointer', marginBottom: 20, height: 32,
+            width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            background: '#0875D7', border: 'none', borderRadius: 8,
+            padding: '9px 14px', cursor: 'pointer', marginBottom: 4,
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Sparkles size={14} color="#ffffff" strokeWidth={2} />
-              <span style={{ fontSize: 13, fontWeight: 500, color: '#ffffff' }}>Rewrite steps</span>
-            </div>
-            <ChevronDown size={14} color="rgba(255,255,255,0.7)" strokeWidth={2} />
+            <Sparkles size={15} color="#ffffff" strokeWidth={2} />
+            <span style={{ fontSize: 14, fontWeight: 500, color: '#ffffff' }}>Rewrite steps</span>
           </button>
 
-          {/* Steps */}
-          <div style={{ position: 'relative' }}>
-            {/* Vertical line */}
-            <div style={{ position: 'absolute', left: 13, top: 28, width: 2, height: `calc(100% - 88px)`, background: '#e5e7eb', zIndex: 0 }} />
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-              {flowSteps.map((step) => (
-                <div
-                  key={step.n}
-                  style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '12px 0', borderBottom: '1px solid #f9fafb', position: 'relative', zIndex: 1 }}
-                >
-                  {/* Badge */}
-                  <div style={{
-                    width: 28, height: 28, borderRadius: 6, background: '#F9FAFB', border: '1px solid #e5e7eb',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 13, fontWeight: 600, color: '#344054', flexShrink: 0,
-                  }}>
-                    {step.n}
-                  </div>
-                  {/* Text */}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 14, fontWeight: 500, color: '#344054', marginBottom: 2 }}>{step.main}</div>
-                    <div style={{ fontSize: 12, color: '#667085', lineHeight: 1.5 }}>{step.sub}</div>
-                  </div>
-                  {/* Dots menu */}
-                  <button style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: '#9ca3af', flexShrink: 0 }}>
-                    <MoreVertical size={16} strokeWidth={1.8} />
-                  </button>
-                </div>
-              ))}
-            </div>
-
-            {/* Add Step button */}
-            <button style={{
-              width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: 8,
-              padding: '10px 14px', cursor: 'pointer', marginTop: 8,
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Plus size={18} color="#C74900" strokeWidth={2} />
-                <span style={{ fontSize: 14, fontWeight: 500, color: '#C74900' }}>Add Step</span>
-              </div>
-              <ChevronDown size={16} color="#9ca3af" strokeWidth={2} />
-            </button>
-
-            {/* End Message */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 0 4px', borderTop: '1px solid #f3f4f6', marginTop: 8 }}>
+          {/* Step cards */}
+          {flowSteps.map((step) => (
+            <div
+              key={step.n}
+              style={{
+                background: '#ffffff', borderRadius: 10, border: '1px solid #e8e8ee',
+                boxShadow: '0 1px 4px rgba(0,0,0,0.06)', padding: '12px 12px 12px 14px',
+                display: 'flex', alignItems: 'center', gap: 12,
+              }}
+            >
               <div style={{
-                width: 28, height: 28, borderRadius: 6, background: '#F9FAFB', border: '1px solid #e5e7eb',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                width: 34, height: 34, borderRadius: '50%', background: '#ffffff', border: '1.5px solid #d0d5dd',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 14, fontWeight: 500, color: '#344054', flexShrink: 0,
               }}>
-                <Flag size={13} color="#667085" strokeWidth={1.8} />
+                {step.n}
               </div>
-              <div style={{ flex: 1, display: 'flex', gap: 8, alignItems: 'center' }}>
-                <span style={{ fontSize: 14, fontWeight: 500, color: '#344054' }}>End Message</span>
-                <span style={{ fontSize: 12, color: '#667085' }}>This is a description.</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <StepLabel text={step.main} />
+                <div style={{ fontSize: 12, color: '#98a2b3', marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {step.sub}
+                </div>
               </div>
+              <button style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 2px', color: '#98a2b3', flexShrink: 0 }}>
+                <MoreVertical size={16} strokeWidth={1.8} />
+              </button>
             </div>
+          ))}
+
+          {/* Add Step — dashed orange border */}
+          <button style={{
+            width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            background: '#ffffff', border: '1.5px dashed #C74900', borderRadius: 10,
+            padding: '13px 14px', cursor: 'pointer', boxSizing: 'border-box',
+          }}>
+            <Plus size={18} color="#C74900" strokeWidth={2.5} />
+            <span style={{ fontSize: 14, fontWeight: 500, color: '#C74900' }}>Add Step</span>
+          </button>
+
+          {/* End Message card */}
+          <div style={{
+            background: '#ffffff', borderRadius: 10, border: '1px solid #e8e8ee',
+            boxShadow: '0 1px 4px rgba(0,0,0,0.06)', padding: '12px 12px 12px 14px',
+            display: 'flex', alignItems: 'center', gap: 12,
+          }}>
+            <div style={{
+              width: 34, height: 34, borderRadius: '50%', background: '#ffffff', border: '1.5px solid #d0d5dd',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+            }}>
+              <Flag size={14} color="#667085" strokeWidth={1.8} />
+            </div>
+            <span style={{ fontSize: 14, fontWeight: 500, color: '#344054' }}>End Message</span>
           </div>
+
         </div>
       </div>
 
       {/* Footer */}
       <div style={{
-        background: '#ffffff', borderTop: '1px solid #f0f0f0', padding: '12px 24px',
+        background: '#ffffff', borderTop: '1px solid #ebebeb', padding: '0 20px',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, height: 68,
       }}>
-        <button style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, padding: '6px 10px', borderRadius: 6 }}>
+        <button style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '8px 4px' }}>
           <span style={{ fontSize: 14, fontWeight: 500, color: '#B3131D' }}>Discard</span>
-          <ChevronDown size={16} color="#B3131D" strokeWidth={2} />
         </button>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <button style={{ background: 'none', border: '1px solid #e5e7eb', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 8 }}>
-            <span style={{ fontSize: 14, fontWeight: 500, color: '#C74900' }}>Preview</span>
-            <ChevronDown size={14} color="#C74900" strokeWidth={2} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <button style={{ background: '#ffffff', border: '1.5px solid #C74900', cursor: 'pointer', padding: '8px 20px', borderRadius: 8 }}>
+            <span style={{ fontSize: 14, fontWeight: 600, color: '#C74900' }}>Preview</span>
           </button>
-          <button style={{ background: '#C74900', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 8 }}>
-            <span style={{ fontSize: 14, fontWeight: 500, color: '#ffffff' }}>Save Flow</span>
-            <ChevronDown size={14} color="rgba(255,255,255,0.7)" strokeWidth={2} />
+          <button style={{ background: '#A13000', border: 'none', cursor: 'pointer', padding: '9px 20px', borderRadius: 8 }}>
+            <span style={{ fontSize: 14, fontWeight: 600, color: '#ffffff' }}>Save Flow</span>
           </button>
         </div>
       </div>
