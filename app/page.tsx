@@ -441,18 +441,17 @@ export default function StudioPage() {
             position: 'fixed', bottom: 28, right: 28, zIndex: 200,
             display: 'flex', alignItems: 'center', gap: 8,
             padding: '12px 20px', borderRadius: 10, border: 'none', cursor: 'pointer',
-            background: '#C74900', color: '#ffffff',
+            background: '#1F1F32', color: '#ffffff',
             fontSize: 14, fontWeight: 600,
             fontFamily: "'Inter', -apple-system, sans-serif",
-            boxShadow: '0 4px 16px rgba(199,73,0,0.4)',
+            boxShadow: '0 4px 16px rgba(31,31,50,0.4)',
             transition: 'transform 150ms, box-shadow 150ms',
           }}
-          onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(199,73,0,0.45)' }}
-          onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(199,73,0,0.4)' }}
+          onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(31,31,50,0.5)' }}
+          onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(31,31,50,0.4)' }}
         >
-          <svg width="16" height="18" viewBox="0 0 18 22" fill="none">
-            <path d="M10.5 1L2 12H8.5L7.5 21L16 10H9.5L10.5 1Z" fill="#ffffff" />
-          </svg>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/brand/whatfix_symbol.svg" alt="Whatfix" width={18} height={18} style={{ filter: 'brightness(0) invert(1)' }} />
           Open Studio
         </button>
       )}
