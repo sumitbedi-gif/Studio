@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
+import { PopupFlow, PopupOverlayOnApp, type PopupTemplate, type ElementInfo } from '@/components/popup-flow'
 import {
   Plus,
   X,
@@ -38,6 +39,7 @@ import {
   Minimize2,
   Pencil,
   AlertCircle,
+  Crosshair,
 } from 'lucide-react'
 
 const rewriteExamples = [
@@ -94,41 +96,129 @@ const flowSteps = [
 
 // ─── Dummy App Skeleton ───────────────────────────────────────────────────────
 
-function AppSkeleton({ open }: { open: boolean }) {
+interface AppSkeletonProps {
+  open: boolean
+  popupTemplate?: PopupTemplate | null
+  pickerActive?: boolean
+  onElementClick?: (element: ElementInfo) => void
+  inPopupEditor?: boolean
+  previewElement?: ElementInfo | null
+}
+
+function PickableElement({
+  pickerActive,
+  name,
+  selector,
+  kind = 'Button',
+  onElementClick,
+  children,
+  style = {},
+  glowRadius = 10,
+  isPreviewing = false,
+}: {
+  pickerActive: boolean
+  name: string
+  selector: string
+  kind?: string
+  onElementClick?: (e: ElementInfo) => void
+  children: React.ReactNode
+  style?: React.CSSProperties
+  glowRadius?: number
+  isPreviewing?: boolean
+}) {
+  const [hover, setHover] = useState(false)
+  const cls = [
+    pickerActive && !hover ? 'picker-glow' : '',
+    isPreviewing ? 'preview-glow' : '',
+  ].filter(Boolean).join(' ')
   return (
-    <div style={{ position: 'fixed', inset: 0, display: 'flex', fontFamily: "'Inter', -apple-system, sans-serif" }}>
+    <div
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      onClick={(e) => {
+        if (pickerActive) {
+          e.stopPropagation()
+          onElementClick?.({ name, selector })
+        }
+      }}
+      className={cls || undefined}
+      style={{
+        position: 'relative',
+        cursor: pickerActive ? 'crosshair' : 'pointer',
+        outline: pickerActive && hover ? '2px dashed #EF4444' : 'none',
+        outlineOffset: 2,
+        borderRadius: glowRadius,
+        ...style,
+      }}
+    >
+      {children}
+      {pickerActive && hover && (
+        <div style={{
+          position: 'absolute', top: -28, left: 0,
+          background: '#0A0A0A', color: '#FFFFFF',
+          fontSize: 11, fontWeight: 500, padding: '4px 9px', borderRadius: 5,
+          whiteSpace: 'nowrap', zIndex: 200,
+          boxShadow: '0 4px 12px rgba(0,0,0,0.20)',
+          letterSpacing: '-0.005em',
+        }}>
+          {kind}: {name}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function AppSkeleton({ open, popupTemplate, pickerActive = false, onElementClick, inPopupEditor = false, previewElement }: AppSkeletonProps) {
+  const isPreviewing = (sel: string) => previewElement?.selector === sel
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, display: 'flex',
+      fontFamily: "'Inter', -apple-system, sans-serif",
+      cursor: pickerActive ? 'crosshair' : 'auto',
+    }}>
       {/* App sidebar */}
       <div style={{ width: 220, background: '#ffffff', borderRight: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
         {/* Logo */}
         <div style={{ padding: '20px 20px 12px', borderBottom: '1px solid #f3f4f6' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ width: 32, height: 32, borderRadius: 8, background: '#4f46e5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ width: 32, height: 32, borderRadius: 8, background: '#D4572A', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Zap size={16} color="#fff" fill="#fff" />
             </div>
-            <span style={{ fontWeight: 700, fontSize: 15, color: '#111827' }}>Acme CRM</span>
+            <span style={{ fontWeight: 700, fontSize: 15, color: '#111827' }}>ACME Corp</span>
           </div>
         </div>
         {/* Nav items */}
         {[
-          { icon: <LayoutDashboard size={16} />, label: 'Dashboard', active: true },
-          { icon: <Users size={16} />, label: 'Contacts' },
-          { icon: <Inbox size={16} />, label: 'Inbox' },
-          { icon: <BarChart size={16} />, label: 'Reports' },
-          { icon: <Settings size={16} />, label: 'Settings' },
-        ].map(({ icon, label, active }) => (
-          <div
+          { icon: <LayoutDashboard size={16} />, label: 'Dashboard', active: true,  selector: '#nav > .nav-dashboard' },
+          { icon: <Users size={16} />,           label: 'Contacts',                  selector: '#nav > .nav-contacts'  },
+          { icon: <Inbox size={16} />,           label: 'Inbox',                     selector: '#nav > .nav-inbox'     },
+          { icon: <BarChart size={16} />,        label: 'Reports',                   selector: '#nav > .nav-reports'   },
+          { icon: <Settings size={16} />,        label: 'Settings',                  selector: '#nav > .nav-settings'  },
+        ].map(({ icon, label, active, selector }) => (
+          <PickableElement
             key={label}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 10,
-              padding: '9px 16px', margin: '2px 8px', borderRadius: 7,
-              background: active ? '#eef2ff' : 'transparent',
-              color: active ? '#4f46e5' : '#6b7280',
-              fontSize: 14, fontWeight: active ? 600 : 400, cursor: 'pointer',
-            }}
+            pickerActive={pickerActive}
+            name={label}
+            kind="Nav"
+            selector={selector}
+            onElementClick={onElementClick}
+            style={{ margin: '2px 8px' }}
+            glowRadius={7}
+            isPreviewing={isPreviewing(selector)}
           >
-            {icon}
-            {label}
-          </div>
+            <div
+              style={{
+                display: 'flex', alignItems: 'center', gap: 10,
+                padding: '9px 16px', borderRadius: 7,
+                background: active ? '#eef2ff' : 'transparent',
+                color: active ? '#4f46e5' : '#6b7280',
+                fontSize: 14, fontWeight: active ? 600 : 400, cursor: 'inherit',
+              }}
+            >
+              {icon}
+              {label}
+            </div>
+          </PickableElement>
         ))}
         <div style={{ flex: 1 }} />
         <div style={{ padding: '12px 16px', borderTop: '1px solid #f3f4f6', display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -149,22 +239,55 @@ function AppSkeleton({ open }: { open: boolean }) {
             <Search size={14} color="#9ca3af" />
             <span style={{ fontSize: 13, color: '#9ca3af' }}>Search…</span>
           </div>
+          <PickableElement
+            pickerActive={pickerActive}
+            name="Login"
+            selector="#top-nav > .btn-login"
+            onElementClick={onElementClick}
+            isPreviewing={isPreviewing('#top-nav > .btn-login')}
+          >
+            <button
+              className="btn-login"
+              style={{
+                background: '#ffffff', color: '#D4572A', border: '1.5px solid #D4572A',
+                borderRadius: 8, padding: '7px 18px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+              }}
+            >
+              Login
+            </button>
+          </PickableElement>
         </div>
 
         {/* Body */}
-        <div style={{ flex: 1, padding: '24px', overflowY: 'auto', filter: open ? 'blur(1px)' : 'none', transition: 'filter 300ms', paddingRight: open ? 460 : 24 }}>
+        <div style={{
+          flex: 1, padding: '24px', overflowY: 'auto',
+          filter: open && !pickerActive ? 'blur(1px)' : 'none',
+          transition: 'filter 300ms',
+          paddingRight: open ? 460 : 24,
+        }}>
           {/* Stat cards */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 24 }}>
             {[
-              { label: 'Total Users', value: '12,481', delta: '+8.2%', color: '#4f46e5' },
-              { label: 'Active Sessions', value: '3,240', delta: '+3.1%', color: '#059669' },
-              { label: 'Tickets Open', value: '147', delta: '-12%', color: '#dc2626' },
-            ].map(({ label, value, delta, color }) => (
-              <div key={label} style={{ background: '#ffffff', borderRadius: 10, padding: '18px 20px', border: '1px solid #e5e7eb' }}>
-                <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 6, fontWeight: 500 }}>{label}</div>
-                <div style={{ fontSize: 26, fontWeight: 700, color: '#111827', marginBottom: 4 }}>{value}</div>
-                <div style={{ fontSize: 12, color, fontWeight: 600 }}>{delta} vs last month</div>
-              </div>
+              { label: 'Total Users',     value: '12,481', delta: '+8.2%', color: '#4f46e5', selector: '#stats > .stat-users'    },
+              { label: 'Active Sessions', value: '3,240',  delta: '+3.1%', color: '#059669', selector: '#stats > .stat-sessions' },
+              { label: 'Tickets Open',    value: '147',    delta: '-12%',  color: '#dc2626', selector: '#stats > .stat-tickets'  },
+            ].map(({ label, value, delta, color, selector }) => (
+              <PickableElement
+                key={label}
+                pickerActive={pickerActive}
+                name={label}
+                kind="Card"
+                selector={selector}
+                onElementClick={onElementClick}
+                glowRadius={10}
+                isPreviewing={isPreviewing(selector)}
+              >
+                <div style={{ background: '#ffffff', borderRadius: 10, padding: '18px 20px', border: '1px solid #e5e7eb' }}>
+                  <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 6, fontWeight: 500 }}>{label}</div>
+                  <div style={{ fontSize: 26, fontWeight: 700, color: '#111827', marginBottom: 4 }}>{value}</div>
+                  <div style={{ fontSize: 12, color, fontWeight: 600 }}>{delta} vs last month</div>
+                </div>
+              </PickableElement>
             ))}
           </div>
 
@@ -203,12 +326,15 @@ function AppSkeleton({ open }: { open: boolean }) {
         </div>
       </div>
 
-      {/* Overlay */}
-      {open && (
+      {/* Popup template overlay (popup editor) */}
+      {popupTemplate && <PopupOverlayOnApp template={popupTemplate} />}
+
+      {/* Dim overlay — only when studio is open AND we're NOT in the popup editor */}
+      {open && !inPopupEditor && (
         <div
           style={{
             position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.25)',
-            zIndex: 99, transition: 'opacity 300ms',
+            zIndex: 99, transition: 'opacity 300ms', pointerEvents: 'none',
           }}
         />
       )}
@@ -703,12 +829,38 @@ function FlowView({ onBack, onClose }: { onBack: () => void; onClose: () => void
 
 // ─── Studio Panel ─────────────────────────────────────────────────────────────
 
-function StudioPanel({ onClose }: { onClose: () => void }) {
+interface StudioPanelProps {
+  onClose: () => void
+  popupTemplate: PopupTemplate | null
+  setPopupTemplate: (t: PopupTemplate | null) => void
+  pickerActive: boolean
+  startPicker: () => void
+  stopPicker: () => void
+  selectedElement: ElementInfo | null
+  setSelectedElement: (el: ElementInfo | null) => void
+  setPreviewElement: (el: ElementInfo | null) => void
+  popupView: boolean
+  setPopupView: (v: boolean) => void
+}
+
+function StudioPanel({
+  onClose, popupTemplate, setPopupTemplate,
+  pickerActive, startPicker, stopPicker,
+  selectedElement, setSelectedElement, setPreviewElement,
+  popupView, setPopupView,
+}: StudioPanelProps) {
   const [previewMode, setPreviewMode] = useState(false)
   const [view, setView] = useState<'home' | 'flow'>('home')
 
   const handleCardClick = (label: string) => {
     if (label === 'Flow') setView('flow')
+    if (label === 'Popup') setPopupView(true)
+  }
+
+  const exitPopupFlow = () => {
+    setPopupView(false)
+    setPopupTemplate(null)
+    stopPicker()
   }
 
   return (
@@ -746,7 +898,20 @@ function StudioPanel({ onClose }: { onClose: () => void }) {
 
       {/* Main panel */}
       <div style={{ width: 383, background: '#F2F2F8', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        {view === 'home' ? (
+        {popupView ? (
+          <PopupFlow
+            onClose={exitPopupFlow}
+            onMin={exitPopupFlow}
+            template={popupTemplate}
+            setTemplate={setPopupTemplate}
+            pickerActive={pickerActive}
+            startPicker={startPicker}
+            stopPicker={stopPicker}
+            selectedElement={selectedElement}
+            setSelectedElement={setSelectedElement}
+            setPreviewElement={setPreviewElement}
+          />
+        ) : view === 'home' ? (
           <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflowY: 'auto', overflowX: 'hidden' }}>
             {/* Header / banner */}
             <div style={{ background: '#FFF7F4', padding: '14px 16px 20px 24px', position: 'relative', minHeight: 130, overflow: 'hidden', flexShrink: 0 }}>
@@ -808,22 +973,105 @@ function StudioPanel({ onClose }: { onClose: () => void }) {
 
 export default function StudioPage() {
   const [open, setOpen] = useState(false)
+  const [popupView, setPopupView] = useState(false)
+  const [popupTemplate, setPopupTemplate] = useState<PopupTemplate | null>(null)
+  const [pickerActive, setPickerActive] = useState(false)
+  const [selectedElement, setSelectedElement] = useState<ElementInfo | null>(null)
+  const [previewElement, setPreviewElement] = useState<ElementInfo | null>(null)
+
+  // Cancel picker on Escape
+  useEffect(() => {
+    if (!pickerActive) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setPickerActive(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [pickerActive])
+
+  const handleElementClick = (el: ElementInfo) => {
+    setSelectedElement(el)
+    setPickerActive(false)
+  }
+
+  // While picker is active during the popup flow, hide the popup overlay
+  // and slide the studio panel away so the user can interact with the bg app.
+  const minimizedForPicker = pickerActive && popupView
+  const showPopupOverlay = popupView && popupTemplate && !pickerActive
+  const panelVisible = open && !minimizedForPicker
 
   return (
     <>
-      <AppSkeleton open={open} />
+      <AppSkeleton
+        open={open}
+        popupTemplate={showPopupOverlay ? popupTemplate : null}
+        pickerActive={pickerActive}
+        onElementClick={handleElementClick}
+        inPopupEditor={popupView}
+        previewElement={previewElement}
+      />
+
+      {/* Floating "click an element" banner during picker mode */}
+      {pickerActive && (
+        <div
+          className="picker-banner-in"
+          style={{
+            position: 'fixed', bottom: 32, left: '50%',
+            background: '#0A0A0A', color: '#FFFFFF',
+            padding: '12px 18px', borderRadius: 14,
+            display: 'flex', alignItems: 'center', gap: 14,
+            boxShadow: '0 1px 0 rgba(255,255,255,0.10) inset, 0 16px 40px rgba(15, 23, 42, 0.36), 0 4px 12px rgba(15, 23, 42, 0.18)',
+            zIndex: 300,
+            fontFamily: "'Inter', -apple-system, sans-serif",
+          }}
+        >
+          <div style={{
+            width: 22, height: 22, borderRadius: 6,
+            background: 'rgba(37, 99, 235, 0.22)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <Crosshair size={12} color="#93C5FD" strokeWidth={2.4} />
+          </div>
+          <span style={{ fontSize: 13, fontWeight: 500, letterSpacing: '-0.005em' }}>
+            Click any element on the page to use as a trigger
+          </span>
+          <button
+            onClick={() => setPickerActive(false)}
+            style={{
+              background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.10)',
+              color: '#FFFFFF', borderRadius: 7,
+              padding: '5px 12px', fontSize: 11.5, fontWeight: 500, cursor: 'pointer',
+              marginLeft: 4,
+            }}
+          >
+            Cancel
+          </button>
+        </div>
+      )}
 
       {/* Studio panel — slides in from right */}
       <div
         style={{
           position: 'fixed', top: 0, right: 0, bottom: 0,
           display: 'flex', zIndex: 100,
-          boxShadow: open ? '-4px 0 40px rgba(0,0,0,0.22)' : 'none',
-          transform: open ? 'translateX(0)' : 'translateX(100%)',
+          boxShadow: panelVisible ? '-4px 0 40px rgba(0,0,0,0.22)' : 'none',
+          transform: panelVisible ? 'translateX(0)' : 'translateX(100%)',
           transition: 'transform 320ms cubic-bezier(0.32,0,0.15,1)',
         }}
       >
-        <StudioPanel onClose={() => setOpen(false)} />
+        <StudioPanel
+          onClose={() => { setOpen(false); setPopupView(false); setPopupTemplate(null); setPickerActive(false) }}
+          popupView={popupView}
+          setPopupView={setPopupView}
+          popupTemplate={popupTemplate}
+          setPopupTemplate={setPopupTemplate}
+          pickerActive={pickerActive}
+          startPicker={() => { setSelectedElement(null); setPickerActive(true) }}
+          stopPicker={() => setPickerActive(false)}
+          selectedElement={selectedElement}
+          setSelectedElement={setSelectedElement}
+          setPreviewElement={setPreviewElement}
+        />
       </div>
 
       {/* Open Studio button */}
