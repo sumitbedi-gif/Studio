@@ -22,7 +22,6 @@ import {
   Wand2,
   Lightbulb,
   Plus,
-  Pencil,
 } from 'lucide-react'
 
 // ─── Color tokens ─────────────────────────────────────────────────────────────
@@ -413,7 +412,7 @@ function ConfigurationsTab() {
 
 // ─── AI Loader (rotating ring + cycling text) ────────────────────────────────
 
-function AILoader({ messages }: { messages: string[] }) {
+function AILoader({ messages, centered = false }: { messages: string[]; centered?: boolean }) {
   const [idx, setIdx] = useState(0)
   useEffect(() => {
     // Advance one message at a time and STOP at the last one — never loop.
@@ -423,44 +422,97 @@ function AILoader({ messages }: { messages: string[] }) {
     return () => clearTimeout(t)
   }, [idx, messages.length])
 
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '52px 24px', gap: 20 }}>
-      <div style={{ position: 'relative', width: 64, height: 64 }}>
-        {/* Outer ring */}
-        <div className="ai-ring-1" style={{
-          position: 'absolute', inset: 0, borderRadius: '50%',
-          background: 'conic-gradient(from 0deg, transparent 0deg, #93C5FD 80deg, #2563EB 140deg, transparent 220deg)',
-          WebkitMask: 'radial-gradient(circle, transparent 70%, black 72%)',
-          mask: 'radial-gradient(circle, transparent 70%, black 72%)',
+  const content = (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 22, padding: centered ? 0 : '52px 24px' }}>
+      <div style={{ position: 'relative', width: 92, height: 92, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        {/* Pulsing radial glow background */}
+        <div className="ai-glow-bg" style={{
+          position: 'absolute', inset: -10,
+          borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(15, 23, 42, 0.18) 0%, rgba(15, 23, 42, 0.06) 35%, transparent 70%)',
+          pointerEvents: 'none',
         }} />
-        {/* Inner ring */}
-        <div className="ai-ring-2" style={{
-          position: 'absolute', inset: 6, borderRadius: '50%',
-          background: 'conic-gradient(from 180deg, transparent 0deg, #BFDBFE 90deg, transparent 180deg)',
-          WebkitMask: 'radial-gradient(circle, transparent 60%, black 62%)',
-          mask: 'radial-gradient(circle, transparent 60%, black 62%)',
-        }} />
-        {/* Sparkle center */}
-        <div style={{
-          position: 'absolute', inset: 0,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>
-          <div className="ai-sparkle-pulse" style={{
-            width: 30, height: 30, borderRadius: '50%',
-            background: C.aiSoft,
+
+        {/* Core rings + sparkle wrapper */}
+        <div style={{ position: 'relative', width: 68, height: 68 }}>
+          {/* Outer ring */}
+          <div className="ai-ring-1" style={{
+            position: 'absolute', inset: 0, borderRadius: '50%',
+            background: 'conic-gradient(from 0deg, transparent 0deg, #94A3B8 80deg, #0F172A 140deg, transparent 220deg)',
+            WebkitMask: 'radial-gradient(circle, transparent 70%, black 72%)',
+            mask: 'radial-gradient(circle, transparent 70%, black 72%)',
+          }} />
+          {/* Inner ring */}
+          <div className="ai-ring-2" style={{
+            position: 'absolute', inset: 6, borderRadius: '50%',
+            background: 'conic-gradient(from 180deg, transparent 0deg, #CBD5E1 90deg, transparent 180deg)',
+            WebkitMask: 'radial-gradient(circle, transparent 60%, black 62%)',
+            mask: 'radial-gradient(circle, transparent 60%, black 62%)',
+          }} />
+          {/* Sparkle center */}
+          <div style={{
+            position: 'absolute', inset: 0,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
-            <Sparkles size={15} color={C.ai} strokeWidth={2.4} />
+            <div className="ai-sparkle-pulse" style={{
+              width: 32, height: 32, borderRadius: '50%',
+              background: '#F1F5F9',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: '0 1px 0 rgba(255, 255, 255, 0.6) inset, 0 4px 12px rgba(15, 23, 42, 0.22)',
+            }}>
+              <Sparkles size={16} color="#0F172A" strokeWidth={2.4} />
+            </div>
           </div>
+        </div>
+
+        {/* Orbiting particles */}
+        <div className="ai-orbit-1" style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+          <span style={{
+            position: 'absolute', top: 0, left: '50%',
+            width: 5, height: 5, borderRadius: '50%',
+            background: '#0F172A',
+            boxShadow: '0 0 8px rgba(15, 23, 42, 0.6)',
+            transform: 'translateX(-50%)',
+          }} />
+        </div>
+        <div className="ai-orbit-2" style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+          <span style={{
+            position: 'absolute', bottom: 4, right: 8,
+            width: 4, height: 4, borderRadius: '50%',
+            background: '#334155',
+            boxShadow: '0 0 6px rgba(51, 65, 85, 0.55)',
+          }} />
+        </div>
+        <div className="ai-orbit-3" style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+          <span style={{
+            position: 'absolute', top: '55%', left: 2,
+            width: 3, height: 3, borderRadius: '50%',
+            background: '#64748B',
+            boxShadow: '0 0 6px rgba(100, 116, 139, 0.5)',
+          }} />
         </div>
       </div>
 
       <div key={idx} className="ai-text-cycle" style={{
-        fontSize: 13, color: C.textSecondary, fontWeight: 500, textAlign: 'center', minHeight: 18,
-        letterSpacing: '-0.005em',
+        fontSize: 13.5, color: C.textSecondary, fontWeight: 500, textAlign: 'center', minHeight: 20,
+        letterSpacing: '-0.005em', maxWidth: 260,
       }}>
         {messages[idx]}
       </div>
+    </div>
+  )
+
+  if (!centered) return content
+
+  return (
+    <div style={{
+      height: '100%',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '24px',
+    }}>
+      {content}
     </div>
   )
 }
@@ -1120,7 +1172,6 @@ function SummaryView({
   const pillRefs = useRef<Record<string, HTMLButtonElement | null>>({})
   const popoverRef = useRef<HTMLDivElement>(null)
   const [pickerOrigin, setPickerOrigin] = useState<'trigger' | null>(null)
-  const [pencilHover, setPencilHover] = useState(false)
 
   // Typing animation — skip entirely if typing has already happened in this session
   const segments = buildSegments(rules)
@@ -1255,52 +1306,6 @@ function SummaryView({
           pointerEvents: 'none',
         }} />
 
-        {/* Quiet pencil button — top-right corner, transparent, no layout impact */}
-        <div style={{ position: 'absolute', top: 8, right: 8, zIndex: 5 }}>
-          {hasFinishedTyping && (
-            <button
-              onClick={onEdit}
-              onMouseEnter={() => setPencilHover(true)}
-              onMouseLeave={() => setPencilHover(false)}
-              className="ai-pencil-btn-quiet summary-fade-in-1"
-              aria-label="Edit with AI"
-              style={{
-                width: 26, height: 26,
-                borderRadius: 7,
-                background: 'transparent',
-                color: '#6B7280',
-                border: 'none',
-                cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                padding: 0,
-                transition: 'background 150ms, color 150ms',
-              }}
-            >
-              <Pencil size={13} strokeWidth={2.2} className="ai-pencil-icon" />
-            </button>
-          )}
-          {hasFinishedTyping && pencilHover && (
-            <div className="pencil-tooltip-in" style={{
-              position: 'absolute',
-              top: '100%', right: 0, marginTop: 6,
-              background: '#0A0A0A',
-              color: '#FFFFFF',
-              fontSize: 11,
-              fontWeight: 500,
-              padding: '5px 10px',
-              borderRadius: 7,
-              whiteSpace: 'nowrap',
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.20)',
-              letterSpacing: '-0.005em',
-              pointerEvents: 'none',
-              display: 'flex', alignItems: 'center', gap: 4,
-            }}>
-              <Sparkles size={10} strokeWidth={2.4} className="ai-sparkle-twinkle" />
-              Edit with AI
-            </div>
-          )}
-        </div>
-
         <div style={{
           position: 'relative',
           fontSize: 14, lineHeight: 1.85, color: '#18181B',
@@ -1313,7 +1318,7 @@ function SummaryView({
 
         {hasFinishedTyping && (
           <div className="summary-fade-in-2" style={{
-            marginTop: 16,
+            marginTop: 14,
             paddingTop: 14,
             borderTop: '1px solid rgba(37, 99, 235, 0.10)',
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -1371,6 +1376,28 @@ function SummaryView({
           </div>
         )}
       </div>
+
+      {hasFinishedTyping && (
+        <button
+          onClick={onEdit}
+          className="ai-edit-btn-outline summary-fade-in-1"
+          style={{
+            marginTop: 14, width: '100%',
+            background: '#FFFFFF',
+            color: '#18181B',
+            border: '1px solid rgba(15, 23, 42, 0.08)',
+            borderRadius: 11, padding: '11px 16px',
+            fontSize: 13, fontWeight: 600, cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            letterSpacing: '-0.008em',
+            boxShadow: '0 1px 0 rgba(255, 255, 255, 0.6) inset, 0 1px 2px rgba(15, 23, 42, 0.04), 0 2px 6px rgba(15, 23, 42, 0.03)',
+            transition: 'background 160ms, border-color 160ms, color 160ms, box-shadow 160ms, transform 160ms',
+          }}
+        >
+          <Wand2 size={14} strokeWidth={2.4} />
+          Edit with AI
+        </button>
+      )}
 
       <div style={{ display: 'flex', justifyContent: 'center', marginTop: 14 }}>
         <button onClick={onSetManually} style={{
@@ -1472,7 +1499,7 @@ function VisibilityRulesTab({
   setHasTypedSummary: (v: boolean) => void
 }) {
   if (phase === 'loading') {
-    return <AILoader messages={buildLoaderMessages(template)} />
+    return <AILoader messages={buildLoaderMessages(template)} centered />
   }
 
   if (phase === 'manual') {
