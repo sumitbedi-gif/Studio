@@ -22,6 +22,9 @@ import {
   Wand2,
   Lightbulb,
   Plus,
+  Clock,
+  Zap,
+  Hash,
 } from 'lucide-react'
 
 // ─── Color tokens ─────────────────────────────────────────────────────────────
@@ -105,6 +108,13 @@ export interface VRRules {
   elementTrigger: ElementInfo | null
   showFrequency: boolean
   showAudience: boolean
+  // Extended dimensions
+  flowTrigger: { name: string; step?: string } | null
+  timeWindow: { start: string; end: string } | null
+  cohort: string | null
+  urlConditions: { field: string; operator: string; value: string }[] | null
+  elementCondition: { element: string; condition: 'equals' | 'contains' | 'exists'; value?: string } | null
+  weekDays: string[] | null
 }
 
 const defaultRules: VRRules = {
@@ -115,6 +125,12 @@ const defaultRules: VRRules = {
   elementTrigger: null,
   showFrequency: true,
   showAudience: true,
+  flowTrigger: null,
+  timeWindow: null,
+  cohort: null,
+  urlConditions: null,
+  elementCondition: null,
+  weekDays: null,
 }
 
 function urlToDisplay(full: string): string {
@@ -1134,6 +1150,34 @@ function buildSegments(rules: VRRules): Segment[] {
     segs.push({ kind: 'text', value: ', when the user clicks ' })
     segs.push({ kind: 'pill', name: 'trigger', pillKey: 'trigger',   value: rules.elementTrigger.name, field: 'elementTrigger', dismissible: true })
   }
+  if (rules.flowTrigger) {
+    segs.push({ kind: 'text', value: rules.flowTrigger.step ? ', after step ' : ', after completing ' })
+    const flowVal = rules.flowTrigger.step
+      ? `${rules.flowTrigger.step} of ${rules.flowTrigger.name}`
+      : rules.flowTrigger.name
+    segs.push({ kind: 'pill', name: 'trigger', pillKey: 'flowTrigger', value: flowVal, field: 'flowTrigger', dismissible: true })
+  }
+  if (rules.elementCondition) {
+    const condText = rules.elementCondition.condition === 'exists'
+      ? `${rules.elementCondition.element} is present`
+      : `${rules.elementCondition.element} = ${rules.elementCondition.value}`
+    segs.push({ kind: 'text', value: ', when ' })
+    segs.push({ kind: 'pill', name: 'trigger', pillKey: 'elementCondition', value: condText, field: 'elementCondition', dismissible: true })
+  }
+  if (rules.urlConditions && rules.urlConditions.length > 0) {
+    const condText = rules.urlConditions.map(c => `${c.field} ${c.operator} "${c.value}"`).join(' AND ')
+    segs.push({ kind: 'text', value: ', where ' })
+    segs.push({ kind: 'pill', name: 'url', pillKey: 'urlConditions', value: condText, field: 'urlConditions', dismissible: true })
+  }
+  if (rules.timeWindow) {
+    segs.push({ kind: 'text', value: ', between ' })
+    segs.push({ kind: 'pill', name: 'dates', pillKey: 'timeWindow', value: `${rules.timeWindow.start} – ${rules.timeWindow.end}`, field: 'timeWindow', dismissible: true })
+    segs.push({ kind: 'text', value: ' daily' })
+  }
+  if (rules.weekDays && rules.weekDays.length > 0) {
+    segs.push({ kind: 'text', value: ', on ' })
+    segs.push({ kind: 'pill', name: 'frequency', pillKey: 'weekDays', value: rules.weekDays.join(', '), field: 'weekDays', dismissible: true })
+  }
   if (rules.showFrequency) {
     segs.push({ kind: 'text', value: ', up to ' })
     segs.push({ kind: 'pill', name: 'frequency', pillKey: 'frequency', value: `${rules.occurrences} times`, field: 'occurrences', dismissible: true })
@@ -1271,13 +1315,15 @@ function SummaryView({
           onClick={() => openPopoverFor(seg.name, seg.pillKey)}
           dismissible={isDismissible}
           onDismiss={
-            seg.field === 'elementTrigger'
-              ? () => setRules((prev) => ({ ...prev, elementTrigger: null }))
-              : seg.field === 'occurrences'
-                ? () => setRules((prev) => ({ ...prev, showFrequency: false }))
-                : seg.field === 'audience'
-                  ? () => setRules((prev) => ({ ...prev, showAudience: false }))
-                  : undefined
+            seg.field === 'elementTrigger'  ? () => setRules((prev) => ({ ...prev, elementTrigger: null }))
+            : seg.field === 'occurrences'   ? () => setRules((prev) => ({ ...prev, showFrequency: false }))
+            : seg.field === 'audience'      ? () => setRules((prev) => ({ ...prev, showAudience: false }))
+            : seg.field === 'flowTrigger'   ? () => setRules((prev) => ({ ...prev, flowTrigger: null }))
+            : seg.field === 'timeWindow'    ? () => setRules((prev) => ({ ...prev, timeWindow: null }))
+            : seg.field === 'urlConditions' ? () => setRules((prev) => ({ ...prev, urlConditions: null }))
+            : seg.field === 'elementCondition' ? () => setRules((prev) => ({ ...prev, elementCondition: null }))
+            : seg.field === 'weekDays'      ? () => setRules((prev) => ({ ...prev, weekDays: null }))
+            : undefined
           }
         >
           {text}
@@ -1524,9 +1570,65 @@ function VisibilityRulesTab({
   )
 }
 
+// ─── Demo scenario data ───────────────────────────────────────────────────────
+
+interface DemoScenario {
+  id: string
+  category: 'Where' | 'Trigger' | 'When' | 'Who'
+  label: string
+  prompt: string
+}
+
+const demoScenarios: DemoScenario[] = [
+  // WHERE
+  { id: 'multi-page',     category: 'Where',   label: 'Show on related pages',   prompt: 'Show this on all opportunities pages' },
+  { id: 'bulk-url',       category: 'Where',   label: 'Bulk URL targeting',       prompt: 'Show this on multiple pages on my application' },
+  { id: 'url-conditions', category: 'Where',   label: 'URL conditions (AND)',     prompt: 'Show this popup when domain contains opportunities and URL hash is admin' },
+  { id: 'static-url',     category: 'Where',   label: 'Element-based page',       prompt: 'Show this on Leads page' },
+  // TRIGGER
+  { id: 'action-trigger',  category: 'Trigger', label: 'After user clicks',       prompt: 'Show this after user clicks submit' },
+  { id: 'field-value',     category: 'Trigger', label: 'Field value condition',   prompt: 'Show when SLA category is P3' },
+  { id: 'element-present', category: 'Trigger', label: 'Element on page',         prompt: 'Show when SLA Category is there on the page' },
+  { id: 'after-flow',      category: 'Trigger', label: 'After flow completion',   prompt: 'Show this popup after user completes onboarding flow' },
+  { id: 'mid-flow',        category: 'Trigger', label: 'Mid-flow step',           prompt: 'Show this popup after user completes 3rd step of the onboarding flow' },
+  // WHEN
+  { id: 'time-window',    category: 'When',    label: 'Time of day',             prompt: 'Show between 4 PM to 6 PM daily' },
+  { id: 'date-range',     category: 'When',    label: 'Date range',              prompt: 'Show from today 12pm to 17th April 7pm' },
+  { id: 'frequency-days', category: 'When',    label: 'Weekly + frequency',      prompt: 'Show weekly on thursday and friday and total of 5 times' },
+  // WHO
+  { id: 'cohort',         category: 'Who',     label: 'Existing cohort',         prompt: 'Show this only to cohort of salesforce admins' },
+  { id: 'create-cohort',  category: 'Who',     label: 'Create new cohort',       prompt: 'Show this to users logging in for the first time' },
+  { id: 'ambiguous',      category: 'Who',     label: 'Ambiguous input',         prompt: 'Show this for premium users' },
+]
+
+const scenarioCategories: DemoScenario['category'][] = ['Where', 'Trigger', 'When', 'Who']
+const categoryColors: Record<string, string> = { Where: '#2563EB', Trigger: '#D4572A', When: '#059669', Who: '#7C3AED' }
+const categoryBgs: Record<string, string> = { Where: '#EFF6FF', Trigger: '#FFF7F4', When: '#ECFDF5', Who: '#F5F3FF' }
+
+// Dummy data for new scenario fluid forms
+const dummyFlows = [
+  { name: 'Onboarding flow', steps: ['Create account', 'Set preferences', 'Import data', 'Invite team', 'Complete'] },
+  { name: 'Account setup', steps: ['Basic info', 'Billing details', 'Done'] },
+  { name: 'Feature walkthrough', steps: ['Dashboard', 'Reports', 'Settings', 'Notifications', 'API keys', 'Finish'] },
+  { name: 'Checkout process', steps: ['Cart review', 'Shipping address', 'Payment', 'Confirm order'] },
+]
+
+const dummyCohorts = ['Salesforce Admins', 'First-time users', 'Premium users', 'Trial users', 'Enterprise accounts', 'Power users']
+
+const dummyPageGroups = [
+  { name: 'Opportunities', pages: ['opportunities/list', 'opportunities/detail', 'opportunities/new'] },
+  { name: 'Settings', pages: ['settings/general', 'settings/security', 'settings/notifications'] },
+  { name: 'Reports', pages: ['reports/overview', 'reports/analytics', 'reports/export'] },
+]
+
 // ─── Bottom sheet — prompt + Fluid UI ─────────────────────────────────────────
 
-type FluidKind = 'date' | 'element' | 'audience' | 'compound' | 'frequency' | 'none'
+type FluidKind =
+  | 'date' | 'element' | 'audience' | 'compound' | 'frequency'
+  | 'flow' | 'flowStep' | 'timeWindow' | 'urlCondition'
+  | 'elementCondition' | 'elementPresence' | 'cohort'
+  | 'multiPage' | 'enhancedFrequency' | 'ambiguous'
+  | 'none'
 
 const suggestionChips: { label: string; prompt: string }[] = [
   { label: 'Change date range',          prompt: 'Change the date range to June 1 through June 15' },
@@ -1537,6 +1639,22 @@ const suggestionChips: { label: string; prompt: string }[] = [
 
 function classifyPrompt(text: string): FluidKind {
   const t = text.toLowerCase()
+
+  // New scenario patterns (most specific first)
+  if (/(after.*complet.*flow|after.*flow|after.*onboarding)/.test(t) && /(step|\d+(st|nd|rd|th))/.test(t)) return 'flowStep'
+  if (/(after.*complet.*flow|after.*flow|after.*onboarding)/.test(t)) return 'flow'
+  if (/(between.*\d+\s*(am|pm).*\d+\s*(am|pm)|\d+\s*(am|pm).*to.*\d+\s*(am|pm))/.test(t)) return 'timeWindow'
+  if (/(domain.*contains|url.*hash|url.*contains.*and)/.test(t)) return 'urlCondition'
+  if (/(when.*is\s+(there|present|on the page)|there on the page)/.test(t)) return 'elementPresence'
+  if (/(when.*category.*is|field.*value|sla.*is\s+\w)/.test(t)) return 'elementCondition'
+  if (/(weekly|daily).*(thursday|friday|monday|tuesday|wednesday|saturday|sunday)/.test(t)) return 'enhancedFrequency'
+  if (/(cohort|salesforce admin)/.test(t)) return 'cohort'
+  if (/(first.time|logging in.*first|new user)/.test(t)) return 'cohort'
+  if (/(all.*pages|multiple pages|opportunities pages)/.test(t)) return 'multiPage'
+  if (/(on\s+\w+\s+page$|on leads page)/.test(t) && !/(click|button)/.test(t)) return 'elementPresence'
+  if (/(premium user)/.test(t)) return 'ambiguous'
+
+  // Existing patterns (unchanged)
   const hasDate     = /(date|range|june|july|august|september|october|november|december|january|february|march|april|may)/.test(t)
   const hasElement  = /(click|button|element|login|trigger|page)/.test(t)
   const hasAudience = /(team|sales|engineering|marketing|cohort|audience|customer success|executive)/.test(t)
@@ -1653,6 +1771,7 @@ function BottomSheet({
   const [compoundStep, setCompoundStep] = useState<1 | 2>(1)
   const [compoundDates, setCompoundDates] = useState<{ start: string; end: string } | null>(null)
   const [animateIn, setAnimateIn] = useState(false)
+  const [showScenarios, setShowScenarios] = useState(false)
 
   useEffect(() => {
     if (open) {
@@ -1662,6 +1781,7 @@ function BottomSheet({
       setExtracted({})
       setCompoundStep(1)
       setCompoundDates(null)
+      setShowScenarios(false)
       requestAnimationFrame(() => setAnimateIn(true))
     } else {
       setAnimateIn(false)
@@ -1721,12 +1841,19 @@ function BottomSheet({
 
   if (!open) return null
 
+  const handleApplyGeneric = (updates: Partial<VRRules>, fields: string[]) => {
+    onApplyRules(updates, fields)
+    handleClose()
+  }
+
   // Adaptive max-height per stage so the drawer feels right-sized for its content
   const stageMaxHeight =
-    stage === 'input'      ? 340
+    stage === 'input'        ? (showScenarios ? 560 : 340)
     : stage === 'processing' ? 320
     : fluidKind === 'audience' ? 480
     : fluidKind === 'compound' ? 460
+    : fluidKind === 'flowStep' ? 520
+    : fluidKind === 'cohort' || fluidKind === 'flow' || fluidKind === 'multiPage' || fluidKind === 'ambiguous' ? 480
     : 420
 
   return (
@@ -1816,6 +1943,67 @@ function BottomSheet({
                 ))}
               </div>
             </div>
+
+            {/* Demo scenario selector */}
+            <div style={{ marginTop: 14 }}>
+              <button
+                onClick={() => setShowScenarios(s => !s)}
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  width: '100%', background: 'none', border: 'none', cursor: 'pointer',
+                  padding: '0 0 6px',
+                }}
+              >
+                <span style={{ fontSize: 10.5, color: C.textTertiary, fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                  Demo scenarios
+                </span>
+                <ChevronDown
+                  size={12} color={C.textTertiary} strokeWidth={2.4}
+                  style={{ transform: showScenarios ? 'rotate(180deg)' : 'none', transition: 'transform 200ms' }}
+                />
+              </button>
+              {showScenarios && (
+                <div className="vr-fade-in" style={{
+                  maxHeight: 240, overflowY: 'auto',
+                  background: '#FFFFFF', border: `1px solid ${C.border}`, borderRadius: 10,
+                  padding: 4,
+                }}>
+                  {scenarioCategories.map(cat => {
+                    const items = demoScenarios.filter(s => s.category === cat)
+                    return (
+                      <div key={cat}>
+                        <div style={{
+                          fontSize: 9.5, fontWeight: 700, color: categoryColors[cat],
+                          background: categoryBgs[cat],
+                          padding: '4px 10px', borderRadius: 5, margin: '4px 4px 2px',
+                          letterSpacing: '0.06em', textTransform: 'uppercase',
+                        }}>
+                          {cat}
+                        </div>
+                        {items.map(s => (
+                          <button
+                            key={s.id}
+                            onClick={() => { handleChipClick(s.prompt); setShowScenarios(false) }}
+                            style={{
+                              display: 'block', width: '100%', textAlign: 'left',
+                              padding: '7px 10px', border: 'none', borderRadius: 6,
+                              background: 'transparent', cursor: 'pointer',
+                              fontSize: 12, color: C.textPrimary, fontWeight: 500,
+                              letterSpacing: '-0.005em',
+                              transition: 'background 150ms',
+                            }}
+                            onMouseEnter={(e) => (e.currentTarget.style.background = '#F4F4F2')}
+                            onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                          >
+                            {s.label}
+                          </button>
+                        ))}
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
           </>
         )}
 
@@ -1859,6 +2047,10 @@ function BottomSheet({
                 onSelectMatch={(m) => setSelectedElement(m)}
                 onPreviewMatch={setPreviewElement}
               />
+            )}
+            {/* Generic handler for all new scenario types */}
+            {!['date', 'element', 'audience', 'compound', 'frequency', 'none'].includes(fluidKind) && (
+              <GenericScenarioFluid kind={fluidKind} prompt={prompt} onCancel={handleClose} onApply={handleApplyGeneric} />
             )}
             {fluidKind === 'none' && (
               <div style={{ padding: '32px 16px', fontSize: 13, color: C.textSecondary, textAlign: 'center' }}>
@@ -2390,6 +2582,316 @@ function CompoundFluid({
       )}
     </div>
   )
+}
+
+// ─── Generic Scenario Fluid (handles all new scenario types) ─────────────────
+
+function ScenarioListSelect({ icon, title, description, options, onCancel, onAccept }: {
+  icon: React.ReactNode; title: string; description: string
+  options: { label: string; sub?: string }[]
+  onCancel: () => void
+  onAccept: (selected: string) => void
+}) {
+  const [selected, setSelected] = useState(options[0]?.label ?? '')
+  return (
+    <FluidWrapper icon={icon} title={title}>
+      <div className="fluid-stagger-item" style={{ fontSize: 12.5, color: C.textSecondary, marginBottom: 12, lineHeight: 1.5 }}>
+        {description}
+      </div>
+      <div className="fluid-stagger-item" style={{
+        display: 'flex', flexDirection: 'column', gap: 5,
+        maxHeight: 180, overflowY: 'auto',
+        background: '#FFFFFF', border: `1px solid ${C.border}`, borderRadius: 10, padding: 4,
+      }}>
+        {options.map((opt) => {
+          const active = selected === opt.label
+          return (
+            <button
+              key={opt.label}
+              onClick={() => setSelected(opt.label)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 10,
+                padding: '9px 10px', background: active ? C.aiSoft : 'transparent',
+                border: 'none', borderRadius: 7, cursor: 'pointer',
+                textAlign: 'left', width: '100%', transition: 'background 150ms',
+              }}
+            >
+              <span style={{
+                width: 14, height: 14, borderRadius: '50%', flexShrink: 0,
+                border: `2px solid ${active ? C.ai : '#D4D4D1'}`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                {active && <span style={{ width: 5, height: 5, borderRadius: '50%', background: C.ai }} />}
+              </span>
+              <div>
+                <div style={{ fontSize: 12.5, color: C.textPrimary, fontWeight: active ? 600 : 500 }}>{opt.label}</div>
+                {opt.sub && <div style={{ fontSize: 10.5, color: C.textTertiary, marginTop: 1 }}>{opt.sub}</div>}
+              </div>
+            </button>
+          )
+        })}
+      </div>
+      <div className="fluid-stagger-item">
+        <ApplyButtons onCancel={onCancel} onApply={() => onAccept(selected)} applyLabel="Accept" />
+      </div>
+    </FluidWrapper>
+  )
+}
+
+function GenericScenarioFluid({ kind, prompt, onCancel, onApply }: {
+  kind: FluidKind
+  prompt: string
+  onCancel: () => void
+  onApply: (updates: Partial<VRRules>, fields: string[]) => void
+}) {
+  if (kind === 'flow') {
+    return (
+      <ScenarioListSelect
+        icon={<Zap size={14} color={C.ai} strokeWidth={2.2} />}
+        title="Select a flow"
+        description="AI detected a flow-based trigger. Pick the flow to bind this popup to."
+        options={dummyFlows.map(f => ({ label: f.name, sub: `${f.steps.length} steps` }))}
+        onCancel={onCancel}
+        onAccept={(name) => onApply({ flowTrigger: { name } }, ['flowTrigger'])}
+      />
+    )
+  }
+
+  if (kind === 'flowStep') {
+    const flow = dummyFlows[0] // default to onboarding
+    const [selectedFlow, setSelectedFlow] = useState(flow.name)
+    const [selectedStep, setSelectedStep] = useState('')
+    const activeFlow = dummyFlows.find(f => f.name === selectedFlow) ?? flow
+    return (
+      <FluidWrapper icon={<Zap size={14} color={C.ai} strokeWidth={2.2} />} title="Select flow + step">
+        <div className="fluid-stagger-item" style={{ fontSize: 12.5, color: C.textSecondary, marginBottom: 10, lineHeight: 1.5 }}>
+          Pick the flow and the specific step to trigger after.
+        </div>
+        <div className="fluid-stagger-item" style={{ fontSize: 10.5, color: C.textTertiary, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: 4 }}>Flow</div>
+        <div className="fluid-stagger-item" style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 12 }}>
+          {dummyFlows.map(f => (
+            <button key={f.name} onClick={() => { setSelectedFlow(f.name); setSelectedStep('') }} style={{
+              padding: '5px 10px', borderRadius: 7, fontSize: 11.5, fontWeight: 500, cursor: 'pointer', border: 'none',
+              background: selectedFlow === f.name ? C.aiSoft : '#F4F4F2',
+              color: selectedFlow === f.name ? C.ai : C.textSecondary,
+              transition: 'all 150ms',
+            }}>{f.name}</button>
+          ))}
+        </div>
+        <div className="fluid-stagger-item" style={{ fontSize: 10.5, color: C.textTertiary, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: 4 }}>Step</div>
+        <div className="fluid-stagger-item" style={{
+          display: 'flex', flexDirection: 'column', gap: 4,
+          background: '#FFFFFF', border: `1px solid ${C.border}`, borderRadius: 10, padding: 4, maxHeight: 130, overflowY: 'auto',
+        }}>
+          {activeFlow.steps.map((s, i) => {
+            const active = selectedStep === s
+            return (
+              <button key={s} onClick={() => setSelectedStep(s)} style={{
+                display: 'flex', alignItems: 'center', gap: 9, padding: '7px 9px', border: 'none',
+                borderRadius: 6, cursor: 'pointer', background: active ? C.aiSoft : 'transparent', textAlign: 'left', width: '100%',
+              }}>
+                <span style={{ width: 18, height: 18, borderRadius: 5, background: active ? C.ai : '#E5E5E3', color: active ? '#fff' : C.textTertiary, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, flexShrink: 0 }}>{i + 1}</span>
+                <span style={{ fontSize: 12, color: C.textPrimary, fontWeight: active ? 600 : 500 }}>{s}</span>
+              </button>
+            )
+          })}
+        </div>
+        <div className="fluid-stagger-item">
+          <ApplyButtons onCancel={onCancel} onApply={() => onApply({ flowTrigger: { name: selectedFlow, step: selectedStep || undefined } }, ['flowTrigger'])} applyDisabled={!selectedStep} applyLabel="Accept" />
+        </div>
+      </FluidWrapper>
+    )
+  }
+
+  if (kind === 'timeWindow') {
+    const [start, setStart] = useState('4:00 PM')
+    const [end, setEnd] = useState('6:00 PM')
+    return (
+      <FluidWrapper icon={<Clock size={14} color={C.ai} strokeWidth={2.2} />} title="Time window">
+        <div className="fluid-stagger-item" style={{ fontSize: 12.5, color: C.textSecondary, marginBottom: 12, lineHeight: 1.5 }}>
+          Show this popup only during specific hours each day.
+        </div>
+        <div className="fluid-stagger-item" style={{ display: 'flex', gap: 10 }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 10.5, color: C.textTertiary, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: 4 }}>From</div>
+            <StyledInput value={start} onChange={(e) => setStart(e.target.value)} />
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 10.5, color: C.textTertiary, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: 4 }}>To</div>
+            <StyledInput value={end} onChange={(e) => setEnd(e.target.value)} />
+          </div>
+        </div>
+        <div className="fluid-stagger-item">
+          <ApplyButtons onCancel={onCancel} onApply={() => onApply({ timeWindow: { start, end } }, ['timeWindow'])} applyLabel="Accept" />
+        </div>
+      </FluidWrapper>
+    )
+  }
+
+  if (kind === 'cohort') {
+    return (
+      <ScenarioListSelect
+        icon={<Users size={14} color={C.ai} strokeWidth={2.2} />}
+        title="Select a cohort"
+        description={/first.time|logging|new user/i.test(prompt)
+          ? 'This cohort doesn\'t exist yet. Select one to create and apply, or pick an existing one.'
+          : 'AI found matching cohorts in your workspace. Select one to apply.'}
+        options={dummyCohorts.map(c => ({ label: c }))}
+        onCancel={onCancel}
+        onAccept={(name) => onApply({ cohort: name, audience: name, showAudience: true }, ['audience'])}
+      />
+    )
+  }
+
+  if (kind === 'urlCondition') {
+    const [conditions, setConditions] = useState([
+      { field: 'Domain', operator: 'contains', value: 'opportunities' },
+      { field: 'URL hash', operator: 'equals', value: 'admin' },
+    ])
+    return (
+      <FluidWrapper icon={<Hash size={14} color={C.ai} strokeWidth={2.2} />} title="URL conditions">
+        <div className="fluid-stagger-item" style={{ fontSize: 12.5, color: C.textSecondary, marginBottom: 12, lineHeight: 1.5 }}>
+          AI parsed your URL targeting conditions. Adjust if needed.
+        </div>
+        <div className="fluid-stagger-item" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {conditions.map((c, i) => (
+            <div key={i} style={{
+              display: 'flex', gap: 6, alignItems: 'center',
+              padding: '8px 10px', background: '#F8FAFC', border: `1px solid ${C.border}`, borderRadius: 9,
+            }}>
+              <span style={{ fontSize: 11, fontWeight: 600, color: C.ai, whiteSpace: 'nowrap' }}>{c.field}</span>
+              <span style={{ fontSize: 10, color: C.textTertiary }}>{c.operator}</span>
+              <input
+                value={c.value}
+                onChange={(e) => {
+                  const next = [...conditions]
+                  next[i] = { ...next[i], value: e.target.value }
+                  setConditions(next)
+                }}
+                style={{
+                  flex: 1, border: `1px solid ${C.border}`, borderRadius: 6, padding: '4px 8px',
+                  fontSize: 12, color: C.textPrimary, outline: 'none', background: '#FFFFFF',
+                  fontFamily: "'Inter', -apple-system, sans-serif", fontWeight: 500,
+                }}
+              />
+            </div>
+          ))}
+        </div>
+        <div className="fluid-stagger-item">
+          <ApplyButtons onCancel={onCancel} onApply={() => onApply({ urlConditions: conditions }, ['urlConditions'])} applyLabel="Accept" />
+        </div>
+      </FluidWrapper>
+    )
+  }
+
+  if (kind === 'multiPage') {
+    return (
+      <ScenarioListSelect
+        icon={<Globe2 size={14} color={C.ai} strokeWidth={2.2} />}
+        title="Page group detected"
+        description="AI found related page groups. Select the group to target."
+        options={dummyPageGroups.map(g => ({ label: g.name, sub: `${g.pages.length} pages` }))}
+        onCancel={onCancel}
+        onAccept={(name) => {
+          const group = dummyPageGroups.find(g => g.name === name)
+          if (group) {
+            onApply({
+              urls: group.pages.map(p => ({ full: `https://app.acme.com/${p}`, display: urlToDisplay(`https://app.acme.com/${p}`) })),
+            }, ['urls'])
+          }
+        }}
+      />
+    )
+  }
+
+  if (kind === 'elementPresence' || kind === 'elementCondition') {
+    const isCondition = kind === 'elementCondition'
+    const element = 'SLA Category'
+    const value = isCondition ? 'P3' : undefined
+    return (
+      <FluidWrapper icon={<Crosshair size={14} color={C.ai} strokeWidth={2.2} />} title={isCondition ? 'Element condition' : 'Element on page'}>
+        <div className="fluid-stagger-item" style={{ fontSize: 12.5, color: C.textSecondary, marginBottom: 12, lineHeight: 1.5 }}>
+          {isCondition
+            ? 'AI detected a field-value condition. The popup will show when this element has the specified value.'
+            : 'AI detected an element-based trigger. The popup will show when this element is present on the page.'}
+        </div>
+        <div className="fluid-stagger-item" style={{
+          display: 'flex', alignItems: 'center', gap: 10,
+          padding: '10px 12px', background: C.aiSoft, border: `1px solid rgba(37, 99, 235, 0.18)`, borderRadius: 9,
+        }}>
+          <div style={{ width: 28, height: 28, borderRadius: 8, background: '#FFFFFF', border: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <Crosshair size={13} color={C.ai} strokeWidth={2.2} />
+          </div>
+          <div>
+            <div style={{ fontSize: 12.5, color: C.textPrimary, fontWeight: 600 }}>{element}</div>
+            {isCondition && <div style={{ fontSize: 11, color: C.ai, fontWeight: 500, marginTop: 1 }}>value = {value}</div>}
+            {!isCondition && <div style={{ fontSize: 11, color: C.textTertiary, marginTop: 1 }}>is present on the page</div>}
+          </div>
+        </div>
+        <div className="fluid-stagger-item">
+          <ApplyButtons onCancel={onCancel} onApply={() => onApply({
+            elementCondition: { element, condition: isCondition ? 'equals' : 'exists', value },
+          }, ['elementCondition'])} applyLabel="Accept" />
+        </div>
+      </FluidWrapper>
+    )
+  }
+
+  if (kind === 'enhancedFrequency') {
+    const allDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+    const [days, setDays] = useState<string[]>(['Thu', 'Fri'])
+    const [count, setCount] = useState(5)
+    const toggleDay = (d: string) => setDays(prev => prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d])
+    return (
+      <FluidWrapper icon={<Repeat size={14} color={C.ai} strokeWidth={2.2} />} title="Weekly schedule">
+        <div className="fluid-stagger-item" style={{ fontSize: 12.5, color: C.textSecondary, marginBottom: 12, lineHeight: 1.5 }}>
+          Show on specific days of the week, with a total occurrence cap.
+        </div>
+        <div className="fluid-stagger-item" style={{ display: 'flex', gap: 5, marginBottom: 12 }}>
+          {allDays.map(d => {
+            const active = days.includes(d)
+            return (
+              <button key={d} onClick={() => toggleDay(d)} style={{
+                flex: 1, padding: '7px 0', borderRadius: 7, fontSize: 11, fontWeight: 600, cursor: 'pointer', border: 'none',
+                background: active ? C.ai : '#F4F4F2', color: active ? '#FFFFFF' : C.textTertiary,
+                transition: 'all 150ms',
+              }}>{d}</button>
+            )
+          })}
+        </div>
+        <div className="fluid-stagger-item" style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+          <span style={{ fontSize: 12, color: C.textSecondary }}>Total occurrences:</span>
+          <input type="number" value={count} onChange={e => setCount(Math.max(1, parseInt(e.target.value) || 1))} style={{
+            width: 60, height: 28, border: `1px solid ${C.border}`, borderRadius: 7, textAlign: 'center',
+            fontSize: 13, fontWeight: 600, color: C.textPrimary, outline: 'none',
+          }} />
+        </div>
+        <div className="fluid-stagger-item">
+          <ApplyButtons onCancel={onCancel} onApply={() => onApply({ weekDays: days, occurrences: count, showFrequency: true }, ['occurrences'])} applyLabel="Accept" />
+        </div>
+      </FluidWrapper>
+    )
+  }
+
+  if (kind === 'ambiguous') {
+    return (
+      <ScenarioListSelect
+        icon={<Lightbulb size={14} color={C.ai} strokeWidth={2.2} />}
+        title="Which did you mean?"
+        description="AI couldn't determine the exact intent. Select the closest match."
+        options={[
+          { label: 'Premium users cohort', sub: 'Target the "Premium users" cohort' },
+          { label: 'Users with premium attribute', sub: 'Check user attribute = premium' },
+          { label: 'Enterprise plan users', sub: 'Filter by billing plan' },
+        ]}
+        onCancel={onCancel}
+        onAccept={(name) => onApply({ audience: name, showAudience: true }, ['audience'])}
+      />
+    )
+  }
+
+  // Fallback — should not reach here for known kinds
+  return null
 }
 
 // ─── Editor (Configurations + VR tabs + footer) ───────────────────────────────
