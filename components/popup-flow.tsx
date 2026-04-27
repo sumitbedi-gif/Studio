@@ -25,6 +25,8 @@ import {
   Clock,
   Zap,
   Hash,
+  Mic,
+  FileVideo,
 } from 'lucide-react'
 
 // ─── Color tokens ─────────────────────────────────────────────────────────────
@@ -1724,6 +1726,11 @@ function extractAudience(text: string): string {
   return 'Sales team'
 }
 
+export interface RecordingPayload {
+  prompt: string
+  attachment: { name: string; duration: string }
+}
+
 interface BottomSheetProps {
   open: boolean
   onClose: () => void
@@ -1734,6 +1741,9 @@ interface BottomSheetProps {
   selectedElement: ElementInfo | null
   setSelectedElement: (el: ElementInfo | null) => void
   setPreviewElement: (el: ElementInfo | null) => void
+  onStartRecording: () => void
+  recordingPayload: RecordingPayload | null
+  consumeRecordingPayload: () => void
 }
 
 function ChipButton({ children, onClick }: { children: React.ReactNode; onClick: () => void }) {
@@ -1759,38 +1769,158 @@ function ChipButton({ children, onClick }: { children: React.ReactNode; onClick:
   )
 }
 
+// Inline clarifier for the time-window step. Used by the typed Settings
+// scenario where dates are explicit but the user didn't pin times — the agent
+// proposes 4–8pm and asks for a confirmation rather than guessing silently.
+function ClarifierTimeWindow({ initial, onCancel, onAccept }: {
+  initial: { start: string; end: string }
+  onCancel: () => void
+  onAccept: (window: { start: string; end: string }) => void
+}) {
+  const [start, setStart] = useState(initial.start)
+  const [end, setEnd] = useState(initial.end)
+  return (
+    <FluidWrapper icon={<Clock size={14} color={C.ai} strokeWidth={2.2} />} title="Confirm time window">
+      <div className="fluid-stagger-item" style={{ fontSize: 12.5, color: C.textSecondary, marginBottom: 12, lineHeight: 1.5 }}>
+        I caught <strong style={{ color: C.textPrimary, fontWeight: 600 }}>May 5</strong> and <strong style={{ color: C.textPrimary, fontWeight: 600 }}>4 to 8 PM</strong> — confirm the times below and we&apos;ll move on.
+      </div>
+      <div className="fluid-stagger-item" style={{ display: 'flex', gap: 10 }}>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 10.5, color: C.textTertiary, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: 4 }}>From</div>
+          <input
+            value={start}
+            onChange={(e) => setStart(e.target.value)}
+            style={{
+              width: '100%', border: `1px solid ${C.border}`, borderRadius: 9,
+              padding: '9px 12px', fontSize: 13, color: C.textPrimary, background: '#FFFFFF',
+              outline: 'none', fontFamily: "'Inter', -apple-system, sans-serif", boxSizing: 'border-box',
+              fontWeight: 500,
+            }}
+            onFocus={(e) => (e.currentTarget.style.borderColor = C.ai)}
+            onBlur={(e) => (e.currentTarget.style.borderColor = C.border)}
+          />
+        </div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 10.5, color: C.textTertiary, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: 4 }}>To</div>
+          <input
+            value={end}
+            onChange={(e) => setEnd(e.target.value)}
+            style={{
+              width: '100%', border: `1px solid ${C.border}`, borderRadius: 9,
+              padding: '9px 12px', fontSize: 13, color: C.textPrimary, background: '#FFFFFF',
+              outline: 'none', fontFamily: "'Inter', -apple-system, sans-serif", boxSizing: 'border-box',
+              fontWeight: 500,
+            }}
+            onFocus={(e) => (e.currentTarget.style.borderColor = C.ai)}
+            onBlur={(e) => (e.currentTarget.style.borderColor = C.border)}
+          />
+        </div>
+      </div>
+      <div className="fluid-stagger-item">
+        <ApplyButtons onCancel={onCancel} onApply={() => onAccept({ start, end })} applyLabel="Looks right — next" />
+      </div>
+    </FluidWrapper>
+  )
+}
+
+// Detects the "Settings popup on May 5th 4–8pm" demo scenario which mixes
+// concrete values (dates, time, frequency) with ambiguity (which element, which
+// pages). When matched, the agent runs a chained clarifier rather than
+// dispatching to a single fluid form.
+function isSettingsScenario(text: string): boolean {
+  const t = text.toLowerCase()
+  return /settings/.test(t) && /\b(may|5th)\b/.test(t) && /\d/.test(t)
+}
+
 function BottomSheet({
   open, onClose, onApplyRules,
   pickerActive, startPicker, stopPicker,
   selectedElement, setSelectedElement, setPreviewElement,
+  onStartRecording, recordingPayload, consumeRecordingPayload,
 }: BottomSheetProps) {
   const [prompt, setPrompt] = useState('')
-  const [stage, setStage] = useState<'input' | 'processing' | 'fluid'>('input')
+  const [stage, setStage] = useState<'input' | 'processing' | 'fluid' | 'clarifier-time' | 'clarifier-element' | 'clarifier-applying'>('input')
   const [fluidKind, setFluidKind] = useState<FluidKind>('none')
   const [extracted, setExtracted] = useState<{ dates?: { start: string; end: string }; audience?: string; frequency?: number; elementMatches?: ElementInfo[] }>({})
   const [compoundStep, setCompoundStep] = useState<1 | 2>(1)
   const [compoundDates, setCompoundDates] = useState<{ start: string; end: string } | null>(null)
   const [animateIn, setAnimateIn] = useState(false)
   const [showScenarios, setShowScenarios] = useState(false)
+  const [attachment, setAttachment] = useState<{ name: string; duration: string } | null>(null)
+  // Holds the values we resolved across the chained clarifier so the final
+  // apply step has everything in one batch.
+  const [pendingRules, setPendingRules] = useState<Partial<VRRules> | null>(null)
+  const [pendingFields, setPendingFields] = useState<string[]>([])
 
   useEffect(() => {
     if (open) {
-      setPrompt('')
+      // If the drawer was reopened after a recording, the parent has stashed a
+      // payload — prefill prompt + attachment instead of clearing.
+      if (recordingPayload) {
+        setPrompt(recordingPayload.prompt)
+        setAttachment(recordingPayload.attachment)
+        consumeRecordingPayload()
+      } else {
+        setPrompt('')
+        setAttachment(null)
+      }
       setStage('input')
       setFluidKind('none')
       setExtracted({})
       setCompoundStep(1)
       setCompoundDates(null)
       setShowScenarios(false)
+      setPendingRules(null)
+      setPendingFields([])
       requestAnimationFrame(() => setAnimateIn(true))
     } else {
       setAnimateIn(false)
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
   const handleSubmit = () => {
     const text = prompt.trim()
-    if (!text) return
+    if (!text && !attachment) return
+
+    // Settings demo scenario — branches based on whether we have a recording.
+    // With a video the agent claims it has full context and applies directly.
+    // Without one it asks for clarification through chained fluid forms.
+    if (isSettingsScenario(text)) {
+      setStage('processing')
+      if (attachment) {
+        // Recorded path: full context, apply everything at once.
+        setTimeout(() => {
+          const settingsEl = elementCandidates.find(e => e.name === 'Settings')!
+          onApplyRules(
+            {
+              dateRange: { start: 'May 5, 2026', end: 'May 5, 2026' },
+              timeWindow: { start: '4:00 PM', end: '8:00 PM' },
+              elementTrigger: settingsEl,
+              occurrences: 999,
+              showFrequency: true,
+              urls: [
+                { display: 'app.acme.com/settings', full: 'https://app.acme.com/settings' },
+                { display: 'app.acme.com/account/settings', full: 'https://app.acme.com/account/settings' },
+              ],
+            },
+            ['dateRange', 'timeWindow', 'elementTrigger', 'occurrences', 'urls'],
+          )
+          handleClose()
+        }, 2600)
+        return
+      }
+      // Typed path: resolve dates + time first, then which Settings element.
+      setPendingRules({
+        dateRange: { start: 'May 5, 2026', end: 'May 5, 2026' },
+        occurrences: 999,
+        showFrequency: true,
+      })
+      setPendingFields(['dateRange', 'occurrences'])
+      setTimeout(() => setStage('clarifier-time'), 2200)
+      return
+    }
+
     setStage('processing')
     const kind = classifyPrompt(text)
     setExtracted({
@@ -1803,6 +1933,32 @@ function BottomSheet({
       setFluidKind(kind)
       setStage('fluid')
     }, 2600)
+  }
+
+  // Chained clarifier — step 1 (time window) accepted.
+  const handleClarifierTime = (window: { start: string; end: string }) => {
+    setPendingRules(prev => ({ ...(prev ?? {}), timeWindow: window }))
+    setPendingFields(prev => [...prev, 'timeWindow'])
+    setStage('clarifier-element')
+  }
+
+  // Chained clarifier — step 2 (Settings element) accepted. Apply everything.
+  const handleClarifierElement = () => {
+    if (!selectedElement) return
+    const settingsPages = dummyPageGroups.find(p => p.name === 'Settings')?.pages ?? []
+    const urls = settingsPages.map(p => ({ display: `app.acme.com/${p}`, full: `https://app.acme.com/${p}` }))
+    const merged: Partial<VRRules> = {
+      ...(pendingRules ?? {}),
+      elementTrigger: selectedElement,
+      urls: urls.length ? urls : [{ display: 'app.acme.com/settings', full: 'https://app.acme.com/settings' }],
+    }
+    const fields = [...pendingFields, 'elementTrigger', 'urls']
+    setStage('clarifier-applying')
+    setTimeout(() => {
+      onApplyRules(merged, fields)
+      setSelectedElement(null)
+      handleClose()
+    }, 1100)
   }
 
   const handleChipClick = (chipPrompt: string) => {
@@ -1848,8 +2004,11 @@ function BottomSheet({
 
   // Adaptive max-height per stage so the drawer feels right-sized for its content
   const stageMaxHeight =
-    stage === 'input'        ? (showScenarios ? 560 : 340)
-    : stage === 'processing' ? 320
+    stage === 'input'              ? (showScenarios ? 580 : (attachment ? 380 : 340))
+    : stage === 'processing'       ? 320
+    : stage === 'clarifier-time'   ? 440
+    : stage === 'clarifier-element' ? 480
+    : stage === 'clarifier-applying' ? 320
     : fluidKind === 'audience' ? 480
     : fluidKind === 'compound' ? 460
     : fluidKind === 'flowStep' ? 520
@@ -1882,6 +2041,9 @@ function BottomSheet({
           <span style={{ fontSize: 14, fontWeight: 600, color: C.textPrimary, letterSpacing: '-0.01em' }}>
             {stage === 'input' ? 'How would you like to change the rules?'
               : stage === 'processing' ? 'Working on it…'
+              : stage === 'clarifier-time' ? 'Confirm the time window'
+              : stage === 'clarifier-element' ? 'Which Settings element?'
+              : stage === 'clarifier-applying' ? 'Applying everything…'
               : 'Make the change'}
           </span>
         </div>
@@ -1891,6 +2053,45 @@ function BottomSheet({
       <div style={{ flex: 1, overflowY: 'auto', padding: '4px 16px 14px' }}>
         {stage === 'input' && (
           <>
+            {attachment && (
+              <div className="vr-fade-in" style={{
+                display: 'flex', alignItems: 'center', gap: 10,
+                padding: '8px 10px', marginBottom: 8,
+                background: 'linear-gradient(135deg, #FEF3F2 0%, #FFFFFF 100%)',
+                border: '1px solid rgba(220, 38, 38, 0.18)',
+                borderRadius: 10,
+              }}>
+                <div style={{
+                  width: 28, height: 28, borderRadius: 7,
+                  background: '#FEE2E2',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                }}>
+                  <FileVideo size={14} color="#B91C1C" strokeWidth={2.2} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: C.textPrimary, letterSpacing: '-0.005em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {attachment.name}
+                  </div>
+                  <div style={{ fontSize: 10.5, color: C.textTertiary, marginTop: 1 }}>
+                    Recording · {attachment.duration}
+                  </div>
+                </div>
+                <button
+                  onClick={() => setAttachment(null)}
+                  title="Remove recording"
+                  style={{
+                    width: 22, height: 22, border: 'none', borderRadius: 5,
+                    background: 'transparent', color: C.textTertiary, cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    transition: 'background 150ms, color 150ms',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = '#FEE2E2'; e.currentTarget.style.color = '#B91C1C' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = C.textTertiary }}
+                >
+                  <X size={12} strokeWidth={2.4} />
+                </button>
+              </div>
+            )}
             <div style={{
               border: `1px solid ${C.border}`, borderRadius: 11, background: '#FFFFFF',
               padding: '10px 12px 8px', transition: 'border-color 150ms',
@@ -1911,23 +2112,44 @@ function BottomSheet({
                   background: 'transparent',
                 }}
               />
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 2 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 2, gap: 8 }}>
                 <span style={{ fontSize: 11, color: C.textTertiary }}>⌘↵ to submit</span>
-                <button
-                  onClick={handleSubmit}
-                  disabled={!prompt.trim()}
-                  style={{
-                    background: prompt.trim() ? C.textPrimary : '#E5E5E3',
-                    color: '#ffffff', border: 'none', borderRadius: 7,
-                    padding: '5px 12px', fontSize: 12, fontWeight: 600,
-                    cursor: prompt.trim() ? 'pointer' : 'not-allowed',
-                    display: 'flex', alignItems: 'center', gap: 5,
-                    transition: 'background 150ms',
-                  }}
-                >
-                  Submit
-                  <ArrowUp size={12} strokeWidth={2.5} />
-                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <button
+                    onClick={onStartRecording}
+                    title="Record your scenario instead of typing"
+                    style={{
+                      background: '#FFFFFF',
+                      color: '#B91C1C',
+                      border: '1px solid rgba(220, 38, 38, 0.22)',
+                      borderRadius: 7,
+                      padding: '4px 10px', fontSize: 12, fontWeight: 600,
+                      cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', gap: 5,
+                      transition: 'background 150ms, border-color 150ms',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = '#FEF2F2'; e.currentTarget.style.borderColor = 'rgba(220, 38, 38, 0.40)' }}
+                    onMouseLeave={e => { e.currentTarget.style.background = '#FFFFFF'; e.currentTarget.style.borderColor = 'rgba(220, 38, 38, 0.22)' }}
+                  >
+                    <Mic size={11} strokeWidth={2.4} />
+                    Record with AI
+                  </button>
+                  <button
+                    onClick={handleSubmit}
+                    disabled={!prompt.trim() && !attachment}
+                    style={{
+                      background: (prompt.trim() || attachment) ? C.textPrimary : '#E5E5E3',
+                      color: '#ffffff', border: 'none', borderRadius: 7,
+                      padding: '5px 12px', fontSize: 12, fontWeight: 600,
+                      cursor: (prompt.trim() || attachment) ? 'pointer' : 'not-allowed',
+                      display: 'flex', alignItems: 'center', gap: 5,
+                      transition: 'background 150ms',
+                    }}
+                  >
+                    Submit
+                    <ArrowUp size={12} strokeWidth={2.5} />
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -2008,11 +2230,42 @@ function BottomSheet({
         )}
 
         {stage === 'processing' && (
-          <AILoader messages={[
-            'Understanding your request…',
-            'Building the right form…',
-            'Almost there…',
-          ]} />
+          <AILoader messages={
+            attachment ? [
+              'Reviewing your recording…',
+              'Extracting timing, element, and pages…',
+              'Applying everything at once…',
+            ] : [
+              'Understanding your request…',
+              'Most things look clear…',
+              'I have a couple of questions…',
+            ]
+          } />
+        )}
+
+        {stage === 'clarifier-time' && (
+          <ClarifierTimeWindow
+            initial={{ start: '4:00 PM', end: '8:00 PM' }}
+            onCancel={handleClose}
+            onAccept={handleClarifierTime}
+          />
+        )}
+
+        {stage === 'clarifier-element' && (
+          <ElementPickerFluid
+            matches={findElementMatches('settings')}
+            pickerActive={pickerActive}
+            selectedElement={selectedElement}
+            onCancel={handleClose}
+            onApply={handleClarifierElement}
+            onPick={startPicker}
+            onSelectMatch={(m) => setSelectedElement(m)}
+            onPreviewMatch={setPreviewElement}
+          />
+        )}
+
+        {stage === 'clarifier-applying' && (
+          <AILoader messages={['Applying everything…']} />
         )}
 
         {stage === 'fluid' && (
@@ -2896,7 +3149,7 @@ function GenericScenarioFluid({ kind, prompt, onCancel, onApply }: {
 
 // ─── Editor (Configurations + VR tabs + footer) ───────────────────────────────
 
-function PopupEditor({ template, onBack, onClose, onMin, rules, setRules, pickerActive, startPicker, stopPicker, selectedElement, setSelectedElement, setPreviewElement }: {
+function PopupEditor({ template, onBack, onClose, onMin, rules, setRules, pickerActive, startPicker, stopPicker, selectedElement, setSelectedElement, setPreviewElement, recordingActive, startRecording, recordingPayload, consumeRecordingPayload }: {
   template: PopupTemplate
   onBack: () => void
   onClose: () => void
@@ -2909,6 +3162,10 @@ function PopupEditor({ template, onBack, onClose, onMin, rules, setRules, picker
   selectedElement: ElementInfo | null
   setSelectedElement: (el: ElementInfo | null) => void
   setPreviewElement: (el: ElementInfo | null) => void
+  recordingActive: boolean
+  startRecording: () => void
+  recordingPayload: RecordingPayload | null
+  consumeRecordingPayload: () => void
 }) {
   const [tab, setTab] = useState<'config' | 'visibility'>('config')
   const [popupName, setPopupName] = useState(template.name)
@@ -2916,6 +3173,14 @@ function PopupEditor({ template, onBack, onClose, onMin, rules, setRules, picker
   const [showReasoning, setShowReasoning] = useState(false)
   const [highlightedFields, setHighlightedFields] = useState<Set<string>>(new Set())
   const [toast, setToast] = useState(false)
+
+  // When the parent finishes a recording it parks the payload here. Re-open the
+  // drawer so BottomSheet's effect can prefill prompt + attachment.
+  useEffect(() => {
+    if (recordingPayload && !recordingActive) {
+      setShowSheet(true)
+    }
+  }, [recordingPayload, recordingActive])
 
   // Lifted state so the VR loading + typing animation only happen ONCE
   // per popup edit session, even when the user toggles between tabs.
@@ -3084,6 +3349,9 @@ function PopupEditor({ template, onBack, onClose, onMin, rules, setRules, picker
         selectedElement={selectedElement}
         setSelectedElement={setSelectedElement}
         setPreviewElement={setPreviewElement}
+        onStartRecording={() => { setShowSheet(false); startRecording() }}
+        recordingPayload={recordingPayload}
+        consumeRecordingPayload={consumeRecordingPayload}
       />
 
       {/* Reasoning modal — centered in studio */}
@@ -3107,6 +3375,10 @@ export interface PopupFlowProps {
   selectedElement: ElementInfo | null
   setSelectedElement: (el: ElementInfo | null) => void
   setPreviewElement: (el: ElementInfo | null) => void
+  recordingActive: boolean
+  startRecording: () => void
+  recordingPayload: RecordingPayload | null
+  consumeRecordingPayload: () => void
 }
 
 export function PopupFlow({
@@ -3114,6 +3386,7 @@ export function PopupFlow({
   pickerActive, startPicker, stopPicker,
   selectedElement, setSelectedElement,
   setPreviewElement,
+  recordingActive, startRecording, recordingPayload, consumeRecordingPayload,
 }: PopupFlowProps) {
   const [rules, setRules] = useState<VRRules>(defaultRules)
 
@@ -3135,6 +3408,10 @@ export function PopupFlow({
       selectedElement={selectedElement}
       setSelectedElement={setSelectedElement}
       setPreviewElement={setPreviewElement}
+      recordingActive={recordingActive}
+      startRecording={startRecording}
+      recordingPayload={recordingPayload}
+      consumeRecordingPayload={consumeRecordingPayload}
     />
   )
 }

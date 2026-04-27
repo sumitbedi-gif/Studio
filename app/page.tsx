@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { PopupFlow, PopupOverlayOnApp, type PopupTemplate, type ElementInfo } from '@/components/popup-flow'
+import { PopupFlow, PopupOverlayOnApp, type PopupTemplate, type ElementInfo, type RecordingPayload } from '@/components/popup-flow'
+import { AuthoringAgent } from '@/components/authoring-agent'
 import {
   Plus,
   X,
@@ -40,6 +41,7 @@ import {
   Pencil,
   AlertCircle,
   Crosshair,
+  Square,
 } from 'lucide-react'
 
 const rewriteExamples = [
@@ -384,19 +386,23 @@ function ManageIcon() {
 
 // ─── Sidebar icon ─────────────────────────────────────────────────────────────
 
-function SidebarIcon({ children, active = false, title }: { children: React.ReactNode; active?: boolean; title?: string }) {
+function SidebarIcon({ children, active = false, title, onClick, accent }: { children: React.ReactNode; active?: boolean; title?: string; onClick?: () => void; accent?: boolean }) {
   const [hovered, setHovered] = useState(false)
   return (
     <button
       title={title}
+      onClick={onClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
         width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center',
         border: 'none', borderRadius: 6, cursor: 'pointer', flexShrink: 0,
-        background: active ? 'rgba(61,60,82,0.9)' : hovered ? 'rgba(255,255,255,0.08)' : 'transparent',
+        background: active
+          ? (accent ? '#C74900' : 'rgba(61,60,82,0.9)')
+          : hovered ? 'rgba(255,255,255,0.08)' : 'transparent',
         color: active ? '#ffffff' : hovered ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.55)',
         transition: 'background 150ms, color 150ms',
+        boxShadow: active && accent ? '0 2px 8px rgba(199, 73, 0, 0.35)' : 'none',
       }}
     >
       {children}
@@ -841,6 +847,10 @@ interface StudioPanelProps {
   setPreviewElement: (el: ElementInfo | null) => void
   popupView: boolean
   setPopupView: (v: boolean) => void
+  recordingActive: boolean
+  startRecording: () => void
+  recordingPayload: RecordingPayload | null
+  consumeRecordingPayload: () => void
 }
 
 function StudioPanel({
@@ -848,9 +858,10 @@ function StudioPanel({
   pickerActive, startPicker, stopPicker,
   selectedElement, setSelectedElement, setPreviewElement,
   popupView, setPopupView,
+  recordingActive, startRecording, recordingPayload, consumeRecordingPayload,
 }: StudioPanelProps) {
   const [previewMode, setPreviewMode] = useState(false)
-  const [view, setView] = useState<'home' | 'flow'>('home')
+  const [view, setView] = useState<'home' | 'flow' | 'authoring'>('home')
 
   const handleCardClick = (label: string) => {
     if (label === 'Flow') setView('flow')
@@ -878,7 +889,15 @@ function StudioPanel({
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, flex: 1 }}>
-          <SidebarIcon active title="Create"><Plus size={18} strokeWidth={2.5} /></SidebarIcon>
+          <SidebarIcon
+            active={view === 'authoring'}
+            accent
+            title="Authoring Agent"
+            onClick={() => setView(view === 'authoring' ? 'home' : 'authoring')}
+          >
+            <Sparkles size={17} strokeWidth={2.2} />
+          </SidebarIcon>
+          <SidebarIcon active={view !== 'authoring'} title="Create" onClick={() => setView('home')}><Plus size={18} strokeWidth={2.5} /></SidebarIcon>
           <SidebarIcon title="Manage"><ManageIcon /></SidebarIcon>
           <SidebarIcon title="Collaborate"><MessageCircleMore size={18} strokeWidth={1.8} /></SidebarIcon>
           <SidebarIcon title="Tracking"><MousePointerClick size={18} strokeWidth={1.8} /></SidebarIcon>
@@ -910,7 +929,13 @@ function StudioPanel({
             selectedElement={selectedElement}
             setSelectedElement={setSelectedElement}
             setPreviewElement={setPreviewElement}
+            recordingActive={recordingActive}
+            startRecording={startRecording}
+            recordingPayload={recordingPayload}
+            consumeRecordingPayload={consumeRecordingPayload}
           />
+        ) : view === 'authoring' ? (
+          <AuthoringAgent />
         ) : view === 'home' ? (
           <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflowY: 'auto', overflowX: 'hidden' }}>
             {/* Header / banner */}
@@ -969,6 +994,91 @@ function StudioPanel({
   )
 }
 
+// ─── Recording bar — anchored at the bottom while the studio is collapsed ────
+
+function RecordingBar({ elapsed, onStop }: { elapsed: number; onStop: () => void }) {
+  const minutes = Math.floor(elapsed / 60)
+  const seconds = elapsed % 60
+  const timer = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+
+  return (
+    <div
+      className="recording-bar-in"
+      style={{
+        position: 'fixed', bottom: 24, left: '50%',
+        transform: 'translateX(-50%)',
+        background: '#0A0A0A',
+        color: '#FFFFFF',
+        padding: '10px 12px 10px 16px',
+        borderRadius: 999,
+        display: 'flex', alignItems: 'center', gap: 14,
+        boxShadow: '0 1px 0 rgba(255,255,255,0.10) inset, 0 16px 40px rgba(15, 23, 42, 0.36), 0 4px 12px rgba(15, 23, 42, 0.18)',
+        zIndex: 400,
+        fontFamily: "'Inter', -apple-system, sans-serif",
+        minWidth: 320,
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, paddingLeft: 2 }}>
+        <span
+          style={{
+            width: 9, height: 9, borderRadius: '50%',
+            background: '#EF4444',
+            boxShadow: '0 0 0 0 rgba(239, 68, 68, 0.7)',
+            animation: 'recordPulse 1.4s ease-in-out infinite',
+          }}
+        />
+        <span style={{ fontSize: 12.5, fontWeight: 600, letterSpacing: '-0.005em' }}>
+          Recording
+        </span>
+        <span style={{
+          fontSize: 12.5, fontVariantNumeric: 'tabular-nums', color: 'rgba(255,255,255,0.7)',
+          letterSpacing: '-0.005em', fontFamily: 'monospace',
+        }}>
+          {timer}
+        </span>
+      </div>
+
+      <div style={{ flex: 1, fontSize: 11.5, color: 'rgba(255,255,255,0.55)', letterSpacing: '-0.005em' }}>
+        Walk through your scenario, then hit Stop
+      </div>
+
+      <button
+        onClick={onStop}
+        style={{
+          background: '#EF4444',
+          border: 'none', borderRadius: 999,
+          padding: '7px 14px 7px 12px',
+          color: '#FFFFFF', fontSize: 12, fontWeight: 600,
+          cursor: 'pointer',
+          display: 'flex', alignItems: 'center', gap: 6,
+          letterSpacing: '-0.005em',
+          boxShadow: '0 1px 0 rgba(255,255,255,0.18) inset, 0 4px 12px rgba(239, 68, 68, 0.36)',
+          transition: 'background 150ms, transform 100ms',
+        }}
+        onMouseEnter={e => (e.currentTarget.style.background = '#DC2626')}
+        onMouseLeave={e => (e.currentTarget.style.background = '#EF4444')}
+      >
+        <Square size={11} fill="#FFFFFF" strokeWidth={0} />
+        Stop
+      </button>
+
+      <style jsx>{`
+        @keyframes recordPulse {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.55); }
+          50%      { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+        }
+        .recording-bar-in {
+          animation: recordingBarIn 280ms cubic-bezier(0.32, 0, 0.15, 1);
+        }
+        @keyframes recordingBarIn {
+          from { opacity: 0; transform: translate(-50%, 12px); }
+          to   { opacity: 1; transform: translate(-50%, 0); }
+        }
+      `}</style>
+    </div>
+  )
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function StudioPage() {
@@ -978,6 +1088,9 @@ export default function StudioPage() {
   const [pickerActive, setPickerActive] = useState(false)
   const [selectedElement, setSelectedElement] = useState<ElementInfo | null>(null)
   const [previewElement, setPreviewElement] = useState<ElementInfo | null>(null)
+  const [recordingActive, setRecordingActive] = useState(false)
+  const [recordingElapsed, setRecordingElapsed] = useState(0)
+  const [recordingPayload, setRecordingPayload] = useState<RecordingPayload | null>(null)
 
   // Cancel picker on Escape
   useEffect(() => {
@@ -989,6 +1102,31 @@ export default function StudioPage() {
     return () => window.removeEventListener('keydown', onKey)
   }, [pickerActive])
 
+  // Recording timer — counts up while the user is "recording" their scenario.
+  useEffect(() => {
+    if (!recordingActive) return
+    setRecordingElapsed(0)
+    const interval = setInterval(() => setRecordingElapsed(e => e + 1), 1000)
+    return () => clearInterval(interval)
+  }, [recordingActive])
+
+  const startRecording = () => {
+    setRecordingPayload(null)
+    setRecordingActive(true)
+  }
+
+  const stopRecording = () => {
+    // Finalize: stash a mocked transcript + video chip, then re-open the drawer.
+    const minutes = Math.floor(recordingElapsed / 60)
+    const seconds = recordingElapsed % 60
+    const duration = `${minutes}:${seconds.toString().padStart(2, '0')}`
+    setRecordingPayload({
+      prompt: 'I want the popup when my user clicks on "settings" on 5th may between 4 to 8 pm. Show it unlimited times whenever the user clicks on settings. It should only on pages wherever settings is available',
+      attachment: { name: `recording_${new Date().toISOString().slice(0, 10)}.webm`, duration },
+    })
+    setRecordingActive(false)
+  }
+
   const handleElementClick = (el: ElementInfo) => {
     setSelectedElement(el)
     setPickerActive(false)
@@ -996,9 +1134,11 @@ export default function StudioPage() {
 
   // While picker is active during the popup flow, hide the popup overlay
   // and slide the studio panel away so the user can interact with the bg app.
+  // Recording does the same — collapse the panel so users can demonstrate on
+  // the underlying app while narrating.
   const minimizedForPicker = pickerActive && popupView
-  const showPopupOverlay = popupView && popupTemplate && !pickerActive
-  const panelVisible = open && !minimizedForPicker
+  const showPopupOverlay = popupView && popupTemplate && !pickerActive && !recordingActive
+  const panelVisible = open && !minimizedForPicker && !recordingActive
 
   return (
     <>
@@ -1071,8 +1211,20 @@ export default function StudioPage() {
           selectedElement={selectedElement}
           setSelectedElement={setSelectedElement}
           setPreviewElement={setPreviewElement}
+          recordingActive={recordingActive}
+          startRecording={startRecording}
+          recordingPayload={recordingPayload}
+          consumeRecordingPayload={() => setRecordingPayload(null)}
         />
       </div>
+
+      {/* Recording bar — slides up from the bottom while the studio is collapsed */}
+      {recordingActive && (
+        <RecordingBar
+          elapsed={recordingElapsed}
+          onStop={stopRecording}
+        />
+      )}
 
       {/* Open Studio button */}
       {!open && (
