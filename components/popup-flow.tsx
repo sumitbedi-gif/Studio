@@ -32,6 +32,8 @@ import {
   CornerDownLeft,
   Pencil,
   Square,
+  MapPin,
+  User,
 } from 'lucide-react'
 
 // ─── Color tokens ─────────────────────────────────────────────────────────────
@@ -569,18 +571,18 @@ function SummaryPill({
   onDismiss?: () => void
 }) {
   const [hover, setHover] = useState(false)
-  // Neutral grey base, slightly darker on active so the popover anchor is
-  // obvious without competing with the page accent color.
+  // Almost invisible at rest so the sentence reads as text. Border deepens
+  // on hover/active to confirm interactivity without flooding the surface.
   const bg = isActive
     ? '#ECECF3'
     : hover
-      ? '#F2F2F8'
-      : '#F6F6F9'
+      ? '#F4F4F5'
+      : '#FAFAFC'
   const borderColor = isActive
     ? '#DFDDE7'
     : hover
-      ? '#DFDDE7'
-      : '#ECECF3'
+      ? '#ECECF3'
+      : '#F2F2F8'
 
   return (
     <span
@@ -605,7 +607,7 @@ function SummaryPill({
           padding: '0px 6px 1px',
           margin: '0 2px',
           fontSize: 13,
-          fontWeight: 550,
+          fontWeight: 500,
           cursor: 'pointer',
           fontFamily: 'inherit',
           verticalAlign: 'baseline',
@@ -1410,13 +1412,20 @@ function SummaryView({
   // the surface stays calm but the prompts are reachable.
   const [chipsOpen, setChipsOpen] = useState(false)
   const [scenariosOpen, setScenariosOpen] = useState(false)
+  // The composer (textarea + chips + accordion) lives inside a bottom drawer
+  // behind the "Edit with prompt" button so the resting surface stays calm
+  // and the two entry modes (Record vs. Type) are visually equal.
+  const [promptDrawerOpen, setPromptDrawerOpen] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  // Recording payload arrival — drop the video chip into the composer. We
-  // intentionally don't prefill text; the recording IS the context.
+  // Recording payload arrival — drop the video chip into the composer AND
+  // open the prompt drawer so the user can see the attachment + add any text
+  // before submitting. We intentionally don't prefill text; the recording is
+  // the context.
   useEffect(() => {
     if (recordingPayload) {
       setAttachment(recordingPayload.attachment)
+      setPromptDrawerOpen(true)
       consumeRecordingPayload()
     }
   }, [recordingPayload, consumeRecordingPayload])
@@ -1429,7 +1438,10 @@ function SummaryView({
 
   const handleEditSection = (key: SectionKey) => {
     setActiveChip(key)
-    setTimeout(() => textareaRef.current?.focus(), 50)
+    setPromptDrawerOpen(true)
+    // The drawer's own focus effect handles the textarea — wait long enough
+    // for the slide-in to settle so caret lands cleanly.
+    setTimeout(() => textareaRef.current?.focus(), 120)
   }
 
   // When the legacy element picker returns, route based on origin.
@@ -1503,10 +1515,12 @@ function SummaryView({
   const handleSubmitComposer = () => {
     const text = prompt.trim()
     if (!text && !attachment) return
-    // Auto-collapse the prompt-suggestions accordion when the user submits —
-    // the surface should feel calm during processing.
+    // Auto-collapse the prompt-suggestions accordion + close the prompt
+    // drawer when the user submits — the surface should feel calm during
+    // processing and the clarifier rises against the resting view.
     setChipsOpen(false)
     setScenariosOpen(false)
+    setPromptDrawerOpen(false)
 
     // Recording present → the recording is the context. We apply the canned
     // Settings demo as the showcase outcome.
@@ -1677,28 +1691,12 @@ function SummaryView({
         ) : (
           <>
             <SectionBlock
-              label="When"
-              segments={whenSegs}
-              highlighted={sectionHighlighted('when')}
-              onEdit={() => handleEditSection('when')}
-              revealCount={Math.min(totals.when, typedCount)}
-              sectionTotal={totals.when}
-              done={hasFinishedTyping}
-              openPill={openPill}
-              highlightedFields={highlightedFields}
-              onPillClick={openPopoverFor}
-              pillRefs={pillRefs}
-              setRules={setRules}
-              emptyHelper={{ prompt: 'When should this appear?', cta: 'Add date range' }}
-              onAddBack={() => setRules((p) => ({ ...p, showDateRange: true }))}
-            />
-            <div style={{ height: 1, background: '#F2F2F8', margin: '0 14px' }} />
-            <SectionBlock
               label="Where"
+              icon={<MapPin size={11} strokeWidth={2.2} />}
               segments={whereSegs}
               highlighted={sectionHighlighted('where')}
               onEdit={() => handleEditSection('where')}
-              revealCount={Math.min(totals.where, Math.max(0, typedCount - totals.when))}
+              revealCount={Math.min(totals.where, typedCount)}
               sectionTotal={totals.where}
               done={hasFinishedTyping}
               openPill={openPill}
@@ -1711,11 +1709,30 @@ function SummaryView({
             />
             <div style={{ height: 1, background: '#F2F2F8', margin: '0 14px' }} />
             <SectionBlock
+              label="When"
+              icon={<Clock size={11} strokeWidth={2.2} />}
+              segments={whenSegs}
+              highlighted={sectionHighlighted('when')}
+              onEdit={() => handleEditSection('when')}
+              revealCount={Math.min(totals.when, Math.max(0, typedCount - totals.where))}
+              sectionTotal={totals.when}
+              done={hasFinishedTyping}
+              openPill={openPill}
+              highlightedFields={highlightedFields}
+              onPillClick={openPopoverFor}
+              pillRefs={pillRefs}
+              setRules={setRules}
+              emptyHelper={{ prompt: 'When should this appear?', cta: 'Add date range' }}
+              onAddBack={() => setRules((p) => ({ ...p, showDateRange: true }))}
+            />
+            <div style={{ height: 1, background: '#F2F2F8', margin: '0 14px' }} />
+            <SectionBlock
               label="Who"
+              icon={<User size={11} strokeWidth={2.2} />}
               segments={whoSegs}
               highlighted={sectionHighlighted('who')}
               onEdit={() => handleEditSection('who')}
-              revealCount={Math.min(totals.who, Math.max(0, typedCount - totals.when - totals.where))}
+              revealCount={Math.min(totals.who, Math.max(0, typedCount - totals.where - totals.when))}
               sectionTotal={totals.who}
               done={hasFinishedTyping}
               openPill={openPill}
@@ -1876,110 +1893,71 @@ function SummaryView({
           </div>
         )}
 
-        {/* Record-screen entry point lives outside the composer because
-            screen recording is a powerful first-class input mode that deserves
-            its own discoverability moment — Vara's pick. Ghost button so it
-            doesn't compete with Send for visual weight. */}
-        {status === 'idle' && !attachment && (
-          <RecordScreenButton onClick={onStartRecording} />
-        )}
-
-        <InlineComposer
-          textareaRef={textareaRef}
-          prompt={prompt}
-          setPrompt={setPrompt}
-          activeChip={activeChip}
-          clearChip={() => setActiveChip(null)}
-          attachment={attachment}
-          clearAttachment={() => setAttachment(null)}
-          status={status}
-          onSubmit={handleSubmitComposer}
-          onStartRecording={onStartRecording}
-        />
-
-        {/* Suggestion chips. Before first edit: always visible as training
-            wheels. After first edit: collapsed behind a subtle "Quick prompts"
-            toggle that expands to show the four chips + a "Show more" link to
-            the full scenarios sheet. */}
-        {status === 'idle' && !hasMadeFirstEdit && (
-          <SuggestionChipsRow
-            chips={composerSuggestionChips}
-            onPick={(p) => { setPrompt(p); textareaRef.current?.focus() }}
+        {/* Two equal-weight entry buttons. Recording is the first-class
+            "show, don't tell" path; the prompt drawer is the typed path.
+            Visible at the same time so the user's next action is obvious. */}
+        {status === 'idle' && (
+          <ActionButtonRow
+            onRecord={onStartRecording}
+            onTypePrompt={() => setPromptDrawerOpen(true)}
           />
         )}
-        {status === 'idle' && hasMadeFirstEdit && (
-          <div style={{ marginTop: 10 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-              <button
-                onClick={() => setChipsOpen((o) => !o)}
-                style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 4,
-                  background: 'transparent', border: 'none', cursor: 'pointer',
-                  color: '#8C899F', fontSize: 11, fontWeight: 500,
-                  padding: '2px 4px 2px 0', letterSpacing: '-0.005em',
-                  transition: 'color 150ms',
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = '#1F1F32')}
-                onMouseLeave={(e) => (e.currentTarget.style.color = '#8C899F')}
-              >
-                <ChevronDown
-                  size={11}
-                  strokeWidth={2.2}
-                  style={{
-                    transform: chipsOpen ? 'rotate(180deg)' : 'none',
-                    transition: 'transform 200ms cubic-bezier(0.32, 0, 0.15, 1)',
-                  }}
-                />
-                Quick prompts
-              </button>
-              {chipsOpen && (
-                <button
-                  onClick={() => setScenariosOpen(true)}
-                  style={{
-                    background: 'transparent', border: 'none', cursor: 'pointer',
-                    color: '#8C899F', fontSize: 11, fontWeight: 500,
-                    padding: '2px 4px', letterSpacing: '-0.005em',
-                    whiteSpace: 'nowrap',
-                    transition: 'color 150ms',
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = '#1F1F32')}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = '#8C899F')}
-                >
-                  Show more
-                </button>
-              )}
-            </div>
-            {chipsOpen && (
-              <div className="vr-fade-in" style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 5 }}>
-                {composerSuggestionChips.map(c => (
-                  <button
-                    key={c.label}
-                    onClick={() => {
-                      setPrompt(c.prompt)
-                      textareaRef.current?.focus()
-                      setChipsOpen(false)
-                    }}
-                    style={{
-                      background: '#F4F4F5',
-                      border: 'none',
-                      borderRadius: 999,
-                      padding: '5px 11px',
-                      fontSize: 11.5, color: '#525066', cursor: 'pointer',
-                      fontWeight: 500, letterSpacing: '-0.005em',
-                      transition: 'background 150ms, color 150ms',
-                      whiteSpace: 'nowrap',
-                    }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = '#ECECF3'; e.currentTarget.style.color = '#1F1F32' }}
-                    onMouseLeave={(e) => { e.currentTarget.style.background = '#F4F4F5'; e.currentTarget.style.color = '#525066' }}
-                  >
-                    {c.label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+        {/* Inline processing/clarifier still owns the composer area when the
+            agent is mid-thought — surfaces only during status !== 'idle'. */}
+        {status !== 'idle' && (
+          <InlineComposer
+            textareaRef={textareaRef}
+            prompt={prompt}
+            setPrompt={setPrompt}
+            activeChip={activeChip}
+            clearChip={() => setActiveChip(null)}
+            attachment={attachment}
+            clearAttachment={() => setAttachment(null)}
+            status={status}
+            onSubmit={handleSubmitComposer}
+            onStartRecording={onStartRecording}
+          />
         )}
       </div>
+
+      {/* Prompt drawer — hosts the composer + chips + Quick-prompts accordion
+          behind the "Edit with prompt" button. Stays out of the way at rest so
+          the section card is the visual focus; rises with auto-focused textarea
+          when the user wants to type. */}
+      {promptDrawerOpen && (
+        <>
+          <div
+            onClick={() => setPromptDrawerOpen(false)}
+            className="sheet-dim-in"
+            style={{
+              position: 'absolute', inset: 0,
+              background: 'rgba(15, 23, 42, 0.22)',
+              backdropFilter: 'blur(1px)',
+              WebkitBackdropFilter: 'blur(1px)',
+              zIndex: 15,
+              cursor: 'pointer',
+            }}
+          />
+          <PromptDrawer
+            textareaRef={textareaRef}
+            prompt={prompt}
+            setPrompt={setPrompt}
+            activeChip={activeChip}
+            clearChip={() => setActiveChip(null)}
+            attachment={attachment}
+            clearAttachment={() => setAttachment(null)}
+            status={status}
+            onSubmit={handleSubmitComposer}
+            onStartRecording={onStartRecording}
+            chips={composerSuggestionChips}
+            chipsOpen={chipsOpen}
+            setChipsOpen={setChipsOpen}
+            hasMadeFirstEdit={hasMadeFirstEdit}
+            onShowMore={() => setScenariosOpen(true)}
+            onClose={() => setPromptDrawerOpen(false)}
+          />
+        </>
+      )}
 
       {/* Scenarios sheet — full library of prompt scenarios grouped by
           category. Picking one fills the composer and the sheet auto-closes,
@@ -2017,11 +1995,12 @@ function SummaryView({
 // Renders an inline segment list so values become clickable pills (the legacy
 // surgical-edit behavior) while the connective text remains plain.
 function SectionBlock({
-  label, segments, highlighted, onEdit, revealCount, sectionTotal, done,
+  label, icon, segments, highlighted, onEdit, revealCount, sectionTotal, done,
   openPill, highlightedFields, onPillClick, pillRefs, setRules,
   emptyHelper, onAddBack,
 }: {
   label: string
+  icon: React.ReactNode
   segments: Segment[]
   highlighted: boolean
   onEdit: () => void
@@ -2090,7 +2069,7 @@ function SectionBlock({
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        padding: '16px 16px 18px',
+        padding: '14px 16px 14px',
         borderRadius: 9,
         background: highlighted ? '#F6F6F9' : 'transparent',
         transition: 'background 220ms',
@@ -2099,12 +2078,16 @@ function SectionBlock({
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         marginBottom: 8,
+        minHeight: 22,
       }}>
         <span style={{
-          fontSize: 12.5, fontWeight: 600,
-          color: '#1F1F32',
-          letterSpacing: '-0.005em',
+          display: 'inline-flex', alignItems: 'center', gap: 6,
+          fontSize: 10.5, fontWeight: 600,
+          color: '#8C899F',
+          letterSpacing: '0.06em',
+          textTransform: 'uppercase',
         }}>
+          <span style={{ display: 'inline-flex', color: '#8C899F' }}>{icon}</span>
           {label}
         </span>
         {done && (
@@ -2112,13 +2095,14 @@ function SectionBlock({
             onClick={onEdit}
             title={`Refine ${label}`}
             style={{
-              width: 26, height: 26, border: 'none', borderRadius: 6,
+              width: 24, height: 24, border: 'none', borderRadius: 6,
               background: hovered ? '#F6F6F9' : 'transparent',
-              color: hovered ? '#1F1F32' : '#8C899F',
+              color: '#1F1F32',
               cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              transition: 'background 150ms, color 150ms, opacity 150ms',
-              opacity: hovered ? 1 : 0.55,
+              transition: 'background 150ms, opacity 150ms',
+              opacity: hovered ? 1 : 0,
+              pointerEvents: hovered ? 'auto' : 'none',
             }}
           >
             <Pencil size={13} strokeWidth={2.2} />
@@ -2126,7 +2110,7 @@ function SectionBlock({
         )}
       </div>
       <div style={{
-        fontSize: 13, lineHeight: 2,
+        fontSize: 13, lineHeight: 1.75,
         color: '#1F1F32', fontWeight: 400,
         letterSpacing: '-0.005em',
         minHeight: 20,
@@ -2214,7 +2198,7 @@ function LoadingSectionCard({ messages }: { messages: string[] }) {
         </div>
       </div>
 
-      {(['When', 'Where', 'Who'] as const).map((label, sectionIdx) => (
+      {(['Where', 'When', 'Who'] as const).map((label, sectionIdx) => (
         <div key={label}>
           <div style={{ padding: '4px 0 16px' }}>
             <div style={{
@@ -2476,6 +2460,31 @@ function InlineComposer({
 // Full-width neutral pill. Orange-tinted icon is the only color accent —
 // signals "this is a different input mode" without shouting. The structural
 // border stays neutral so it doesn't read as an alert.
+// Resting-state entry buttons. Two paths share one container so they read as
+// a single input-mode picker (ElevenLabs / Substack pattern). Record is the
+// recommended path so it gets primary emphasis; Edit-with-prompt sits below
+// as the equally-reachable typed alternative.
+function ActionButtonRow({ onRecord, onTypePrompt }: {
+  onRecord: () => void
+  onTypePrompt: () => void
+}) {
+  return (
+    <div
+      style={{
+        background: '#FFFFFF',
+        border: '1px solid #ECECF3',
+        borderRadius: 12,
+        padding: 10,
+        display: 'flex', flexDirection: 'column', gap: 6,
+        boxShadow: '0 1px 0 rgba(255, 255, 255, 0.7) inset',
+      }}
+    >
+      <RecordScreenButton onClick={onRecord} />
+      <EditWithPromptButton onClick={onTypePrompt} />
+    </div>
+  )
+}
+
 function RecordScreenButton({ onClick }: { onClick: () => void }) {
   const [hover, setHover] = useState(false)
   return (
@@ -2483,11 +2492,38 @@ function RecordScreenButton({ onClick }: { onClick: () => void }) {
       onClick={onClick}
       style={{
         width: '100%',
-        marginBottom: 8,
+        background: hover ? '#0A0A0A' : '#1F1F32',
+        border: '1px solid #1F1F32',
+        borderRadius: 9,
+        padding: '11px 14px',
+        cursor: 'pointer',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+        fontSize: 13, fontWeight: 500,
+        color: '#FFFFFF',
+        letterSpacing: '-0.005em',
+        transition: 'background 150ms',
+        boxShadow: '0 1px 0 rgba(255, 255, 255, 0.10) inset, 0 1px 2px rgba(15, 23, 42, 0.10)',
+      }}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+    >
+      <MonitorUp size={14} strokeWidth={2.2} color="#FFFFFF" />
+      Show me: Narrate and Record
+    </button>
+  )
+}
+
+function EditWithPromptButton({ onClick }: { onClick: () => void }) {
+  const [hover, setHover] = useState(false)
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        width: '100%',
         background: hover ? '#F6F6F9' : '#FFFFFF',
         border: `1px solid ${hover ? '#DFDDE7' : '#ECECF3'}`,
-        borderRadius: 10,
-        padding: '11px 14px',
+        borderRadius: 9,
+        padding: '9px 14px',
         cursor: 'pointer',
         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
         fontSize: 13, fontWeight: 500,
@@ -2498,8 +2534,8 @@ function RecordScreenButton({ onClick }: { onClick: () => void }) {
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
     >
-      <MonitorPlay size={14} strokeWidth={2.2} color={C.accent} />
-      Record screen
+      <Wand2 size={13} strokeWidth={2.2} color="#525066" />
+      Edit with prompt
     </button>
   )
 }
@@ -2592,6 +2628,192 @@ function SuggestionChipsRow({ chips, onPick }: {
 // Bottom sheet that lists every demo scenario grouped by category. Picking
 // one fills the composer above and dismisses the sheet — the surface stays
 // the same one the user is editing, no separate "composer" mode.
+// Prompt drawer — the typed-input path. Composer + chips + accordion live
+// inside; the resting panel keeps just the two action buttons. Auto-focuses
+// the textarea on open. Closes on submit (handled by the parent).
+function PromptDrawer({
+  textareaRef, prompt, setPrompt, activeChip, clearChip,
+  attachment, clearAttachment,
+  status, onSubmit, onStartRecording,
+  chips, chipsOpen, setChipsOpen, hasMadeFirstEdit, onShowMore, onClose,
+}: {
+  textareaRef: React.RefObject<HTMLTextAreaElement | null>
+  prompt: string
+  setPrompt: (v: string) => void
+  activeChip: SectionKey | null
+  clearChip: () => void
+  attachment: { name: string; duration: string } | null
+  clearAttachment: () => void
+  status: ComposerStatus
+  onSubmit: () => void
+  onStartRecording: () => void
+  chips: { label: string; prompt: string }[]
+  chipsOpen: boolean
+  setChipsOpen: (v: boolean) => void
+  hasMadeFirstEdit: boolean
+  onShowMore: () => void
+  onClose: () => void
+}) {
+  // Double-RAF the open transition so the browser paints the off-screen frame
+  // before the slide starts — single RAF batches with the initial mount on
+  // some browsers and the drawer pops in. Settled tracks the end of the
+  // animation so the inner scroll container can hold its overflow during the
+  // slide (otherwise scrollbars flicker mid-animation).
+  const [animateIn, setAnimateIn] = useState(false)
+  const [settled, setSettled] = useState(false)
+  useEffect(() => {
+    let r2 = 0
+    const r1 = requestAnimationFrame(() => {
+      r2 = requestAnimationFrame(() => setAnimateIn(true))
+    })
+    const t = setTimeout(() => setSettled(true), 340)
+    return () => {
+      cancelAnimationFrame(r1)
+      cancelAnimationFrame(r2)
+      clearTimeout(t)
+    }
+  }, [])
+
+  // Focus the textarea right after the slide-in settles. Caret should land
+  // ready to type so the user doesn't need a follow-up click.
+  useEffect(() => {
+    const t = setTimeout(() => textareaRef.current?.focus(), 200)
+    return () => clearTimeout(t)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Pre-first-edit shows chips inline; post-first-edit collapses them under
+  // the same "Quick prompts" accordion the inline version used.
+  const showChipsInline = !hasMadeFirstEdit
+  const showAccordion   =  hasMadeFirstEdit
+
+  return (
+    <div
+      style={{
+        position: 'absolute', left: 0, right: 0, bottom: 0,
+        background: '#FFFFFF',
+        border: '1px solid #ECECF3',
+        borderBottom: 'none',
+        borderRadius: '18px 18px 0 0',
+        boxShadow: '0 -1px 0 rgba(255, 255, 255, 0.6) inset, 0 -8px 24px rgba(15, 23, 42, 0.08), 0 -24px 64px rgba(15, 23, 42, 0.10)',
+        display: 'flex', flexDirection: 'column',
+        transform: animateIn ? 'translateY(0)' : 'translateY(101%)',
+        opacity: animateIn ? 1 : 0,
+        transition: 'transform 320ms cubic-bezier(0.32, 0, 0.15, 1), opacity 220ms ease-out',
+        willChange: 'transform, opacity',
+        zIndex: 16,
+        maxHeight: 480,
+      }}
+    >
+      <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 8 }}>
+        <div style={{ width: 36, height: 4, background: '#E5E5E3', borderRadius: 999 }} />
+      </div>
+
+      <div style={{ padding: '10px 14px 6px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span style={{ fontSize: 13, fontWeight: 600, color: '#1F1F32', letterSpacing: '-0.005em' }}>
+          Edit with prompt
+        </span>
+        <HeaderBtn title="Close" onClick={onClose}><X size={14} strokeWidth={2} /></HeaderBtn>
+      </div>
+
+      <div style={{ flex: 1, overflowY: settled ? 'auto' : 'hidden', padding: '4px 14px 16px' }}>
+        <InlineComposer
+          textareaRef={textareaRef}
+          prompt={prompt}
+          setPrompt={setPrompt}
+          activeChip={activeChip}
+          clearChip={clearChip}
+          attachment={attachment}
+          clearAttachment={clearAttachment}
+          status={status}
+          onSubmit={onSubmit}
+          onStartRecording={onStartRecording}
+        />
+
+        {status === 'idle' && showChipsInline && (
+          <SuggestionChipsRow
+            chips={chips}
+            onPick={(p) => { setPrompt(p); textareaRef.current?.focus() }}
+          />
+        )}
+
+        {status === 'idle' && showAccordion && (
+          <div style={{ marginTop: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+              <button
+                onClick={() => setChipsOpen(!chipsOpen)}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 4,
+                  background: 'transparent', border: 'none', cursor: 'pointer',
+                  color: '#8C899F', fontSize: 11, fontWeight: 500,
+                  padding: '2px 4px 2px 0', letterSpacing: '-0.005em',
+                  transition: 'color 150ms',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = '#1F1F32')}
+                onMouseLeave={(e) => (e.currentTarget.style.color = '#8C899F')}
+              >
+                <ChevronDown
+                  size={11}
+                  strokeWidth={2.2}
+                  style={{
+                    transform: chipsOpen ? 'rotate(180deg)' : 'none',
+                    transition: 'transform 200ms cubic-bezier(0.32, 0, 0.15, 1)',
+                  }}
+                />
+                Quick prompts
+              </button>
+              {chipsOpen && (
+                <button
+                  onClick={onShowMore}
+                  style={{
+                    background: 'transparent', border: 'none', cursor: 'pointer',
+                    color: '#8C899F', fontSize: 11, fontWeight: 500,
+                    padding: '2px 4px', letterSpacing: '-0.005em',
+                    whiteSpace: 'nowrap',
+                    transition: 'color 150ms',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = '#1F1F32')}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = '#8C899F')}
+                >
+                  Show more
+                </button>
+              )}
+            </div>
+            {chipsOpen && (
+              <div className="vr-fade-in" style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+                {chips.map((c) => (
+                  <button
+                    key={c.label}
+                    onClick={() => {
+                      setPrompt(c.prompt)
+                      textareaRef.current?.focus()
+                      setChipsOpen(false)
+                    }}
+                    style={{
+                      background: '#F4F4F5',
+                      border: 'none',
+                      borderRadius: 999,
+                      padding: '5px 11px',
+                      fontSize: 11.5, color: '#525066', cursor: 'pointer',
+                      fontWeight: 500, letterSpacing: '-0.005em',
+                      transition: 'background 150ms, color 150ms',
+                      whiteSpace: 'nowrap',
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = '#ECECF3'; e.currentTarget.style.color = '#1F1F32' }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = '#F4F4F5'; e.currentTarget.style.color = '#525066' }}
+                  >
+                    {c.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function ScenariosSheet({ onPick, onClose }: {
   onPick: (prompt: string) => void
   onClose: () => void
@@ -2777,7 +2999,7 @@ function VRSkeleton() {
           boxShadow: '0 1px 0 rgba(255, 255, 255, 0.7) inset',
         }}
       >
-        {(['When', 'Where', 'Who'] as const).map((label, idx) => (
+        {(['Where', 'When', 'Who'] as const).map((label, idx) => (
           <div key={label}>
             <div style={{ padding: '12px 14px 14px' }}>
               <SkeletonLine width={36} height={9} radius={3} style={{ marginBottom: 8 }} />
