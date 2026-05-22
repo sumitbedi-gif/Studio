@@ -1313,10 +1313,10 @@ function buildWhoSegments(rules: VRRules): Segment[] {
 // Chips that appear under the composer at rest as quick scenarios. Match the
 // "Try one" set we used inside the legacy bottom drawer.
 const composerSuggestionChips: { label: string; prompt: string }[] = [
-  { label: 'Change date range',          prompt: 'Change the date range to June 1 through June 15' },
-  { label: 'Add audience',               prompt: 'Show this only to Sales team users' },
-  { label: 'Show on a specific element', prompt: 'Show this only when the user clicks the Login button' },
-  { label: 'Limit occurrences',          prompt: 'Stop showing after 2 occurrences' },
+  { label: 'Change date',     prompt: 'Change the date range to June 1 through June 15' },
+  { label: 'Add audience',    prompt: 'Show this only to Sales team users' },
+  { label: 'Pick an element', prompt: 'Show this only when the user clicks the Login button' },
+  { label: 'Limit shows',     prompt: 'Stop showing after 2 occurrences' },
 ]
 
 // Status of the composer's submit pipeline: idle → processing (small inline
@@ -1371,19 +1371,22 @@ function SummaryView({
   const totals = { when: segLen(whenSegs), where: segLen(whereSegs), who: segLen(whoSegs) }
   const totalChars = totals.when + totals.where + totals.who
 
-  // Typing animation across all three sections in sequence.
+  // Typing animation across all three sections in sequence. Doesn't begin
+  // until the staged loader is done — otherwise we'd burn through the chars
+  // while the skeleton is still on screen and the reveal would feel like an
+  // abrupt swap. Once typed in a session, skip it on subsequent visits.
   const [typedCount, setTypedCount] = useState(hasTypedSummary ? totalChars : 0)
   const [hasFinishedTyping, setHasFinishedTyping] = useState(hasTypedSummary)
 
   useEffect(() => {
-    if (hasFinishedTyping) return
+    if (hasFinishedTyping || isLoadingRules) return
     if (typedCount < totalChars) {
-      const t = setTimeout(() => setTypedCount((c) => c + 2), 28)
+      const t = setTimeout(() => setTypedCount((c) => c + 2), 22)
       return () => clearTimeout(t)
     }
     setHasFinishedTyping(true)
     onTypingDone()
-  }, [typedCount, totalChars, hasFinishedTyping, onTypingDone])
+  }, [typedCount, totalChars, hasFinishedTyping, isLoadingRules, onTypingDone])
 
   // Per-pill popover state (legacy surgical-edit behavior).
   const [openPill, setOpenPill] = useState<PillName | null>(null)
@@ -1403,12 +1406,16 @@ function SummaryView({
   // "Try one" suggestions feel like training wheels that disappear after the
   // user has demonstrated they know what to do.
   const [hasMadeFirstEdit, setHasMadeFirstEdit] = useState(false)
+  // Post-first-edit, chips live behind an accordion + a "Show more" sheet so
+  // the surface stays calm but the prompts are reachable.
+  const [chipsOpen, setChipsOpen] = useState(false)
+  const [scenariosOpen, setScenariosOpen] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  // Recording payload arrival — drop video chip + prefill text in the composer.
+  // Recording payload arrival — drop the video chip into the composer. We
+  // intentionally don't prefill text; the recording IS the context.
   useEffect(() => {
     if (recordingPayload) {
-      setPrompt(recordingPayload.prompt)
       setAttachment(recordingPayload.attachment)
       consumeRecordingPayload()
     }
@@ -1496,9 +1503,14 @@ function SummaryView({
   const handleSubmitComposer = () => {
     const text = prompt.trim()
     if (!text && !attachment) return
+    // Auto-collapse the prompt-suggestions accordion when the user submits —
+    // the surface should feel calm during processing.
+    setChipsOpen(false)
+    setScenariosOpen(false)
 
-    // Recording present → assume full context, apply Settings demo directly.
-    if (attachment && isSettingsScenario(text)) {
+    // Recording present → the recording is the context. We apply the canned
+    // Settings demo as the showcase outcome.
+    if (attachment) {
       setStatus('processing')
       setTimeout(() => {
         const settingsEl = elementCandidates.find(e => e.name === 'Settings')!
@@ -1646,7 +1658,7 @@ function SummaryView({
   }
 
   return (
-    <div className="vr-fade-in" style={{ padding: '16px 16px 18px', display: 'flex', flexDirection: 'column', gap: 14, minHeight: '100%' }}>
+    <div className="vr-fade-in" style={{ padding: '16px 16px 18px', display: 'flex', flexDirection: 'column', gap: 14, minHeight: '100%', position: 'relative' }}>
       {/* Toned-down section card with clickable pills inside each section. */}
       <div
         ref={cardRef}
@@ -1885,34 +1897,118 @@ function SummaryView({
           onStartRecording={onStartRecording}
         />
 
-        {/* "Try one" suggestion chips — training wheels that disappear once
-            the user has applied their first edit. Solid neutral pills, no
-            border, per the ChatGPT / Mistral empty-state pattern. */}
+        {/* Suggestion chips. Before first edit: always visible as training
+            wheels. After first edit: collapsed behind a subtle "Quick prompts"
+            toggle that expands to show the four chips + a "Show more" link to
+            the full scenarios sheet. */}
         {status === 'idle' && !hasMadeFirstEdit && (
-          <div style={{ marginTop: 10, display: 'flex', flexWrap: 'wrap', gap: 5 }}>
-            {composerSuggestionChips.map(c => (
+          <SuggestionChipsRow
+            chips={composerSuggestionChips}
+            onPick={(p) => { setPrompt(p); textareaRef.current?.focus() }}
+          />
+        )}
+        {status === 'idle' && hasMadeFirstEdit && (
+          <div style={{ marginTop: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
               <button
-                key={c.label}
-                onClick={() => { setPrompt(c.prompt); textareaRef.current?.focus() }}
+                onClick={() => setChipsOpen((o) => !o)}
                 style={{
-                  background: '#F4F4F5',
-                  border: 'none',
-                  borderRadius: 999,
-                  padding: '5px 11px',
-                  fontSize: 11.5, color: '#525066', cursor: 'pointer',
-                  fontWeight: 500, letterSpacing: '-0.005em',
-                  transition: 'background 150ms, color 150ms',
-                  whiteSpace: 'nowrap',
+                  display: 'inline-flex', alignItems: 'center', gap: 4,
+                  background: 'transparent', border: 'none', cursor: 'pointer',
+                  color: '#8C899F', fontSize: 11, fontWeight: 500,
+                  padding: '2px 4px 2px 0', letterSpacing: '-0.005em',
+                  transition: 'color 150ms',
                 }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = '#ECECF3'; e.currentTarget.style.color = '#1F1F32' }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = '#F4F4F5'; e.currentTarget.style.color = '#525066' }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = '#1F1F32')}
+                onMouseLeave={(e) => (e.currentTarget.style.color = '#8C899F')}
               >
-                {c.label}
+                <ChevronDown
+                  size={11}
+                  strokeWidth={2.2}
+                  style={{
+                    transform: chipsOpen ? 'rotate(180deg)' : 'none',
+                    transition: 'transform 200ms cubic-bezier(0.32, 0, 0.15, 1)',
+                  }}
+                />
+                Quick prompts
               </button>
-            ))}
+              {chipsOpen && (
+                <button
+                  onClick={() => setScenariosOpen(true)}
+                  style={{
+                    background: 'transparent', border: 'none', cursor: 'pointer',
+                    color: '#8C899F', fontSize: 11, fontWeight: 500,
+                    padding: '2px 4px', letterSpacing: '-0.005em',
+                    whiteSpace: 'nowrap',
+                    transition: 'color 150ms',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = '#1F1F32')}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = '#8C899F')}
+                >
+                  Show more
+                </button>
+              )}
+            </div>
+            {chipsOpen && (
+              <div className="vr-fade-in" style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+                {composerSuggestionChips.map(c => (
+                  <button
+                    key={c.label}
+                    onClick={() => {
+                      setPrompt(c.prompt)
+                      textareaRef.current?.focus()
+                      setChipsOpen(false)
+                    }}
+                    style={{
+                      background: '#F4F4F5',
+                      border: 'none',
+                      borderRadius: 999,
+                      padding: '5px 11px',
+                      fontSize: 11.5, color: '#525066', cursor: 'pointer',
+                      fontWeight: 500, letterSpacing: '-0.005em',
+                      transition: 'background 150ms, color 150ms',
+                      whiteSpace: 'nowrap',
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = '#ECECF3'; e.currentTarget.style.color = '#1F1F32' }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = '#F4F4F5'; e.currentTarget.style.color = '#525066' }}
+                  >
+                    {c.label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
+
+      {/* Scenarios sheet — full library of prompt scenarios grouped by
+          category. Picking one fills the composer and the sheet auto-closes,
+          so the user is always returned to their flow. */}
+      {scenariosOpen && (
+        <>
+          <div
+            onClick={() => setScenariosOpen(false)}
+            className="sheet-dim-in"
+            style={{
+              position: 'absolute', inset: 0,
+              background: 'rgba(15, 23, 42, 0.22)',
+              backdropFilter: 'blur(1px)',
+              WebkitBackdropFilter: 'blur(1px)',
+              zIndex: 19,
+              cursor: 'pointer',
+            }}
+          />
+          <ScenariosSheet
+            onPick={(p) => {
+              setPrompt(p)
+              setScenariosOpen(false)
+              setChipsOpen(false)
+              setTimeout(() => textareaRef.current?.focus(), 50)
+            }}
+            onClose={() => setScenariosOpen(false)}
+          />
+        </>
+      )}
     </div>
   )
 }
@@ -2094,10 +2190,28 @@ function LoadingSectionCard({ messages }: { messages: string[] }) {
           width: 5, height: 5, borderRadius: '50%',
           background: '#8C899F',
           animation: 'composerLoaderPulse 1.8s ease-in-out infinite',
+          flexShrink: 0,
         }} />
-        <span className="composer-loader-text" style={{ fontSize: 12.5, fontWeight: 500, letterSpacing: '-0.005em' }}>
-          {messages[idx]}
-        </span>
+        {/* Fixed-height clipped container so each new message can rise from
+            below while the prior one slides up and out — same ticker pattern
+            as rotating taglines. Key on idx forces React to remount the span. */}
+        <div style={{
+          flex: 1, minWidth: 0,
+          height: 16, overflow: 'hidden',
+          display: 'flex', alignItems: 'center',
+        }}>
+          <span
+            key={idx}
+            className="composer-loader-text loader-msg-rotate"
+            style={{
+              fontSize: 11.5, fontWeight: 500, letterSpacing: '-0.005em',
+              lineHeight: '16px',
+              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+            }}
+          >
+            {messages[idx]}
+          </span>
+        </div>
       </div>
 
       {(['When', 'Where', 'Who'] as const).map((label, sectionIdx) => (
@@ -2373,10 +2487,10 @@ function RecordScreenButton({ onClick }: { onClick: () => void }) {
         background: hover ? '#F6F6F9' : '#FFFFFF',
         border: `1px solid ${hover ? '#DFDDE7' : '#ECECF3'}`,
         borderRadius: 10,
-        padding: '8px 12px',
+        padding: '11px 14px',
         cursor: 'pointer',
-        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
-        fontSize: 12.5, fontWeight: 500,
+        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+        fontSize: 13, fontWeight: 500,
         color: '#1F1F32',
         letterSpacing: '-0.005em',
         transition: 'background 150ms, border-color 150ms',
@@ -2384,7 +2498,7 @@ function RecordScreenButton({ onClick }: { onClick: () => void }) {
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
     >
-      <MonitorPlay size={13} strokeWidth={2.2} color={C.accent} />
+      <MonitorPlay size={14} strokeWidth={2.2} color={C.accent} />
       Record screen
     </button>
   )
@@ -2438,6 +2552,115 @@ function MicListeningPill({ elapsed, onStop }: { elapsed: number; onStop: () => 
       >
         <Square size={9} fill="#FFFFFF" strokeWidth={0} />
       </button>
+    </div>
+  )
+}
+
+// Horizontal row of suggestion chips. Used both as the always-visible
+// training-wheel row before the first edit and inside the accordion
+// after — same visual treatment, different parents.
+function SuggestionChipsRow({ chips, onPick }: {
+  chips: { label: string; prompt: string }[]
+  onPick: (prompt: string) => void
+}) {
+  return (
+    <div style={{ marginTop: 10, display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+      {chips.map((c) => (
+        <button
+          key={c.label}
+          onClick={() => onPick(c.prompt)}
+          style={{
+            background: '#F4F4F5',
+            border: 'none',
+            borderRadius: 999,
+            padding: '5px 11px',
+            fontSize: 11.5, color: '#525066', cursor: 'pointer',
+            fontWeight: 500, letterSpacing: '-0.005em',
+            transition: 'background 150ms, color 150ms',
+            whiteSpace: 'nowrap',
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = '#ECECF3'; e.currentTarget.style.color = '#1F1F32' }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = '#F4F4F5'; e.currentTarget.style.color = '#525066' }}
+        >
+          {c.label}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+// Bottom sheet that lists every demo scenario grouped by category. Picking
+// one fills the composer above and dismisses the sheet — the surface stays
+// the same one the user is editing, no separate "composer" mode.
+function ScenariosSheet({ onPick, onClose }: {
+  onPick: (prompt: string) => void
+  onClose: () => void
+}) {
+  const [animateIn, setAnimateIn] = useState(false)
+  useEffect(() => { requestAnimationFrame(() => setAnimateIn(true)) }, [])
+  return (
+    <div
+      style={{
+        position: 'absolute', left: 0, right: 0, bottom: 0,
+        background: '#FFFFFF',
+        border: '1px solid #ECECF3',
+        borderBottom: 'none',
+        borderRadius: '18px 18px 0 0',
+        boxShadow: '0 -1px 0 rgba(255, 255, 255, 0.6) inset, 0 -8px 24px rgba(15, 23, 42, 0.08), 0 -24px 64px rgba(15, 23, 42, 0.10)',
+        maxHeight: 520,
+        display: 'flex', flexDirection: 'column',
+        transform: animateIn ? 'translateY(0)' : 'translateY(100%)',
+        transition: 'transform 280ms cubic-bezier(0.32, 0, 0.15, 1)',
+        zIndex: 20,
+      }}
+    >
+      <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 8 }}>
+        <div style={{ width: 36, height: 4, background: '#E5E5E3', borderRadius: 999 }} />
+      </div>
+
+      <div style={{ padding: '12px 16px 10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span style={{ fontSize: 13, fontWeight: 600, color: '#1F1F32', letterSpacing: '-0.005em' }}>
+          Try a scenario
+        </span>
+        <HeaderBtn title="Close" onClick={onClose}><X size={14} strokeWidth={2} /></HeaderBtn>
+      </div>
+
+      <div style={{ flex: 1, overflowY: 'auto', padding: '0 12px 14px' }}>
+        {scenarioCategories.map((cat) => {
+          const items = demoScenarios.filter((s) => s.category === cat)
+          return (
+            <div key={cat} style={{ marginBottom: 10 }}>
+              <div style={{
+                fontSize: 10, fontWeight: 700, color: '#525066',
+                background: '#F4F4F5',
+                padding: '4px 10px', borderRadius: 5, margin: '4px 4px 6px',
+                letterSpacing: '0.06em', textTransform: 'uppercase',
+                display: 'inline-block',
+              }}>
+                {cat}
+              </div>
+              {items.map((s) => (
+                <button
+                  key={s.id}
+                  onClick={() => onPick(s.prompt)}
+                  style={{
+                    display: 'block', width: '100%', textAlign: 'left',
+                    padding: '8px 10px', border: 'none', borderRadius: 7,
+                    background: 'transparent', cursor: 'pointer',
+                    fontSize: 12.5, color: '#1F1F32', fontWeight: 500,
+                    letterSpacing: '-0.005em',
+                    transition: 'background 150ms',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = '#F6F6F9')}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }
