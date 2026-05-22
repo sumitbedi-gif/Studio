@@ -9,3 +9,8 @@ node_modules/
 .env*.local
 .DS_Store
 .vercel
+
+# Auto-generated build artifacts (TypeScript / Next.js)
+next-env.d.ts
+tsconfig.tsbuildinfo
+*.tsbuildinfo
