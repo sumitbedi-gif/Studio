@@ -27,6 +27,11 @@ import {
   Hash,
   Mic,
   FileVideo,
+  MonitorUp,
+  MonitorPlay,
+  CornerDownLeft,
+  Pencil,
+  Square,
 } from 'lucide-react'
 
 // ─── Color tokens ─────────────────────────────────────────────────────────────
@@ -42,12 +47,15 @@ const C = {
   accent:         '#D4572A',
   accentDark:     '#B7461F',
   accentSoft:     '#FFF7F4',
-  ai:             '#2563EB',  // blue-600
-  aiDark:         '#1D4ED8',  // blue-700
-  aiSoft:         '#EFF6FF',  // blue-50
-  aiSoftBorder:   '#DBEAFE',  // blue-100
-  aiPillActive:   '#DBEAFE',  // blue-100
-  aiRing:         '#93C5FD',  // blue-300
+  // AI-affordance accent. Whatfix uses a neutral grey here so AI features
+  // sit in the surface, not on top of it. The legacy blue is gone — the
+  // tokens stay so existing call-sites keep working.
+  ai:             '#1F1F32',  // primary text/active accent
+  aiDark:         '#0A0A0A',  // pressed/hover accent
+  aiSoft:         '#F4F4F5',  // soft fill (icon backdrops, active rows)
+  aiSoftBorder:   '#ECECF3',  // hairline on soft fill
+  aiPillActive:   '#ECECF3',  // active pill bg
+  aiRing:         '#525066',  // focus ring (used as 1px border, not glow)
   success:        '#16A34A',
   successSoft:    '#DCFCE7',
   shadowSm:       '0 1px 2px rgba(15, 23, 42, 0.04), 0 0 0 1px rgba(15, 23, 42, 0.03)',
@@ -110,6 +118,11 @@ export interface VRRules {
   elementTrigger: ElementInfo | null
   showFrequency: boolean
   showAudience: boolean
+  // Visibility flags for the "required-ish" fields. Letting users dismiss them
+  // collapses the section into an empty state with an Add CTA so nothing is
+  // ever a permanent commitment.
+  showDateRange: boolean
+  showUrls: boolean
   // Extended dimensions
   flowTrigger: { name: string; step?: string } | null
   timeWindow: { start: string; end: string } | null
@@ -127,6 +140,8 @@ const defaultRules: VRRules = {
   elementTrigger: null,
   showFrequency: true,
   showAudience: true,
+  showDateRange: true,
+  showUrls: true,
   flowTrigger: null,
   timeWindow: null,
   cohort: null,
@@ -537,7 +552,7 @@ function AILoader({ messages, centered = false }: { messages: string[]; centered
 
 // ─── Pill (clickable inline value in summary) ────────────────────────────────
 
-type PillName = 'url' | 'dates' | 'trigger' | 'frequency' | 'audience'
+type PillName = 'url' | 'dates' | 'time' | 'trigger' | 'frequency' | 'audience'
 
 function SummaryPill({
   name, pillKey, isActive, isHighlighted, onClick, refStore, children,
@@ -554,17 +569,18 @@ function SummaryPill({
   onDismiss?: () => void
 }) {
   const [hover, setHover] = useState(false)
-  // Subtle grey by default, blue ring only when actively editing
+  // Neutral grey base, slightly darker on active so the popover anchor is
+  // obvious without competing with the page accent color.
   const bg = isActive
-    ? 'rgba(37, 99, 235, 0.08)'
+    ? '#ECECF3'
     : hover
-      ? 'rgba(15, 23, 42, 0.06)'
-      : 'rgba(15, 23, 42, 0.04)'
+      ? '#F2F2F8'
+      : '#F6F6F9'
   const borderColor = isActive
-    ? 'rgba(37, 99, 235, 0.30)'
+    ? '#DFDDE7'
     : hover
-      ? 'rgba(15, 23, 42, 0.10)'
-      : 'rgba(15, 23, 42, 0.06)'
+      ? '#DFDDE7'
+      : '#ECECF3'
 
   return (
     <span
@@ -583,11 +599,11 @@ function SummaryPill({
         style={{
           display: 'inline',
           background: bg,
-          color: isActive ? '#1D4ED8' : '#27272A',
+          color: '#1F1F32',
           border: `1px solid ${borderColor}`,
           borderRadius: 5,
           padding: '0px 6px 1px',
-          margin: '0 1px',
+          margin: '0 2px',
           fontSize: 13,
           fontWeight: 550,
           cursor: 'pointer',
@@ -595,10 +611,8 @@ function SummaryPill({
           verticalAlign: 'baseline',
           letterSpacing: '-0.008em',
           lineHeight: 1.4,
-          boxShadow: isActive
-            ? '0 0 0 3px rgba(37, 99, 235, 0.10)'
-            : 'none',
-          transition: 'background 160ms, border-color 160ms, box-shadow 160ms, color 160ms',
+          boxShadow: 'none',
+          transition: 'background 160ms, border-color 160ms, color 160ms',
         }}
       >
         {children}
@@ -640,12 +654,12 @@ function PopoverHeader({ icon, title }: { icon: React.ReactNode; title: string }
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
       <div style={{
-        width: 24, height: 24, borderRadius: 6, background: C.aiSoft,
+        width: 24, height: 24, borderRadius: 6, background: '#F6F6F9',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
         {icon}
       </div>
-      <span style={{ fontSize: 12.5, fontWeight: 600, color: C.textPrimary, letterSpacing: '-0.005em' }}>{title}</span>
+      <span style={{ fontSize: 12.5, fontWeight: 600, color: '#1F1F32', letterSpacing: '-0.005em' }}>{title}</span>
     </div>
   )
 }
@@ -680,50 +694,28 @@ function PopoverActions({ onSave, onCancel, saveLabel = 'Save', saveDisabled }: 
   )
 }
 
-function PopoverEditWithAI({ onClick }: { onClick: () => void }) {
-  return (
-    <>
-      <div style={{ height: 1, background: C.border, margin: '12px -14px 10px' }} />
-      <button
-        onClick={onClick}
-        style={{
-          width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-          background: C.aiSoft, color: C.aiDark, border: `1px solid ${C.aiSoftBorder}`,
-          borderRadius: 7, padding: '7px 10px', fontSize: 11.5, fontWeight: 600, cursor: 'pointer',
-          transition: 'background 150ms',
-        }}
-        onMouseEnter={(e) => (e.currentTarget.style.background = C.aiPillActive)}
-        onMouseLeave={(e) => (e.currentTarget.style.background = C.aiSoft)}
-      >
-        <Sparkles size={11} strokeWidth={2.4} />
-        Edit with AI
-      </button>
-    </>
-  )
-}
-
 function StyledInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
       {...props}
       style={{
-        width: '100%', border: `1px solid ${C.border}`, borderRadius: 8,
-        padding: '8px 10px', fontSize: 12.5, color: C.textPrimary, background: '#FFFFFF',
+        width: '100%', border: '1px solid #ECECF3', borderRadius: 8,
+        padding: '8px 10px', fontSize: 12.5, color: '#1F1F32', background: '#FFFFFF',
         outline: 'none', fontFamily: "'Inter', -apple-system, sans-serif", boxSizing: 'border-box',
         fontWeight: 500,
         ...(props.style || {}),
       }}
-      onFocus={(e) => { e.currentTarget.style.borderColor = C.ai; props.onFocus?.(e) }}
-      onBlur={(e) => { e.currentTarget.style.borderColor = C.border; props.onBlur?.(e) }}
+      onFocus={(e) => { e.currentTarget.style.borderColor = '#525066'; props.onFocus?.(e) }}
+      onBlur={(e) => { e.currentTarget.style.borderColor = '#ECECF3'; props.onBlur?.(e) }}
     />
   )
 }
 
 // ─── Per-pill popover content ────────────────────────────────────────────────
 
-function UrlPopover({ rules, setRules, onClose, onEditWithAI }: {
+function UrlPopover({ rules, setRules, onClose }: {
   rules: VRRules; setRules: React.Dispatch<React.SetStateAction<VRRules>>;
-  onClose: () => void; onEditWithAI: () => void;
+  onClose: () => void;
 }) {
   const [urls, setUrls] = useState<string[]>(rules.urls.map(u => u.full))
 
@@ -752,7 +744,7 @@ function UrlPopover({ rules, setRules, onClose, onEditWithAI }: {
 
   return (
     <>
-      <PopoverHeader icon={<Globe2 size={13} color={C.ai} strokeWidth={2.2} />} title="Where to show" />
+      <PopoverHeader icon={<Globe2 size={13} color="#525066" strokeWidth={2.2} />} title="Where to show" />
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 180, overflowY: 'auto' }}>
         {urls.map((url, idx) => (
           <div key={idx} style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
@@ -791,7 +783,7 @@ function UrlPopover({ rules, setRules, onClose, onEditWithAI }: {
           style={{
             display: 'flex', alignItems: 'center', gap: 5,
             background: 'none', border: 'none', cursor: 'pointer',
-            color: '#1D4ED8', fontSize: 11.5, fontWeight: 600,
+            color: '#1F1F32', fontSize: 11.5, fontWeight: 600,
             padding: '6px 0',
             letterSpacing: '-0.005em',
           }}
@@ -821,14 +813,13 @@ function UrlPopover({ rules, setRules, onClose, onEditWithAI }: {
           </button>
         </div>
       </div>
-      <PopoverEditWithAI onClick={onEditWithAI} />
     </>
   )
 }
 
-function DatesPopover({ rules, setRules, onClose, onEditWithAI }: {
+function DatesPopover({ rules, setRules, onClose }: {
   rules: VRRules; setRules: React.Dispatch<React.SetStateAction<VRRules>>;
-  onClose: () => void; onEditWithAI: () => void;
+  onClose: () => void;
 }) {
   const [start, setStart] = useState(rules.dateRange.start)
   const [end, setEnd] = useState(rules.dateRange.end)
@@ -838,23 +829,66 @@ function DatesPopover({ rules, setRules, onClose, onEditWithAI }: {
   }
   return (
     <>
-      <PopoverHeader icon={<CalendarDays size={13} color={C.ai} strokeWidth={2.2} />} title="Date range" />
+      <PopoverHeader icon={<CalendarDays size={13} color="#525066" strokeWidth={2.2} />} title="Date range" />
       <div style={{ fontSize: 10, color: C.textTertiary, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: 4 }}>Start</div>
       <StyledInput value={start} onChange={(e) => setStart(e.target.value)} style={{ marginBottom: 8 }} />
       <div style={{ fontSize: 10, color: C.textTertiary, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: 4 }}>End</div>
       <StyledInput value={end} onChange={(e) => setEnd(e.target.value)} />
       <PopoverActions onSave={handleSave} onCancel={onClose} />
-      <PopoverEditWithAI onClick={onEditWithAI} />
     </>
   )
 }
 
-function TriggerPopover({ rules, onRePick, onClose, onEditWithAI }: {
-  rules: VRRules; onRePick: () => void; onClose: () => void; onEditWithAI: () => void;
+function TimePopover({ rules, setRules, onClose }: {
+  rules: VRRules; setRules: React.Dispatch<React.SetStateAction<VRRules>>;
+  onClose: () => void;
+}) {
+  const [start, setStart] = useState(rules.timeWindow?.start ?? '9:00 AM')
+  const [end, setEnd] = useState(rules.timeWindow?.end ?? '5:00 PM')
+  const handleSave = () => {
+    setRules(prev => ({ ...prev, timeWindow: { start, end } }))
+    onClose()
+  }
+  const handleClear = () => {
+    setRules(prev => ({ ...prev, timeWindow: null }))
+    onClose()
+  }
+  return (
+    <>
+      <PopoverHeader icon={<Clock size={13} color="#525066" strokeWidth={2.2} />} title="Daily time window" />
+      <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 10, color: C.textTertiary, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: 4 }}>From</div>
+          <StyledInput value={start} onChange={(e) => setStart(e.target.value)} />
+        </div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 10, color: C.textTertiary, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: 4 }}>To</div>
+          <StyledInput value={end} onChange={(e) => setEnd(e.target.value)} />
+        </div>
+      </div>
+      {rules.timeWindow && (
+        <button
+          onClick={handleClear}
+          style={{
+            marginTop: 10, background: 'transparent', border: 'none',
+            color: '#8C899F', fontSize: 11, fontWeight: 500,
+            padding: 0, cursor: 'pointer', letterSpacing: '-0.005em',
+          }}
+        >
+          Show any time
+        </button>
+      )}
+      <PopoverActions onSave={handleSave} onCancel={onClose} />
+    </>
+  )
+}
+
+function TriggerPopover({ rules, onRePick, onClose }: {
+  rules: VRRules; onRePick: () => void; onClose: () => void;
 }) {
   return (
     <>
-      <PopoverHeader icon={<MousePointer2 size={13} color={C.ai} strokeWidth={2.2} />} title="Trigger element" />
+      <PopoverHeader icon={<MousePointer2 size={13} color="#525066" strokeWidth={2.2} />} title="Trigger element" />
       <div style={{
         background: '#F7F7F5', border: `1px solid ${C.border}`, borderRadius: 8,
         padding: 10, marginBottom: 10,
@@ -877,14 +911,13 @@ function TriggerPopover({ rules, onRePick, onClose, onEditWithAI }: {
         <Crosshair size={12} strokeWidth={2.4} />
         Re-pick element
       </button>
-      <PopoverEditWithAI onClick={onEditWithAI} />
     </>
   )
 }
 
-function FrequencyPopover({ rules, setRules, onClose, onEditWithAI }: {
+function FrequencyPopover({ rules, setRules, onClose }: {
   rules: VRRules; setRules: React.Dispatch<React.SetStateAction<VRRules>>;
-  onClose: () => void; onEditWithAI: () => void;
+  onClose: () => void;
 }) {
   const [count, setCount] = useState(rules.occurrences)
   const handleSave = () => {
@@ -893,7 +926,7 @@ function FrequencyPopover({ rules, setRules, onClose, onEditWithAI }: {
   }
   return (
     <>
-      <PopoverHeader icon={<Repeat size={13} color={C.ai} strokeWidth={2.2} />} title="Frequency" />
+      <PopoverHeader icon={<Repeat size={13} color="#525066" strokeWidth={2.2} />} title="Frequency" />
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <button
           onClick={() => setCount(c => Math.max(1, c - 1))}
@@ -915,14 +948,13 @@ function FrequencyPopover({ rules, setRules, onClose, onEditWithAI }: {
         <span style={{ fontSize: 11.5, color: C.textTertiary, marginLeft: 4 }}>times per user</span>
       </div>
       <PopoverActions onSave={handleSave} onCancel={onClose} />
-      <PopoverEditWithAI onClick={onEditWithAI} />
     </>
   )
 }
 
-function AudiencePopover({ rules, setRules, onClose, onEditWithAI }: {
+function AudiencePopover({ rules, setRules, onClose }: {
   rules: VRRules; setRules: React.Dispatch<React.SetStateAction<VRRules>>;
-  onClose: () => void; onEditWithAI: () => void;
+  onClose: () => void;
 }) {
   const [selected, setSelected] = useState(rules.audience)
   const handleSave = () => {
@@ -931,7 +963,7 @@ function AudiencePopover({ rules, setRules, onClose, onEditWithAI }: {
   }
   return (
     <>
-      <PopoverHeader icon={<Users size={13} color={C.ai} strokeWidth={2.2} />} title="Audience" />
+      <PopoverHeader icon={<Users size={13} color="#525066" strokeWidth={2.2} />} title="Audience" />
       <div style={{
         background: '#FFFFFF', border: `1px solid ${C.border}`, borderRadius: 8, padding: 4,
         maxHeight: 180, overflowY: 'auto',
@@ -962,7 +994,6 @@ function AudiencePopover({ rules, setRules, onClose, onEditWithAI }: {
         })}
       </div>
       <PopoverActions onSave={handleSave} onCancel={onClose} />
-      <PopoverEditWithAI onClick={onEditWithAI} />
     </>
   )
 }
@@ -974,7 +1005,7 @@ function buildReasons(template: PopupTemplate | null, rules: VRRules): { icon: R
 
   // WHERE
   reasons.push({
-    icon: <Globe2 size={12} color="#1D4ED8" strokeWidth={2.2} />,
+    icon: <Globe2 size={12} color="#1F1F32" strokeWidth={2.2} />,
     label: 'Where',
     text: rules.urls.length > 1
       ? `Targeting ${rules.urls.length} pages so users see the popup wherever they land in the relevant flow.`
@@ -985,7 +1016,7 @@ function buildReasons(template: PopupTemplate | null, rules: VRRules): { icon: R
 
   // WHEN
   reasons.push({
-    icon: <CalendarDays size={12} color="#1D4ED8" strokeWidth={2.2} />,
+    icon: <CalendarDays size={12} color="#1F1F32" strokeWidth={2.2} />,
     label: 'When',
     text: 'A 30-day window matches your standard rollout cadence for new feature awareness.',
   })
@@ -993,7 +1024,7 @@ function buildReasons(template: PopupTemplate | null, rules: VRRules): { icon: R
   // TRIGGER (only when set)
   if (rules.elementTrigger) {
     reasons.push({
-      icon: <MousePointer2 size={12} color="#1D4ED8" strokeWidth={2.2} />,
+      icon: <MousePointer2 size={12} color="#1F1F32" strokeWidth={2.2} />,
       label: 'Trigger',
       text: `Catching users at the moment they click ${rules.elementTrigger.name} keeps the message contextual and timely.`,
     })
@@ -1002,7 +1033,7 @@ function buildReasons(template: PopupTemplate | null, rules: VRRules): { icon: R
   // FREQUENCY (only when shown)
   if (rules.showFrequency) {
     reasons.push({
-      icon: <Repeat size={12} color="#1D4ED8" strokeWidth={2.2} />,
+      icon: <Repeat size={12} color="#1F1F32" strokeWidth={2.2} />,
       label: 'Frequency',
       text: `${rules.occurrences} impressions per user is enough to land the message without crossing into notification fatigue.`,
     })
@@ -1011,7 +1042,7 @@ function buildReasons(template: PopupTemplate | null, rules: VRRules): { icon: R
   // AUDIENCE (only when shown)
   if (rules.showAudience) {
     reasons.push({
-      icon: <Users size={12} color="#1D4ED8" strokeWidth={2.2} />,
+      icon: <Users size={12} color="#1F1F32" strokeWidth={2.2} />,
       label: 'Audience',
       text: rules.audience === 'All users'
         ? 'Welcome and announcement popups typically apply to your entire workspace.'
@@ -1049,7 +1080,7 @@ function ReasoningModal({ template, rules, onClose }: {
           width: '100%',
           maxWidth: 320,
           background: 'linear-gradient(180deg, #FBFCFE 0%, #F1F5FB 100%)',
-          border: '1px solid rgba(37, 99, 235, 0.10)',
+          border: '1px solid rgba(15, 23, 42, 0.10)',
           borderRadius: 18,
           boxShadow: '0 1px 0 rgba(255, 255, 255, 0.7) inset, 0 8px 24px rgba(15, 23, 42, 0.16), 0 24px 64px rgba(15, 23, 42, 0.20)',
           maxHeight: '82%',
@@ -1060,16 +1091,16 @@ function ReasoningModal({ template, rules, onClose }: {
         <div style={{
           padding: '16px 18px 14px',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          borderBottom: '1px solid rgba(37, 99, 235, 0.10)',
+          borderBottom: '1px solid rgba(15, 23, 42, 0.10)',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
             <div style={{
               width: 26, height: 26, borderRadius: 8,
-              background: 'linear-gradient(135deg, #EFF6FF 0%, #F5F3FF 100%)',
-              border: '1px solid rgba(37, 99, 235, 0.16)',
+              background: '#F4F4F5',
+              border: '1px solid #ECECF3',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
-              <Sparkles size={13} color="#1D4ED8" strokeWidth={2.4} className="ai-sparkle-twinkle" />
+              <Sparkles size={13} color="#1F1F32" strokeWidth={2.4} className="ai-sparkle-twinkle" />
             </div>
             <div>
               <div style={{ fontSize: 13.5, fontWeight: 600, color: '#0A0A0A', letterSpacing: '-0.01em' }}>
@@ -1104,8 +1135,8 @@ function ReasoningModal({ template, rules, onClose }: {
             <div key={r.label} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
               <div style={{
                 width: 24, height: 24, borderRadius: 7,
-                background: 'rgba(37, 99, 235, 0.08)',
-                border: '1px solid rgba(37, 99, 235, 0.12)',
+                background: 'rgba(15, 23, 42, 0.08)',
+                border: '1px solid rgba(15, 23, 42, 0.12)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 flexShrink: 0, marginTop: 1,
               }}>
@@ -1113,7 +1144,7 @@ function ReasoningModal({ template, rules, onClose }: {
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{
-                  fontSize: 10, color: '#1D4ED8', fontWeight: 600,
+                  fontSize: 10, color: '#1F1F32', fontWeight: 600,
                   letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 3,
                 }}>
                   {r.label}
@@ -1193,58 +1224,218 @@ function buildSegments(rules: VRRules): Segment[] {
   return segs
 }
 
+// Per-section segment builders for the When/Where/Who layout. Each section
+// is its own mini-sentence with clickable pills inline (date pills, audience
+// pill, etc.) — same surgical-edit affordance as the legacy summary card,
+// just split across the three category buckets.
+type SectionKey = 'when' | 'where' | 'who'
+
+function buildWhenSegments(rules: VRRules): Segment[] {
+  const segs: Segment[] = []
+  if (rules.showDateRange) {
+    segs.push({ kind: 'text', value: 'From ' })
+    segs.push({ kind: 'pill', name: 'dates', pillKey: 'dateStart', value: rules.dateRange.start, field: 'dateRange', dismissible: true })
+    segs.push({ kind: 'text', value: ' to ' })
+    segs.push({ kind: 'pill', name: 'dates', pillKey: 'dateEnd',   value: rules.dateRange.end,   field: 'dateRange', dismissible: true })
+    segs.push({ kind: 'text', value: ', ' })
+  }
+  if (rules.timeWindow) {
+    segs.push({ kind: 'pill', name: 'time', pillKey: 'timeWindow', value: `${rules.timeWindow.start} – ${rules.timeWindow.end}`, field: 'timeWindow', dismissible: true })
+    segs.push({ kind: 'text', value: ' daily' })
+  } else {
+    segs.push({ kind: 'pill', name: 'time', pillKey: 'timeWindow', value: 'any time', field: 'timeWindow' })
+  }
+  if (rules.weekDays && rules.weekDays.length > 0) {
+    segs.push({ kind: 'text', value: ', on ' })
+    segs.push({ kind: 'pill', name: 'frequency', pillKey: 'weekDays', value: rules.weekDays.join(', '), field: 'weekDays', dismissible: true })
+  }
+  if (rules.elementTrigger) {
+    segs.push({ kind: 'text', value: ', when the user clicks ' })
+    segs.push({ kind: 'pill', name: 'trigger', pillKey: 'trigger', value: rules.elementTrigger.name, field: 'elementTrigger', dismissible: true })
+  }
+  if (rules.flowTrigger) {
+    segs.push({ kind: 'text', value: rules.flowTrigger.step ? ', after step ' : ', after completing ' })
+    const flowVal = rules.flowTrigger.step
+      ? `${rules.flowTrigger.step} of ${rules.flowTrigger.name}`
+      : rules.flowTrigger.name
+    segs.push({ kind: 'pill', name: 'trigger', pillKey: 'flowTrigger', value: flowVal, field: 'flowTrigger', dismissible: true })
+  }
+  if (rules.elementCondition) {
+    const condText = rules.elementCondition.condition === 'exists'
+      ? `${rules.elementCondition.element} is present`
+      : `${rules.elementCondition.element} = ${rules.elementCondition.value}`
+    segs.push({ kind: 'text', value: ', when ' })
+    segs.push({ kind: 'pill', name: 'trigger', pillKey: 'elementCondition', value: condText, field: 'elementCondition', dismissible: true })
+  }
+  if (rules.showFrequency) {
+    segs.push({ kind: 'text', value: ', up to ' })
+    segs.push({ kind: 'pill', name: 'frequency', pillKey: 'frequency', value: `${rules.occurrences} times`, field: 'occurrences', dismissible: true })
+    segs.push({ kind: 'text', value: ' per user' })
+  }
+  segs.push({ kind: 'text', value: '.' })
+  return segs
+}
+
+function buildWhereSegments(rules: VRRules): Segment[] {
+  const segs: Segment[] = []
+  if (rules.showUrls && rules.urls.length > 0) {
+    segs.push({ kind: 'text', value: 'On ' })
+    const urlPillText = rules.urls.length === 1 ? rules.urls[0].display : `${rules.urls.length} pages`
+    segs.push({ kind: 'pill', name: 'url', pillKey: 'url', value: urlPillText, field: 'urls', dismissible: true })
+    if (rules.urlConditions && rules.urlConditions.length > 0) {
+      const condText = rules.urlConditions.map(c => `${c.field} ${c.operator} "${c.value}"`).join(' AND ')
+      segs.push({ kind: 'text', value: ', where ' })
+      segs.push({ kind: 'pill', name: 'url', pillKey: 'urlConditions', value: condText, field: 'urlConditions', dismissible: true })
+    }
+    segs.push({ kind: 'text', value: '.' })
+  }
+  return segs
+}
+
+function buildWhoSegments(rules: VRRules): Segment[] {
+  const segs: Segment[] = []
+  if (rules.showAudience) {
+    segs.push({ kind: 'text', value: 'For ' })
+    segs.push({ kind: 'pill', name: 'audience', pillKey: 'audience', value: rules.audience, field: 'audience', dismissible: true })
+    // Cohort is supplementary context — only show it when it's actually
+    // different from the audience name. Otherwise the legacy cohort handler
+    // double-prints the same value.
+    if (rules.cohort && rules.cohort !== rules.audience) {
+      segs.push({ kind: 'text', value: ' (' })
+      segs.push({ kind: 'pill', name: 'audience', pillKey: 'cohort', value: rules.cohort, field: 'cohort', dismissible: true })
+      segs.push({ kind: 'text', value: ')' })
+    }
+    segs.push({ kind: 'text', value: '.' })
+  }
+  return segs
+}
+
+// Chips that appear under the composer at rest as quick scenarios. Match the
+// "Try one" set we used inside the legacy bottom drawer.
+const composerSuggestionChips: { label: string; prompt: string }[] = [
+  { label: 'Change date range',          prompt: 'Change the date range to June 1 through June 15' },
+  { label: 'Add audience',               prompt: 'Show this only to Sales team users' },
+  { label: 'Show on a specific element', prompt: 'Show this only when the user clicks the Login button' },
+  { label: 'Limit occurrences',          prompt: 'Stop showing after 2 occurrences' },
+]
+
+// Status of the composer's submit pipeline: idle → processing (small inline
+// loader) → clarifier (compact popover above composer) → done (rules applied).
+type ComposerStatus = 'idle' | 'processing' | 'clarifier'
+
+type ClarifierState =
+  | { kind: 'date'; dates: { start: string; end: string } }
+  | { kind: 'time'; window: { start: string; end: string } }
+  | { kind: 'audience'; audience: string }
+  | { kind: 'frequency'; frequency: number }
+  | { kind: 'element'; matches: ElementInfo[] }
+  | { kind: 'compound'; step: 1 | 2; dates: { start: string; end: string }; matches: ElementInfo[] }
+  | { kind: 'settings-time'; pendingRules: Partial<VRRules>; pendingFields: string[] }
+  | { kind: 'settings-element'; pendingRules: Partial<VRRules>; pendingFields: string[] }
+  | { kind: 'generic'; fluidKind: FluidKind; prompt: string }
+
 function SummaryView({
-  template, rules, setRules, highlightedFields, onEdit, onSetManually,
-  startPicker, selectedElement, setSelectedElement,
+  rules, setRules, highlightedFields,
+  startPicker, selectedElement, setSelectedElement, setPreviewElement,
+  pickerActive,
   onOpenReasoning,
   hasTypedSummary, onTypingDone,
+  recordingPayload, consumeRecordingPayload,
+  onApplyRules, onStartRecording, stopPicker,
+  isLoadingRules, loaderMessages,
 }: {
-  template: PopupTemplate | null
   rules: VRRules
   setRules: React.Dispatch<React.SetStateAction<VRRules>>
   highlightedFields: Set<string>
-  onEdit: () => void
-  onSetManually: () => void
   startPicker: () => void
+  stopPicker: () => void
   selectedElement: ElementInfo | null
   setSelectedElement: (el: ElementInfo | null) => void
+  setPreviewElement: (el: ElementInfo | null) => void
+  pickerActive: boolean
   onOpenReasoning: () => void
   hasTypedSummary: boolean
   onTypingDone: () => void
+  recordingPayload: RecordingPayload | null
+  consumeRecordingPayload: () => void
+  onApplyRules: (next: Partial<VRRules>, fields: string[]) => void
+  onStartRecording: () => void
+  isLoadingRules: boolean
+  loaderMessages: string[]
 }) {
-  const [openPill, setOpenPill] = useState<PillName | null>(null)
-  const [popoverPos, setPopoverPos] = useState<{ top: number; left: number } | null>(null)
-  const cardRef = useRef<HTMLDivElement>(null)
-  const pillRefs = useRef<Record<string, HTMLButtonElement | null>>({})
-  const popoverRef = useRef<HTMLDivElement>(null)
-  const [pickerOrigin, setPickerOrigin] = useState<'trigger' | null>(null)
+  // Section segment lists (with clickable pills) computed from current rules.
+  const whenSegs  = buildWhenSegments(rules)
+  const whereSegs = buildWhereSegments(rules)
+  const whoSegs   = buildWhoSegments(rules)
+  const segLen = (segs: Segment[]) => segs.reduce((s, x) => s + x.value.length, 0)
+  const totals = { when: segLen(whenSegs), where: segLen(whereSegs), who: segLen(whoSegs) }
+  const totalChars = totals.when + totals.where + totals.who
 
-  // Typing animation — skip entirely if typing has already happened in this session
-  const segments = buildSegments(rules)
-  const totalChars = segments.reduce((sum, seg) => sum + seg.value.length, 0)
+  // Typing animation across all three sections in sequence.
   const [typedCount, setTypedCount] = useState(hasTypedSummary ? totalChars : 0)
   const [hasFinishedTyping, setHasFinishedTyping] = useState(hasTypedSummary)
 
   useEffect(() => {
     if (hasFinishedTyping) return
     if (typedCount < totalChars) {
-      const t = setTimeout(() => setTypedCount((c) => c + 2), 38)
+      const t = setTimeout(() => setTypedCount((c) => c + 2), 28)
       return () => clearTimeout(t)
     }
     setHasFinishedTyping(true)
     onTypingDone()
   }, [typedCount, totalChars, hasFinishedTyping, onTypingDone])
 
-  // When picker returns an element AND we initiated from trigger popover, update rule
+  // Per-pill popover state (legacy surgical-edit behavior).
+  const [openPill, setOpenPill] = useState<PillName | null>(null)
+  const [popoverPos, setPopoverPos] = useState<{ top: number; left: number } | null>(null)
+  const cardRef = useRef<HTMLDivElement>(null)
+  const pillRefs = useRef<Record<string, HTMLButtonElement | null>>({})
+  const popoverRef = useRef<HTMLDivElement>(null)
+  const [pickerOrigin, setPickerOrigin] = useState<'trigger' | 'clarifier-element' | 'clarifier-compound' | null>(null)
+
+  // Inline composer state.
+  const [prompt, setPrompt] = useState('')
+  const [activeChip, setActiveChip] = useState<SectionKey | null>(null)
+  const [attachment, setAttachment] = useState<{ name: string; duration: string } | null>(null)
+  const [status, setStatus] = useState<ComposerStatus>('idle')
+  const [clarifier, setClarifier] = useState<ClarifierState | null>(null)
+  // Latched true once the user has applied any edit. Drives chip-hiding so the
+  // "Try one" suggestions feel like training wheels that disappear after the
+  // user has demonstrated they know what to do.
+  const [hasMadeFirstEdit, setHasMadeFirstEdit] = useState(false)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  // Recording payload arrival — drop video chip + prefill text in the composer.
   useEffect(() => {
-    if (selectedElement && pickerOrigin === 'trigger') {
+    if (recordingPayload) {
+      setPrompt(recordingPayload.prompt)
+      setAttachment(recordingPayload.attachment)
+      consumeRecordingPayload()
+    }
+  }, [recordingPayload, consumeRecordingPayload])
+
+  // Whenever the parent flashes a highlight set, treat it as evidence that an
+  // edit just landed — flip the first-edit latch so chips disappear.
+  useEffect(() => {
+    if (highlightedFields.size > 0) setHasMadeFirstEdit(true)
+  }, [highlightedFields])
+
+  const handleEditSection = (key: SectionKey) => {
+    setActiveChip(key)
+    setTimeout(() => textareaRef.current?.focus(), 50)
+  }
+
+  // When the legacy element picker returns, route based on origin.
+  useEffect(() => {
+    if (!selectedElement) return
+    if (pickerOrigin === 'trigger') {
       setRules(prev => ({ ...prev, elementTrigger: selectedElement }))
       setSelectedElement(null)
       setPickerOrigin(null)
     }
   }, [selectedElement, pickerOrigin, setRules, setSelectedElement])
 
-  // Click outside closes popover
+  // Click outside closes per-pill popover (but not the clarifier popover).
   useEffect(() => {
     if (!openPill) return
     const handleClick = (e: MouseEvent) => {
@@ -1270,7 +1461,7 @@ function SummaryView({
       top: pillRect.bottom - cardRect.top + 6,
       left: Math.max(0, Math.min(
         pillRect.left - cardRect.left,
-        cardRect.width - popWidth - 4
+        cardRect.width - popWidth - 4,
       )),
     })
     setOpenPill(name)
@@ -1283,126 +1474,283 @@ function SummaryView({
 
   const renderPopoverContent = (): React.ReactNode => {
     if (!openPill) return null
-    if (openPill === 'url')       return <UrlPopover       rules={rules} setRules={setRules} onClose={closePopover} onEditWithAI={() => { closePopover(); onEdit() }} />
-    if (openPill === 'dates')     return <DatesPopover     rules={rules} setRules={setRules} onClose={closePopover} onEditWithAI={() => { closePopover(); onEdit() }} />
-    if (openPill === 'trigger')   return <TriggerPopover   rules={rules} onRePick={() => { setPickerOrigin('trigger'); startPicker() }} onClose={closePopover} onEditWithAI={() => { closePopover(); onEdit() }} />
-    if (openPill === 'frequency') return <FrequencyPopover rules={rules} setRules={setRules} onClose={closePopover} onEditWithAI={() => { closePopover(); onEdit() }} />
-    if (openPill === 'audience')  return <AudiencePopover  rules={rules} setRules={setRules} onClose={closePopover} onEditWithAI={() => { closePopover(); onEdit() }} />
+    if (openPill === 'url')       return <UrlPopover       rules={rules} setRules={setRules} onClose={closePopover} />
+    if (openPill === 'dates')     return <DatesPopover     rules={rules} setRules={setRules} onClose={closePopover} />
+    if (openPill === 'time')      return <TimePopover      rules={rules} setRules={setRules} onClose={closePopover} />
+    if (openPill === 'trigger')   return <TriggerPopover   rules={rules} onRePick={() => { setPickerOrigin('trigger'); startPicker() }} onClose={closePopover} />
+    if (openPill === 'frequency') return <FrequencyPopover rules={rules} setRules={setRules} onClose={closePopover} />
+    if (openPill === 'audience')  return <AudiencePopover  rules={rules} setRules={setRules} onClose={closePopover} />
     return null
   }
 
-  // Build the rendered text/pills based on typedCount
-  let remaining = hasFinishedTyping ? Number.MAX_SAFE_INTEGER : typedCount
-  const els: React.ReactNode[] = []
-  let key = 0
-  for (const seg of segments) {
-    const visible = Math.min(seg.value.length, remaining)
-    if (visible <= 0 && !hasFinishedTyping) break
-    if (visible <= 0) continue
-    remaining -= visible
+  const sectionHighlighted = (key: SectionKey): boolean => {
+    if (key === 'when')  return ['dateRange', 'timeWindow', 'occurrences', 'elementTrigger', 'flowTrigger', 'elementCondition', 'weekDays'].some(f => highlightedFields.has(f))
+    if (key === 'where') return ['urls', 'urlConditions'].some(f => highlightedFields.has(f))
+    return highlightedFields.has('audience') || highlightedFields.has('cohort')
+  }
 
-    const text = seg.value.slice(0, visible)
-    if (seg.kind === 'text') {
-      els.push(<span key={key++}>{text}</span>)
-    } else {
-      const isDismissible = !!seg.dismissible && hasFinishedTyping
-      els.push(
-        <SummaryPill
-          key={key++}
-          name={seg.name}
-          pillKey={seg.pillKey}
-          isActive={openPill === seg.name}
-          isHighlighted={highlightedFields.has(seg.field)}
-          refStore={pillRefs}
-          onClick={() => openPopoverFor(seg.name, seg.pillKey)}
-          dismissible={isDismissible}
-          onDismiss={
-            seg.field === 'elementTrigger'  ? () => setRules((prev) => ({ ...prev, elementTrigger: null }))
-            : seg.field === 'occurrences'   ? () => setRules((prev) => ({ ...prev, showFrequency: false }))
-            : seg.field === 'audience'      ? () => setRules((prev) => ({ ...prev, showAudience: false }))
-            : seg.field === 'flowTrigger'   ? () => setRules((prev) => ({ ...prev, flowTrigger: null }))
-            : seg.field === 'timeWindow'    ? () => setRules((prev) => ({ ...prev, timeWindow: null }))
-            : seg.field === 'urlConditions' ? () => setRules((prev) => ({ ...prev, urlConditions: null }))
-            : seg.field === 'elementCondition' ? () => setRules((prev) => ({ ...prev, elementCondition: null }))
-            : seg.field === 'weekDays'      ? () => setRules((prev) => ({ ...prev, weekDays: null }))
-            : undefined
-          }
-        >
-          {text}
-        </SummaryPill>
-      )
+  // ─── Submit pipeline ────────────────────────────────────────────────────
+  // Classify the prompt, briefly show the "Working…" inline loader, then
+  // either jump to a clarifier popover or apply directly. The behavior
+  // mirrors the legacy BottomSheet but stays embedded in the composer.
+  const handleSubmitComposer = () => {
+    const text = prompt.trim()
+    if (!text && !attachment) return
+
+    // Recording present → assume full context, apply Settings demo directly.
+    if (attachment && isSettingsScenario(text)) {
+      setStatus('processing')
+      setTimeout(() => {
+        const settingsEl = elementCandidates.find(e => e.name === 'Settings')!
+        onApplyRules(
+          {
+            dateRange: { start: 'May 5, 2026', end: 'May 5, 2026' },
+            timeWindow: { start: '4:00 PM', end: '8:00 PM' },
+            elementTrigger: settingsEl,
+            occurrences: 999,
+            showFrequency: true,
+            urls: [
+              { display: 'app.acme.com/settings', full: 'https://app.acme.com/settings' },
+              { display: 'app.acme.com/account/settings', full: 'https://app.acme.com/account/settings' },
+            ],
+          },
+          ['dateRange', 'timeWindow', 'elementTrigger', 'occurrences', 'urls'],
+        )
+        resetComposer()
+      }, 1500)
+      return
     }
+
+    // Typed Settings scenario → chained clarifier (time → element).
+    if (isSettingsScenario(text)) {
+      setStatus('processing')
+      setTimeout(() => {
+        setClarifier({
+          kind: 'settings-time',
+          pendingRules: { dateRange: { start: 'May 5, 2026', end: 'May 5, 2026' }, occurrences: 999, showFrequency: true },
+          pendingFields: ['dateRange', 'occurrences'],
+        })
+        setStatus('clarifier')
+      }, 1500)
+      return
+    }
+
+    setStatus('processing')
+    // An active section chip is the user's explicit intent — honor it over
+    // whatever the text classifier guesses. Without this bias, typing "change
+    // to Marketing" with the Who chip active routes to a date clarifier
+    // because the text doesn't mention an audience keyword.
+    const chipKind: FluidKind | null =
+      activeChip === 'who'   ? 'audience'
+      : activeChip === 'where' ? 'urlCondition'
+      : activeChip === 'when'  ? (/(\btime\b|\bam\b|\bpm\b|\bhours\b|noon|midnight)/i.test(text) ? 'timeWindow' : 'date')
+      : null
+    const kind = chipKind ?? classifyPrompt(text)
+    setTimeout(() => {
+      if (kind === 'date') {
+        setClarifier({ kind: 'date', dates: extractDates(text) })
+      } else if (kind === 'timeWindow') {
+        setClarifier({ kind: 'time', window: extractTimeWindow(text) })
+      } else if (kind === 'audience') {
+        setClarifier({ kind: 'audience', audience: extractAudience(text) })
+      } else if (kind === 'frequency') {
+        setClarifier({ kind: 'frequency', frequency: extractFrequency(text) })
+      } else if (kind === 'element') {
+        setClarifier({ kind: 'element', matches: findElementMatches(text) })
+      } else if (kind === 'compound') {
+        setClarifier({ kind: 'compound', step: 1, dates: extractDates(text), matches: findElementMatches(text) })
+      } else if (kind !== 'none') {
+        setClarifier({ kind: 'generic', fluidKind: kind, prompt: text })
+      } else {
+        setClarifier({ kind: 'date', dates: extractDates(text) })
+      }
+      setStatus('clarifier')
+    }, 1500)
+  }
+
+  const resetComposer = () => {
+    setPrompt('')
+    setAttachment(null)
+    setActiveChip(null)
+    setStatus('idle')
+    setClarifier(null)
+    setPickerOrigin(null)
+  }
+
+  const cancelClarifier = () => {
+    // Cancel returns to the editable composer with the prompt still present.
+    stopPicker()
+    setStatus('idle')
+    setClarifier(null)
+    setPickerOrigin(null)
+  }
+
+  // Apply handlers per clarifier kind.
+  const applyTime = (window: { start: string; end: string }) => {
+    onApplyRules({ timeWindow: window }, ['timeWindow'])
+    resetComposer()
+  }
+  const applyDate = (dates: { start: string; end: string }) => {
+    onApplyRules({ dateRange: dates }, ['dateRange'])
+    resetComposer()
+  }
+  const applyAudience = (audience: string) => {
+    onApplyRules({ audience, showAudience: true }, ['audience'])
+    resetComposer()
+  }
+  const applyFrequency = (count: number) => {
+    onApplyRules({ occurrences: count, showFrequency: true }, ['occurrences'])
+    resetComposer()
+  }
+  const applyElement = () => {
+    if (!selectedElement) return
+    onApplyRules({ elementTrigger: selectedElement }, ['elementTrigger'])
+    setSelectedElement(null)
+    resetComposer()
+  }
+  const applyCompound = (dates: { start: string; end: string }) => {
+    if (!selectedElement) return
+    onApplyRules({ dateRange: dates, elementTrigger: selectedElement }, ['dateRange', 'elementTrigger'])
+    setSelectedElement(null)
+    resetComposer()
+  }
+  const applyGeneric = (next: Partial<VRRules>, fields: string[]) => {
+    onApplyRules(next, fields)
+    resetComposer()
+  }
+
+  // Chained Settings scenario — confirm time window, then pick element.
+  const acceptSettingsTime = (window: { start: string; end: string }) => {
+    if (!clarifier || clarifier.kind !== 'settings-time') return
+    setClarifier({
+      kind: 'settings-element',
+      pendingRules: { ...clarifier.pendingRules, timeWindow: window },
+      pendingFields: [...clarifier.pendingFields, 'timeWindow'],
+    })
+  }
+  const acceptSettingsElement = () => {
+    if (!clarifier || clarifier.kind !== 'settings-element') return
+    if (!selectedElement) return
+    const settingsPages = dummyPageGroups.find(p => p.name === 'Settings')?.pages ?? []
+    const urls = settingsPages.map(p => ({ display: `app.acme.com/${p}`, full: `https://app.acme.com/${p}` }))
+    onApplyRules(
+      {
+        ...clarifier.pendingRules,
+        elementTrigger: selectedElement,
+        urls: urls.length ? urls : [{ display: 'app.acme.com/settings', full: 'https://app.acme.com/settings' }],
+      },
+      [...clarifier.pendingFields, 'elementTrigger', 'urls'],
+    )
+    setSelectedElement(null)
+    resetComposer()
   }
 
   return (
-    <div className="vr-fade-in" style={{ padding: '20px 16px 24px' }}>
-      {/* Single premium card with subtle blue tint */}
-      <div ref={cardRef} style={{
-        position: 'relative',
-        background: 'linear-gradient(180deg, #FBFCFE 0%, #F1F5FB 100%)',
-        border: '1px solid rgba(37, 99, 235, 0.10)',
-        borderRadius: 18,
-        padding: '24px 22px 18px',
-        boxShadow: '0 1px 0 rgba(255, 255, 255, 0.7) inset, 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(37, 99, 235, 0.06), 0 24px 48px rgba(15, 23, 42, 0.04)',
-        overflow: 'visible',
-      }}>
-        {/* Decorative subtle radial glow at top right */}
-        <div style={{
-          position: 'absolute', top: 0, right: 0, width: '70%', height: '50%',
-          background: 'radial-gradient(80% 100% at 100% 0%, rgba(37, 99, 235, 0.06) 0%, transparent 70%)',
-          borderRadius: '0 18px 0 0',
-          pointerEvents: 'none',
-        }} />
-
-        <div style={{
+    <div className="vr-fade-in" style={{ padding: '16px 16px 18px', display: 'flex', flexDirection: 'column', gap: 14, minHeight: '100%' }}>
+      {/* Toned-down section card with clickable pills inside each section. */}
+      <div
+        ref={cardRef}
+        style={{
           position: 'relative',
-          fontSize: 14, lineHeight: 1.85, color: '#18181B',
-          fontWeight: 400, letterSpacing: '-0.011em',
-          minHeight: 80,
-        }}>
-          {els}
-          {!hasFinishedTyping && <span className="typing-cursor">|</span>}
-        </div>
+          background: '#FFFFFF',
+          border: '1px solid #ECECF3',
+          borderRadius: 12,
+          padding: 4,
+          boxShadow: '0 1px 0 rgba(255, 255, 255, 0.7) inset',
+          overflow: 'visible',
+        }}
+      >
+        {isLoadingRules ? (
+          <LoadingSectionCard messages={loaderMessages} />
+        ) : (
+          <>
+            <SectionBlock
+              label="When"
+              segments={whenSegs}
+              highlighted={sectionHighlighted('when')}
+              onEdit={() => handleEditSection('when')}
+              revealCount={Math.min(totals.when, typedCount)}
+              sectionTotal={totals.when}
+              done={hasFinishedTyping}
+              openPill={openPill}
+              highlightedFields={highlightedFields}
+              onPillClick={openPopoverFor}
+              pillRefs={pillRefs}
+              setRules={setRules}
+              emptyHelper={{ prompt: 'When should this appear?', cta: 'Add date range' }}
+              onAddBack={() => setRules((p) => ({ ...p, showDateRange: true }))}
+            />
+            <div style={{ height: 1, background: '#F2F2F8', margin: '0 14px' }} />
+            <SectionBlock
+              label="Where"
+              segments={whereSegs}
+              highlighted={sectionHighlighted('where')}
+              onEdit={() => handleEditSection('where')}
+              revealCount={Math.min(totals.where, Math.max(0, typedCount - totals.when))}
+              sectionTotal={totals.where}
+              done={hasFinishedTyping}
+              openPill={openPill}
+              highlightedFields={highlightedFields}
+              onPillClick={openPopoverFor}
+              pillRefs={pillRefs}
+              setRules={setRules}
+              emptyHelper={{ prompt: 'Where should this appear?', cta: 'Add pages' }}
+              onAddBack={() => setRules((p) => ({ ...p, showUrls: true }))}
+            />
+            <div style={{ height: 1, background: '#F2F2F8', margin: '0 14px' }} />
+            <SectionBlock
+              label="Who"
+              segments={whoSegs}
+              highlighted={sectionHighlighted('who')}
+              onEdit={() => handleEditSection('who')}
+              revealCount={Math.min(totals.who, Math.max(0, typedCount - totals.when - totals.where))}
+              sectionTotal={totals.who}
+              done={hasFinishedTyping}
+              openPill={openPill}
+              highlightedFields={highlightedFields}
+              onPillClick={openPopoverFor}
+              pillRefs={pillRefs}
+              setRules={setRules}
+              emptyHelper={{ prompt: 'Who should see this?', cta: 'Add audience' }}
+              onAddBack={() => setRules((p) => ({ ...p, showAudience: true }))}
+            />
+          </>
+        )}
 
-        {hasFinishedTyping && (
-          <div className="summary-fade-in-2" style={{
-            marginTop: 14,
-            paddingTop: 14,
-            borderTop: '1px solid rgba(37, 99, 235, 0.10)',
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          }}>
+        {/* "AI generated" + "Why this rule" footer disappears the moment the
+            user makes a manual edit — the rule is no longer pure AI output. */}
+        {hasFinishedTyping && !isLoadingRules && !hasMadeFirstEdit && (
+          <div
+            className="summary-fade-in-2"
+            style={{
+              marginTop: 2,
+              padding: '10px 14px',
+              borderTop: '1px solid #F2F2F8',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            }}
+          >
             <button
               onClick={onOpenReasoning}
               className="card-foot-btn"
               style={{
                 display: 'flex', alignItems: 'center', gap: 5,
                 background: 'none', border: 'none', cursor: 'pointer',
-                color: '#525252', fontSize: 11.5, fontWeight: 500,
+                color: '#6B697B', fontSize: 11, fontWeight: 500,
                 padding: '2px 0', letterSpacing: '-0.005em',
                 transition: 'color 150ms',
               }}
             >
-              <Lightbulb size={11} strokeWidth={2.2} />
+              <Lightbulb size={10.5} strokeWidth={2.2} />
               Why this rule
             </button>
-            <button
-              onClick={onOpenReasoning}
-              className="card-foot-btn"
-              style={{
-                display: 'flex', alignItems: 'center', gap: 5,
-                background: 'none', border: 'none', cursor: 'pointer',
-                color: '#525252', fontSize: 11.5, fontWeight: 500,
-                padding: '2px 0', letterSpacing: '-0.005em',
-                transition: 'color 150ms',
-              }}
-            >
-              <Sparkles size={11} strokeWidth={2.2} className="ai-sparkle-twinkle" />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#6B697B', fontSize: 10.5, fontWeight: 500, letterSpacing: '-0.005em' }}>
+              <Sparkles size={10.5} strokeWidth={2.2} className="ai-sparkle-twinkle" color="#525066" />
               AI generated
-            </button>
+            </div>
           </div>
         )}
 
-        {/* Popover */}
+        {/* Per-pill surgical-edit popover */}
         {openPill && popoverPos && (
           <div
             ref={popoverRef}
@@ -1413,9 +1761,9 @@ function SummaryView({
               left: popoverPos.left,
               width: 270,
               background: '#FFFFFF',
-              border: `1px solid ${C.border}`,
+              border: '1px solid #ECECF3',
               borderRadius: 12,
-              boxShadow: C.popoverShadow,
+              boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(15, 23, 42, 0.08), 0 24px 48px rgba(15, 23, 42, 0.06)',
               padding: 14,
               zIndex: 50,
             }}
@@ -1425,39 +1773,703 @@ function SummaryView({
         )}
       </div>
 
-      {hasFinishedTyping && (
-        <button
-          onClick={onEdit}
-          className="ai-edit-btn-outline summary-fade-in-1"
-          style={{
-            marginTop: 14, width: '100%',
-            background: '#FFFFFF',
-            color: '#18181B',
-            border: '1px solid rgba(15, 23, 42, 0.08)',
-            borderRadius: 11, padding: '11px 16px',
-            fontSize: 13, fontWeight: 600, cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-            letterSpacing: '-0.008em',
-            boxShadow: '0 1px 0 rgba(255, 255, 255, 0.6) inset, 0 1px 2px rgba(15, 23, 42, 0.04), 0 2px 6px rgba(15, 23, 42, 0.03)',
-            transition: 'background 160ms, border-color 160ms, color 160ms, box-shadow 160ms, transform 160ms',
-          }}
-        >
-          <Wand2 size={14} strokeWidth={2.4} />
-          Edit with AI
-        </button>
-      )}
+      {/* Inline composer — sole entry point for AI edits. */}
+      <div style={{ marginTop: 'auto', position: 'relative' }}>
+        {/* Clarifier popover above the composer when status is 'clarifier'. */}
+        {status === 'clarifier' && clarifier && (
+          <div
+            className="clarifier-popover-in"
+            style={{
+              marginBottom: 10,
+              background: '#FFFFFF',
+              border: '1px solid #ECECF3',
+              borderRadius: 12,
+              boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04), 0 6px 16px rgba(15, 23, 42, 0.06), 0 20px 40px rgba(15, 23, 42, 0.04)',
+              padding: 14,
+            }}
+          >
+            {clarifier.kind === 'date' && (
+              <DateRangeFluid initial={clarifier.dates} onCancel={cancelClarifier} onApply={applyDate} />
+            )}
+            {clarifier.kind === 'time' && (
+              <ClarifierTimeWindow
+                initial={clarifier.window}
+                onCancel={cancelClarifier}
+                onAccept={applyTime}
+              />
+            )}
+            {clarifier.kind === 'audience' && (
+              <AudienceFluid initial={clarifier.audience} onCancel={cancelClarifier} onApply={applyAudience} />
+            )}
+            {clarifier.kind === 'frequency' && (
+              <FrequencyFluid initial={clarifier.frequency} onCancel={cancelClarifier} onApply={applyFrequency} />
+            )}
+            {clarifier.kind === 'element' && (
+              <ElementPickerFluid
+                matches={clarifier.matches}
+                pickerActive={pickerActive}
+                selectedElement={selectedElement}
+                onCancel={cancelClarifier}
+                onApply={applyElement}
+                onPick={() => { setPickerOrigin('clarifier-element'); startPicker() }}
+                onSelectMatch={(m) => setSelectedElement(m)}
+                onPreviewMatch={setPreviewElement}
+              />
+            )}
+            {clarifier.kind === 'compound' && (
+              <CompoundFluid
+                step={clarifier.step}
+                dates={clarifier.dates}
+                onDatesChange={(d) => clarifier.kind === 'compound' && setClarifier({ ...clarifier, dates: d })}
+                onNext={() => clarifier.kind === 'compound' && setClarifier({ ...clarifier, step: 2 })}
+                onBack={() => { stopPicker(); clarifier.kind === 'compound' && setClarifier({ ...clarifier, step: 1 }) }}
+                pickerActive={pickerActive}
+                selectedElement={selectedElement}
+                onPick={() => { setPickerOrigin('clarifier-compound'); startPicker() }}
+                onApplyAll={() => clarifier.kind === 'compound' && applyCompound(clarifier.dates)}
+                matches={clarifier.matches}
+                onSelectMatch={(m) => setSelectedElement(m)}
+                onPreviewMatch={setPreviewElement}
+              />
+            )}
+            {clarifier.kind === 'settings-time' && (
+              <ClarifierTimeWindow
+                initial={{ start: '4:00 PM', end: '8:00 PM' }}
+                onCancel={cancelClarifier}
+                onAccept={acceptSettingsTime}
+                caption={<>I caught <strong style={{ color: '#1F1F32', fontWeight: 600 }}>May 5</strong> and <strong style={{ color: '#1F1F32', fontWeight: 600 }}>4 to 8 PM</strong>, confirm the times below and we&apos;ll move on.</>}
+                applyLabel="Looks right, next"
+              />
+            )}
+            {clarifier.kind === 'settings-element' && (
+              <ElementPickerFluid
+                matches={findElementMatches('settings')}
+                pickerActive={pickerActive}
+                selectedElement={selectedElement}
+                onCancel={cancelClarifier}
+                onApply={acceptSettingsElement}
+                onPick={() => { setPickerOrigin('clarifier-element'); startPicker() }}
+                onSelectMatch={(m) => setSelectedElement(m)}
+                onPreviewMatch={setPreviewElement}
+              />
+            )}
+            {clarifier.kind === 'generic' && (
+              <GenericScenarioFluid
+                kind={clarifier.fluidKind}
+                prompt={clarifier.prompt}
+                onCancel={cancelClarifier}
+                onApply={applyGeneric}
+              />
+            )}
+          </div>
+        )}
 
-      <div style={{ display: 'flex', justifyContent: 'center', marginTop: 14 }}>
-        <button onClick={onSetManually} style={{
-          background: 'none', border: 'none', cursor: 'pointer',
-          color: '#9CA3AF', fontSize: 12, fontWeight: 500,
-          padding: '4px 8px',
-          letterSpacing: '-0.005em',
-        }}>
-          Set up manually →
-        </button>
+        {/* Record-screen entry point lives outside the composer because
+            screen recording is a powerful first-class input mode that deserves
+            its own discoverability moment — Vara's pick. Ghost button so it
+            doesn't compete with Send for visual weight. */}
+        {status === 'idle' && !attachment && (
+          <RecordScreenButton onClick={onStartRecording} />
+        )}
+
+        <InlineComposer
+          textareaRef={textareaRef}
+          prompt={prompt}
+          setPrompt={setPrompt}
+          activeChip={activeChip}
+          clearChip={() => setActiveChip(null)}
+          attachment={attachment}
+          clearAttachment={() => setAttachment(null)}
+          status={status}
+          onSubmit={handleSubmitComposer}
+          onStartRecording={onStartRecording}
+        />
+
+        {/* "Try one" suggestion chips — training wheels that disappear once
+            the user has applied their first edit. Solid neutral pills, no
+            border, per the ChatGPT / Mistral empty-state pattern. */}
+        {status === 'idle' && !hasMadeFirstEdit && (
+          <div style={{ marginTop: 10, display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+            {composerSuggestionChips.map(c => (
+              <button
+                key={c.label}
+                onClick={() => { setPrompt(c.prompt); textareaRef.current?.focus() }}
+                style={{
+                  background: '#F4F4F5',
+                  border: 'none',
+                  borderRadius: 999,
+                  padding: '5px 11px',
+                  fontSize: 11.5, color: '#525066', cursor: 'pointer',
+                  fontWeight: 500, letterSpacing: '-0.005em',
+                  transition: 'background 150ms, color 150ms',
+                  whiteSpace: 'nowrap',
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = '#ECECF3'; e.currentTarget.style.color = '#1F1F32' }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = '#F4F4F5'; e.currentTarget.style.color = '#525066' }}
+              >
+                {c.label}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </div>
+  )
+}
+
+// Section block — a single When/Where/Who row inside the toned-down card.
+// Renders an inline segment list so values become clickable pills (the legacy
+// surgical-edit behavior) while the connective text remains plain.
+function SectionBlock({
+  label, segments, highlighted, onEdit, revealCount, sectionTotal, done,
+  openPill, highlightedFields, onPillClick, pillRefs, setRules,
+  emptyHelper, onAddBack,
+}: {
+  label: string
+  segments: Segment[]
+  highlighted: boolean
+  onEdit: () => void
+  revealCount: number
+  sectionTotal: number
+  done: boolean
+  openPill: PillName | null
+  highlightedFields: Set<string>
+  onPillClick: (name: PillName, pillKey: string) => void
+  pillRefs: React.MutableRefObject<Record<string, HTMLButtonElement | null>>
+  setRules: React.Dispatch<React.SetStateAction<VRRules>>
+  emptyHelper?: { prompt: string; cta: string }
+  onAddBack?: () => void
+}) {
+  const [hovered, setHovered] = useState(false)
+  const showCursor = !done && revealCount < sectionTotal
+
+  // Slice the segment list according to revealCount so the typing animation
+  // unfolds character-by-character, treating pill text like normal text.
+  let remaining = done ? Number.MAX_SAFE_INTEGER : revealCount
+  const els: React.ReactNode[] = []
+  let key = 0
+  for (const seg of segments) {
+    const visible = Math.min(seg.value.length, remaining)
+    if (visible <= 0 && !done) break
+    if (visible <= 0) continue
+    remaining -= visible
+    const text = seg.value.slice(0, visible)
+    if (seg.kind === 'text') {
+      els.push(<span key={key++}>{text}</span>)
+    } else {
+      const isDismissible = !!seg.dismissible && done
+      els.push(
+        <SummaryPill
+          key={key++}
+          name={seg.name}
+          pillKey={seg.pillKey}
+          isActive={openPill === seg.name}
+          isHighlighted={highlightedFields.has(seg.field)}
+          refStore={pillRefs}
+          onClick={() => onPillClick(seg.name, seg.pillKey)}
+          dismissible={isDismissible}
+          onDismiss={
+            seg.field === 'dateRange'        ? () => setRules((prev) => ({ ...prev, showDateRange: false }))
+            : seg.field === 'urls'           ? () => setRules((prev) => ({ ...prev, showUrls: false }))
+            : seg.field === 'elementTrigger' ? () => setRules((prev) => ({ ...prev, elementTrigger: null }))
+            : seg.field === 'occurrences'    ? () => setRules((prev) => ({ ...prev, showFrequency: false }))
+            : seg.field === 'audience'       ? () => setRules((prev) => ({ ...prev, showAudience: false }))
+            : seg.field === 'flowTrigger'    ? () => setRules((prev) => ({ ...prev, flowTrigger: null }))
+            : seg.field === 'timeWindow'     ? () => setRules((prev) => ({ ...prev, timeWindow: null }))
+            : seg.field === 'urlConditions'  ? () => setRules((prev) => ({ ...prev, urlConditions: null }))
+            : seg.field === 'elementCondition' ? () => setRules((prev) => ({ ...prev, elementCondition: null }))
+            : seg.field === 'weekDays'       ? () => setRules((prev) => ({ ...prev, weekDays: null }))
+            : seg.field === 'cohort'         ? () => setRules((prev) => ({ ...prev, cohort: null }))
+            : undefined
+          }
+        >
+          {text}
+        </SummaryPill>,
+      )
+    }
+  }
+
+  return (
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        padding: '16px 16px 18px',
+        borderRadius: 9,
+        background: highlighted ? '#F6F6F9' : 'transparent',
+        transition: 'background 220ms',
+      }}
+    >
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        marginBottom: 8,
+      }}>
+        <span style={{
+          fontSize: 12.5, fontWeight: 600,
+          color: '#1F1F32',
+          letterSpacing: '-0.005em',
+        }}>
+          {label}
+        </span>
+        {done && (
+          <button
+            onClick={onEdit}
+            title={`Refine ${label}`}
+            style={{
+              width: 26, height: 26, border: 'none', borderRadius: 6,
+              background: hovered ? '#F6F6F9' : 'transparent',
+              color: hovered ? '#1F1F32' : '#8C899F',
+              cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              transition: 'background 150ms, color 150ms, opacity 150ms',
+              opacity: hovered ? 1 : 0.55,
+            }}
+          >
+            <Pencil size={13} strokeWidth={2.2} />
+          </button>
+        )}
+      </div>
+      <div style={{
+        fontSize: 13, lineHeight: 2,
+        color: '#1F1F32', fontWeight: 400,
+        letterSpacing: '-0.005em',
+        minHeight: 20,
+      }}>
+        {segments.length === 0 && emptyHelper && onAddBack ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <span style={{ color: '#8C899F', fontSize: 12.5 }}>
+              {emptyHelper.prompt}
+            </span>
+            <button
+              onClick={onAddBack}
+              style={{
+                background: '#F4F4F5',
+                border: '1px solid #ECECF3',
+                borderRadius: 999,
+                padding: '3px 10px',
+                fontSize: 11.5, fontWeight: 600,
+                color: '#1F1F32',
+                cursor: 'pointer',
+                display: 'inline-flex', alignItems: 'center', gap: 4,
+                letterSpacing: '-0.005em',
+                transition: 'background 150ms, border-color 150ms',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = '#ECECF3'; e.currentTarget.style.borderColor = '#DFDDE7' }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = '#F4F4F5'; e.currentTarget.style.borderColor = '#ECECF3' }}
+            >
+              <Plus size={11} strokeWidth={2.4} />
+              {emptyHelper.cta}
+            </button>
+          </div>
+        ) : (
+          <>
+            {els}
+            {showCursor && <span className="typing-cursor">|</span>}
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// Loading state for the section card. Stage-text on top (cycles through reading
+// → identifying → drafting) and a skeleton mock of the When/Where/Who layout
+// underneath, so the transition into the real summary feels like the same
+// surface filling in rather than a screen swap.
+function LoadingSectionCard({ messages }: { messages: string[] }) {
+  const [idx, setIdx] = useState(0)
+  useEffect(() => {
+    if (idx >= messages.length - 1) return
+    const t = setTimeout(() => setIdx((i) => i + 1), 1100)
+    return () => clearTimeout(t)
+  }, [idx, messages.length])
+
+  return (
+    <div style={{ padding: '14px 14px 16px' }}>
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 8,
+        marginBottom: 14,
+      }}>
+        <span style={{
+          width: 5, height: 5, borderRadius: '50%',
+          background: '#8C899F',
+          animation: 'composerLoaderPulse 1.8s ease-in-out infinite',
+        }} />
+        <span className="composer-loader-text" style={{ fontSize: 12.5, fontWeight: 500, letterSpacing: '-0.005em' }}>
+          {messages[idx]}
+        </span>
+      </div>
+
+      {(['When', 'Where', 'Who'] as const).map((label, sectionIdx) => (
+        <div key={label}>
+          <div style={{ padding: '4px 0 16px' }}>
+            <div style={{
+              fontSize: 12.5, fontWeight: 600,
+              color: '#1F1F32',
+              letterSpacing: '-0.005em',
+              marginBottom: 10,
+            }}>
+              {label}
+            </div>
+            <SkeletonLine width="92%" height={11} radius={4} style={{ marginBottom: 6 }} />
+            <SkeletonLine width="68%" height={11} radius={4} />
+          </div>
+          {sectionIdx < 2 && <div style={{ height: 1, background: '#F2F2F8', margin: '0 -14px 14px' }} />}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// Inline composer — mirrors the empty-state composer pattern from the
+// process-discovery dashboard. Field-reference chip + video attachment chip
+// float above the textarea; controls (mic, screen-share, send) sit in a row
+// underneath like Google AI Studio's bottom toolbar. While processing, the
+// textarea swaps for a compact inline loading state.
+function InlineComposer({
+  textareaRef, prompt, setPrompt, activeChip, clearChip,
+  attachment, clearAttachment,
+  status, onSubmit, onStartRecording,
+}: {
+  textareaRef: React.RefObject<HTMLTextAreaElement | null>
+  prompt: string
+  setPrompt: (v: string) => void
+  activeChip: SectionKey | null
+  clearChip: () => void
+  attachment: { name: string; duration: string } | null
+  clearAttachment: () => void
+  status: ComposerStatus
+  onSubmit: () => void
+  onStartRecording: () => void
+}) {
+  const [focused, setFocused] = useState(false)
+  const isBusy = status !== 'idle'
+  const canSubmit = !isBusy && (prompt.trim().length > 0 || attachment !== null || activeChip !== null)
+
+  // Inline voice capture — separate from screen recording. The mic stays in the
+  // composer's icon row and transforms in place rather than collapsing the whole
+  // studio. Stop button reveals a mocked transcript appended to the textarea.
+  const [isListening, setIsListening] = useState(false)
+  const [micElapsed, setMicElapsed] = useState(0)
+  useEffect(() => {
+    if (!isListening) return
+    setMicElapsed(0)
+    const id = setInterval(() => setMicElapsed((s) => s + 1), 1000)
+    return () => clearInterval(id)
+  }, [isListening])
+
+  const startListening = () => setIsListening(true)
+  const stopListening = () => {
+    if (!isListening) return
+    const transcript = 'Show this only on the Reports page for users in the Sales cohort.'
+    setPrompt(prompt ? `${prompt.trimEnd()} ${transcript}` : transcript)
+    setIsListening(false)
+  }
+
+  // Auto-grow the textarea with content up to ~6 rows, then scroll internally.
+  // Re-runs whenever the prompt changes (typed input, recording transcript
+  // append, suggestion-chip prefill) so the surface always fits its content.
+  useEffect(() => {
+    const ta = textareaRef.current
+    if (!ta) return
+    ta.style.height = 'auto'
+    const maxHeight = 140
+    ta.style.height = `${Math.min(ta.scrollHeight, maxHeight)}px`
+    ta.style.overflowY = ta.scrollHeight > maxHeight ? 'auto' : 'hidden'
+  }, [prompt, textareaRef])
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault()
+      if (canSubmit) onSubmit()
+    }
+    if (e.key === 'Backspace' && prompt.length === 0 && activeChip) {
+      e.preventDefault()
+      clearChip()
+    }
+  }
+
+  return (
+    <div
+      style={{
+        background: '#FFFFFF',
+        border: `1px solid ${focused ? '#525066' : '#ECECF3'}`,
+        borderRadius: 14,
+        padding: '12px 12px 10px',
+        boxShadow: '0 1px 2px rgba(15, 23, 42, 0.03)',
+        transition: 'border-color 160ms',
+      }}
+    >
+      {/* Chip row — field-reference chip + attached recording chip share the
+          same horizontal strip above the textarea. */}
+      {(activeChip || attachment) && (
+        <div style={{ marginBottom: 8, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+          {activeChip && (
+            <span
+              className="composer-chip-in"
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 5,
+                padding: '3px 6px 3px 8px',
+                background: '#F4F4F5',
+                border: '1px solid #ECECF3',
+                borderRadius: 6,
+                fontSize: 11.5, fontWeight: 600,
+                color: '#1F1F32',
+                letterSpacing: '-0.005em',
+              }}
+            >
+              <Sparkles size={10} strokeWidth={2.2} color="#8C899F" />
+              <span style={{ textTransform: 'capitalize' }}>{activeChip}</span>
+              <button
+                onClick={clearChip}
+                title="Remove reference"
+                style={{
+                  width: 16, height: 16, border: 'none', borderRadius: 4,
+                  background: 'transparent', color: '#525066', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  transition: 'background 150ms, color 150ms',
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = '#ECECF3'; e.currentTarget.style.color = '#1F1F32' }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#525066' }}
+              >
+                <X size={10} strokeWidth={2.4} />
+              </button>
+            </span>
+          )}
+          {attachment && (
+            <span
+              className="composer-chip-in"
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                padding: '3px 6px 3px 8px',
+                background: '#F6F6F9',
+                border: '1px solid #ECECF3',
+                borderRadius: 6,
+                fontSize: 11.5, fontWeight: 600,
+                color: '#1F1F32',
+                letterSpacing: '-0.005em',
+                maxWidth: 240,
+              }}
+            >
+              <FileVideo size={11} strokeWidth={2.2} color="#525066" />
+              <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {attachment.name}
+              </span>
+              <span style={{ color: '#8C899F', fontWeight: 500 }}>{attachment.duration}</span>
+              <button
+                onClick={clearAttachment}
+                title="Remove recording"
+                style={{
+                  width: 16, height: 16, border: 'none', borderRadius: 4,
+                  background: 'transparent', color: '#525066', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  transition: 'background 150ms, color 150ms',
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = '#ECECF3'; e.currentTarget.style.color = '#1F1F32' }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#525066' }}
+              >
+                <X size={10} strokeWidth={2.4} />
+              </button>
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Textarea OR processing strip. While processing we replace the input
+          surface with a compact shimmer + label so the composer feels like it
+          owns the loading state — no drawer required. */}
+      {status === 'processing' ? (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 9,
+          padding: '8px 4px 6px',
+          fontSize: 12.5, color: '#525066',
+          letterSpacing: '-0.005em',
+        }}>
+          <span style={{
+            width: 5, height: 5, borderRadius: '50%',
+            background: '#8C899F',
+            animation: 'composerLoaderPulse 1.8s ease-in-out infinite',
+          }} />
+          <span className="composer-loader-text">Working on it…</span>
+        </div>
+      ) : (
+        <textarea
+          ref={textareaRef}
+          value={prompt}
+          onChange={(e) => setPrompt(e.target.value)}
+          onKeyDown={handleKeyDown}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          placeholder={activeChip
+            ? `Describe the change to ${activeChip}…`
+            : 'Start typing a prompt'}
+          rows={2}
+          disabled={isBusy}
+          style={{
+            width: '100%', border: 'none', outline: 'none', resize: 'none',
+            fontSize: 13, color: '#1F1F32',
+            fontFamily: "'Inter', -apple-system, sans-serif",
+            lineHeight: 1.5,
+            background: 'transparent',
+            padding: 0,
+            letterSpacing: '-0.005em',
+            opacity: isBusy ? 0.6 : 1,
+          }}
+        />
+      )}
+
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        marginTop: 6,
+      }}>
+        <span style={{ fontSize: 11, color: '#9B98A8', letterSpacing: '-0.005em' }}>
+          ⌘↵ to submit
+        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+          {isListening ? (
+            <MicListeningPill elapsed={micElapsed} onStop={stopListening} />
+          ) : (
+            <ComposerIconButton
+              title="Voice input — dictate your prompt"
+              onClick={startListening}
+              disabled={isBusy}
+            >
+              <Mic size={13} strokeWidth={2.2} />
+            </ComposerIconButton>
+          )}
+          <button
+            onClick={onSubmit}
+            disabled={!canSubmit}
+            title="Send"
+            style={{
+              width: 28, height: 28,
+              background: canSubmit ? '#1F1F32' : '#ECECF3',
+              color: canSubmit ? '#FFFFFF' : '#9B98A8',
+              border: 'none', borderRadius: 7,
+              cursor: canSubmit ? 'pointer' : 'not-allowed',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              transition: 'background 150ms, color 150ms',
+            }}
+          >
+            <ArrowUp size={13} strokeWidth={2.4} />
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Full-width neutral pill. Orange-tinted icon is the only color accent —
+// signals "this is a different input mode" without shouting. The structural
+// border stays neutral so it doesn't read as an alert.
+function RecordScreenButton({ onClick }: { onClick: () => void }) {
+  const [hover, setHover] = useState(false)
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        width: '100%',
+        marginBottom: 8,
+        background: hover ? '#F6F6F9' : '#FFFFFF',
+        border: `1px solid ${hover ? '#DFDDE7' : '#ECECF3'}`,
+        borderRadius: 10,
+        padding: '8px 12px',
+        cursor: 'pointer',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
+        fontSize: 12.5, fontWeight: 500,
+        color: '#1F1F32',
+        letterSpacing: '-0.005em',
+        transition: 'background 150ms, border-color 150ms',
+      }}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+    >
+      <MonitorPlay size={13} strokeWidth={2.2} color={C.accent} />
+      Record screen
+    </button>
+  )
+}
+
+// Compact pill that replaces the mic icon while voice input is active.
+// Three animated bars + elapsed timer + stop. Stays inline; never collapses
+// the studio (that's the screen-recording flow).
+function MicListeningPill({ elapsed, onStop }: { elapsed: number; onStop: () => void }) {
+  const minutes = Math.floor(elapsed / 60)
+  const seconds = elapsed % 60
+  const timer = `${minutes}:${seconds.toString().padStart(2, '0')}`
+  return (
+    <div
+      style={{
+        display: 'inline-flex', alignItems: 'center', gap: 8,
+        height: 28, padding: '0 4px 0 10px',
+        background: C.accentSoft,
+        border: `1px solid rgba(212, 87, 42, 0.32)`,
+        borderRadius: 999,
+        color: C.accentDark,
+        fontSize: 11.5, fontWeight: 600,
+        letterSpacing: '-0.005em',
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        {[0, 0.18, 0.36].map((delay, i) => (
+          <span
+            key={i}
+            style={{
+              width: 2, height: 10,
+              background: C.accent,
+              borderRadius: 1,
+              transformOrigin: 'center',
+              animation: `micWaveBar 0.9s ease-in-out ${delay}s infinite`,
+            }}
+          />
+        ))}
+      </div>
+      <span style={{ fontFamily: 'monospace', fontSize: 11, color: C.accentDark }}>{timer}</span>
+      <button
+        onClick={onStop}
+        title="Stop recording"
+        style={{
+          width: 22, height: 22, border: 'none', borderRadius: '50%',
+          background: C.accent,
+          color: '#FFFFFF',
+          cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}
+      >
+        <Square size={9} fill="#FFFFFF" strokeWidth={0} />
+      </button>
+    </div>
+  )
+}
+
+function ComposerIconButton({
+  children, title, onClick, disabled,
+}: {
+  children: React.ReactNode
+  title: string
+  onClick: () => void
+  disabled?: boolean
+}) {
+  const [hover, setHover] = useState(false)
+  return (
+    <button
+      onClick={onClick}
+      title={title}
+      disabled={disabled}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{
+        width: 28, height: 28, border: '1px solid #ECECF3',
+        borderRadius: 7,
+        background: disabled ? '#FAFAFC' : hover ? '#F6F6F9' : '#FFFFFF',
+        color: disabled ? '#B4B2A9' : hover ? '#1F1F32' : '#525066',
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        transition: 'background 150ms, color 150ms, border-color 150ms',
+      }}
+    >
+      {children}
+    </button>
   )
 }
 
@@ -1525,49 +2537,136 @@ function buildLoaderMessages(template: PopupTemplate | null): string[] {
   ]
 }
 
+// Skeleton placeholder for the visibility-rules tab. Mirrors the final 3-section
+// card layout so the transition into the real content feels like the same
+// surface unfolding, not a screen swap. Gemini / ChatGPT / Replit all favor
+// inline placeholders over centered spinners for this kind of "page exists,
+// content is loading" moment.
+function VRSkeleton() {
+  return (
+    <div className="vr-fade-in" style={{ padding: '16px 16px 18px', display: 'flex', flexDirection: 'column', gap: 14, minHeight: '100%' }}>
+      <div
+        style={{
+          background: '#FFFFFF',
+          border: '1px solid #ECECF3',
+          borderRadius: 12,
+          padding: 4,
+          boxShadow: '0 1px 0 rgba(255, 255, 255, 0.7) inset',
+        }}
+      >
+        {(['When', 'Where', 'Who'] as const).map((label, idx) => (
+          <div key={label}>
+            <div style={{ padding: '12px 14px 14px' }}>
+              <SkeletonLine width={36} height={9} radius={3} style={{ marginBottom: 8 }} />
+              <SkeletonLine width="92%" height={11} radius={4} style={{ marginBottom: 6 }} />
+              <SkeletonLine width="68%" height={11} radius={4} />
+            </div>
+            {idx < 2 && <div style={{ height: 1, background: '#F2F2F8', margin: '0 14px' }} />}
+          </div>
+        ))}
+      </div>
+      <div style={{ marginTop: 'auto' }}>
+        <div
+          style={{
+            background: '#FFFFFF',
+            border: '1px solid #ECECF3',
+            borderRadius: 14,
+            padding: '12px 12px 10px',
+            boxShadow: '0 1px 2px rgba(15, 23, 42, 0.03)',
+          }}
+        >
+          <SkeletonLine width="60%" height={11} radius={4} style={{ marginBottom: 14 }} />
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <SkeletonLine width={56} height={9} radius={3} />
+            <div style={{ display: 'flex', gap: 5 }}>
+              <SkeletonLine width={28} height={28} radius={7} />
+              <SkeletonLine width={28} height={28} radius={7} />
+              <SkeletonLine width={28} height={28} radius={7} />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function SkeletonLine({
+  width, height, radius, style,
+}: {
+  width: number | string
+  height: number
+  radius: number
+  style?: React.CSSProperties
+}) {
+  return (
+    <div
+      className="vr-skeleton-shimmer"
+      style={{
+        width,
+        height,
+        borderRadius: radius,
+        background: 'linear-gradient(90deg, #F2F2F8 0%, #ECECF3 50%, #F2F2F8 100%)',
+        backgroundSize: '200% 100%',
+        ...(style || {}),
+      }}
+    />
+  )
+}
+
 function VisibilityRulesTab({
-  template, rules, setRules, highlightedFields, onCustomize,
-  startPicker, selectedElement, setSelectedElement,
+  template, rules, setRules, highlightedFields,
+  startPicker, stopPicker, selectedElement, setSelectedElement, setPreviewElement,
+  pickerActive,
   onOpenReasoning,
   phase, setPhase,
   hasTypedSummary, setHasTypedSummary,
+  onStartRecording, recordingPayload, consumeRecordingPayload,
+  onApplyRules,
 }: {
   template: PopupTemplate | null
   rules: VRRules
   setRules: React.Dispatch<React.SetStateAction<VRRules>>
   highlightedFields: Set<string>
-  onCustomize: () => void
   startPicker: () => void
+  stopPicker: () => void
   selectedElement: ElementInfo | null
   setSelectedElement: (el: ElementInfo | null) => void
+  setPreviewElement: (el: ElementInfo | null) => void
+  pickerActive: boolean
   onOpenReasoning: () => void
   phase: 'loading' | 'summary' | 'manual'
   setPhase: React.Dispatch<React.SetStateAction<'loading' | 'summary' | 'manual'>>
   hasTypedSummary: boolean
   setHasTypedSummary: (v: boolean) => void
+  onStartRecording: () => void
+  recordingPayload: RecordingPayload | null
+  consumeRecordingPayload: () => void
+  onApplyRules: (next: Partial<VRRules>, fields: string[]) => void
 }) {
-  if (phase === 'loading') {
-    return <AILoader messages={buildLoaderMessages(template)} centered />
-  }
-
   if (phase === 'manual') {
     return <ManualVR onBack={() => setPhase('summary')} />
   }
 
   return (
     <SummaryView
-      template={template}
+      isLoadingRules={phase === 'loading'}
+      loaderMessages={buildLoaderMessages(template)}
       rules={rules}
       setRules={setRules}
       highlightedFields={highlightedFields}
-      onEdit={onCustomize}
-      onSetManually={() => setPhase('manual')}
       startPicker={startPicker}
+      stopPicker={stopPicker}
       selectedElement={selectedElement}
       setSelectedElement={setSelectedElement}
+      setPreviewElement={setPreviewElement}
+      pickerActive={pickerActive}
       onOpenReasoning={onOpenReasoning}
       hasTypedSummary={hasTypedSummary}
       onTypingDone={() => setHasTypedSummary(true)}
+      recordingPayload={recordingPayload}
+      consumeRecordingPayload={consumeRecordingPayload}
+      onApplyRules={onApplyRules}
+      onStartRecording={onStartRecording}
     />
   )
 }
@@ -1645,7 +2744,11 @@ function classifyPrompt(text: string): FluidKind {
   // New scenario patterns (most specific first)
   if (/(after.*complet.*flow|after.*flow|after.*onboarding)/.test(t) && /(step|\d+(st|nd|rd|th))/.test(t)) return 'flowStep'
   if (/(after.*complet.*flow|after.*flow|after.*onboarding)/.test(t)) return 'flow'
-  if (/(between.*\d+\s*(am|pm).*\d+\s*(am|pm)|\d+\s*(am|pm).*to.*\d+\s*(am|pm))/.test(t)) return 'timeWindow'
+  if (/(between.*\d+\s*(am|pm)\b.*\d+\s*(am|pm)\b|\d+\s*(am|pm)\b.*to.*\d+\s*(am|pm)\b)/.test(t)) return 'timeWindow'
+  // Time-only language ("change the time", "time window", "every day at 5pm")
+  // resolves to a time clarifier rather than a date one. \bam\b / \bpm\b
+  // require word boundaries on both sides — otherwise "team" matches "am".
+  if (/(\btime\b|time window|\bhours\b|\bam\b|\bpm\b|midnight|noon|morning|evening)/.test(t) && !/(date|range|month|week)/.test(t)) return 'timeWindow'
   if (/(domain.*contains|url.*hash|url.*contains.*and)/.test(t)) return 'urlCondition'
   if (/(when.*is\s+(there|present|on the page)|there on the page)/.test(t)) return 'elementPresence'
   if (/(when.*category.*is|field.*value|sla.*is\s+\w)/.test(t)) return 'elementCondition'
@@ -1668,6 +2771,16 @@ function classifyPrompt(text: string): FluidKind {
   if (hasAudience)  return 'audience'
   if (hasFrequency) return 'frequency'
   return 'none'
+}
+
+function extractTimeWindow(text: string): { start: string; end: string } {
+  const m = text.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\s*(?:to|-|–|until)\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i)
+  if (m) {
+    const fmt = (h: string, min: string | undefined, mer: string | undefined) =>
+      `${h}:${min ?? '00'} ${(mer ?? 'PM').toUpperCase()}`
+    return { start: fmt(m[1], m[2], m[3]), end: fmt(m[4], m[5], m[6]) }
+  }
+  return { start: '9:00 AM', end: '5:00 PM' }
 }
 
 function extractFrequency(text: string): number {
@@ -1744,6 +2857,9 @@ interface BottomSheetProps {
   onStartRecording: () => void
   recordingPayload: RecordingPayload | null
   consumeRecordingPayload: () => void
+  initialPrompt: string | null
+  consumeInitialPrompt: () => void
+  autoSubmit: boolean
 }
 
 function ChipButton({ children, onClick }: { children: React.ReactNode; onClick: () => void }) {
@@ -1769,20 +2885,22 @@ function ChipButton({ children, onClick }: { children: React.ReactNode; onClick:
   )
 }
 
-// Inline clarifier for the time-window step. Used by the typed Settings
-// scenario where dates are explicit but the user didn't pin times — the agent
-// proposes 4–8pm and asks for a confirmation rather than guessing silently.
-function ClarifierTimeWindow({ initial, onCancel, onAccept }: {
+// Inline clarifier for the time-window step. The caption is contextual — the
+// Settings demo passes its own copy, the standalone time clarifier uses a
+// neutral default so it doesn't leak Settings-specific language elsewhere.
+function ClarifierTimeWindow({ initial, onCancel, onAccept, caption, applyLabel }: {
   initial: { start: string; end: string }
   onCancel: () => void
   onAccept: (window: { start: string; end: string }) => void
+  caption?: React.ReactNode
+  applyLabel?: string
 }) {
   const [start, setStart] = useState(initial.start)
   const [end, setEnd] = useState(initial.end)
   return (
-    <FluidWrapper icon={<Clock size={14} color={C.ai} strokeWidth={2.2} />} title="Confirm time window">
+    <FluidWrapper icon={<Clock size={14} color={C.ai} strokeWidth={2.2} />} title="Daily time window">
       <div className="fluid-stagger-item" style={{ fontSize: 12.5, color: C.textSecondary, marginBottom: 12, lineHeight: 1.5 }}>
-        I caught <strong style={{ color: C.textPrimary, fontWeight: 600 }}>May 5</strong> and <strong style={{ color: C.textPrimary, fontWeight: 600 }}>4 to 8 PM</strong> — confirm the times below and we&apos;ll move on.
+        {caption ?? 'Pick the daily window when this should appear.'}
       </div>
       <div className="fluid-stagger-item" style={{ display: 'flex', gap: 10 }}>
         <div style={{ flex: 1 }}>
@@ -1817,7 +2935,7 @@ function ClarifierTimeWindow({ initial, onCancel, onAccept }: {
         </div>
       </div>
       <div className="fluid-stagger-item">
-        <ApplyButtons onCancel={onCancel} onApply={() => onAccept({ start, end })} applyLabel="Looks right — next" />
+        <ApplyButtons onCancel={onCancel} onApply={() => onAccept({ start, end })} applyLabel={applyLabel ?? 'Apply'} />
       </div>
     </FluidWrapper>
   )
@@ -1837,6 +2955,7 @@ function BottomSheet({
   pickerActive, startPicker, stopPicker,
   selectedElement, setSelectedElement, setPreviewElement,
   onStartRecording, recordingPayload, consumeRecordingPayload,
+  initialPrompt, consumeInitialPrompt, autoSubmit,
 }: BottomSheetProps) {
   const [prompt, setPrompt] = useState('')
   const [stage, setStage] = useState<'input' | 'processing' | 'fluid' | 'clarifier-time' | 'clarifier-element' | 'clarifier-applying'>('input')
@@ -1855,11 +2974,16 @@ function BottomSheet({
   useEffect(() => {
     if (open) {
       // If the drawer was reopened after a recording, the parent has stashed a
-      // payload — prefill prompt + attachment instead of clearing.
+      // payload — prefill prompt + attachment instead of clearing. Otherwise
+      // honor a passed-in initial prompt from the inline composer.
       if (recordingPayload) {
         setPrompt(recordingPayload.prompt)
         setAttachment(recordingPayload.attachment)
         consumeRecordingPayload()
+      } else if (initialPrompt) {
+        setPrompt(initialPrompt)
+        setAttachment(null)
+        consumeInitialPrompt()
       } else {
         setPrompt('')
         setAttachment(null)
@@ -1878,6 +3002,20 @@ function BottomSheet({
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
+
+  // If the parent asked us to auto-submit (e.g. the inline composer pre-filled
+  // the prompt and wants the agent to process immediately), kick off submit
+  // after the prefill has settled. Only runs once per open.
+  const autoSubmitFired = useRef(false)
+  useEffect(() => {
+    if (!open) { autoSubmitFired.current = false; return }
+    if (autoSubmit && !autoSubmitFired.current && prompt && stage === 'input') {
+      autoSubmitFired.current = true
+      const t = setTimeout(() => handleSubmit(), 250)
+      return () => clearTimeout(t)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, autoSubmit, prompt, stage])
 
   const handleSubmit = () => {
     const text = prompt.trim()
@@ -2329,17 +3467,17 @@ function BottomSheet({
 function FluidWrapper({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
   return (
     <div className="vr-fade-in fluid-stagger" style={{
-      background: C.cardBg, border: `1px solid ${C.border}`, borderRadius: 12,
-      padding: 16,
+      background: 'transparent', borderRadius: 12,
+      padding: 0,
     }}>
       <div className="fluid-stagger-item" style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
         <div style={{
-          width: 28, height: 28, borderRadius: 8, background: C.aiSoft,
+          width: 26, height: 26, borderRadius: 7, background: '#F4F4F5',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
           {icon}
         </div>
-        <span style={{ fontSize: 13, fontWeight: 600, color: C.textPrimary, letterSpacing: '-0.005em' }}>{title}</span>
+        <span style={{ fontSize: 13, fontWeight: 600, color: '#1F1F32', letterSpacing: '-0.005em' }}>{title}</span>
       </div>
       {children}
     </div>
@@ -2526,13 +3664,13 @@ function FrequencyFluid({ initial, onCancel, onApply }: {
       </div>
       <div className="fluid-stagger-item" style={{
         marginTop: 10, padding: '10px 12px',
-        background: 'rgba(37, 99, 235, 0.05)',
-        border: '1px solid rgba(37, 99, 235, 0.10)',
+        background: 'rgba(15, 23, 42, 0.05)',
+        border: '1px solid rgba(15, 23, 42, 0.10)',
         borderRadius: 9,
         display: 'flex', alignItems: 'flex-start', gap: 8,
       }}>
-        <Sparkles size={11} color="#1D4ED8" strokeWidth={2.4} style={{ marginTop: 2, flexShrink: 0 }} />
-        <div style={{ fontSize: 11.5, color: '#1D4ED8', lineHeight: 1.5, letterSpacing: '-0.005em' }}>
+        <Sparkles size={11} color="#1F1F32" strokeWidth={2.4} style={{ marginTop: 2, flexShrink: 0 }} />
+        <div style={{ fontSize: 11.5, color: '#1F1F32', lineHeight: 1.5, letterSpacing: '-0.005em' }}>
           {helperText}
         </div>
       </div>
@@ -2558,21 +3696,21 @@ function MatchCard({ match, onSelect, onPreview }: {
         display: 'flex', alignItems: 'center', gap: 10,
         padding: '10px 12px',
         background: hover ? '#FFFFFF' : 'rgba(255, 255, 255, 0.6)',
-        border: `1px solid ${hover ? 'rgba(37, 99, 235, 0.30)' : 'rgba(37, 99, 235, 0.14)'}`,
+        border: `1px solid ${hover ? 'rgba(15, 23, 42, 0.30)' : 'rgba(15, 23, 42, 0.14)'}`,
         borderRadius: 10, cursor: 'pointer',
         textAlign: 'left', width: '100%',
-        boxShadow: hover ? '0 2px 8px rgba(37, 99, 235, 0.10)' : 'none',
+        boxShadow: hover ? '0 2px 8px rgba(15, 23, 42, 0.10)' : 'none',
         transition: 'background 150ms, border-color 150ms, box-shadow 150ms, transform 150ms',
         transform: hover ? 'translateY(-1px)' : 'none',
       }}
     >
       <div style={{
         width: 28, height: 28, borderRadius: 8,
-        background: 'linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%)',
-        border: '1px solid rgba(37, 99, 235, 0.16)',
+        background: '#F4F4F5',
+        border: '1px solid #ECECF3',
         display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
       }}>
-        <Crosshair size={13} color="#1D4ED8" strokeWidth={2.4} />
+        <Crosshair size={13} color="#1F1F32" strokeWidth={2.4} />
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{
@@ -2589,7 +3727,7 @@ function MatchCard({ match, onSelect, onPreview }: {
           {match.selector}
         </div>
       </div>
-      <ChevronRight size={13} color={hover ? '#1D4ED8' : C.textTertiary} strokeWidth={2.4} style={{ transition: 'color 150ms' }} />
+      <ChevronRight size={13} color={hover ? '#1F1F32' : C.textTertiary} strokeWidth={2.4} style={{ transition: 'color 150ms' }} />
     </button>
   )
 }
@@ -2635,9 +3773,9 @@ function ElementPickerFluid({ matches, pickerActive, selectedElement, onCancel, 
           {hasMatches && (
             <div className="fluid-stagger-item" style={{ marginBottom: 14 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-                <Sparkles size={11} color="#1D4ED8" strokeWidth={2.4} className="ai-sparkle-twinkle" />
+                <Sparkles size={11} color="#1F1F32" strokeWidth={2.4} className="ai-sparkle-twinkle" />
                 <span style={{
-                  fontSize: 10, color: '#1D4ED8', fontWeight: 600,
+                  fontSize: 10, color: '#1F1F32', fontWeight: 600,
                   letterSpacing: '0.06em', textTransform: 'uppercase',
                 }}>
                   AI found {matches.length} {matches.length === 1 ? 'match' : 'matches'}
@@ -2771,9 +3909,9 @@ function CompoundFluid({
               {matches.length > 0 && (
                 <div style={{ marginTop: 8, marginBottom: 12 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-                    <Sparkles size={11} color="#1D4ED8" strokeWidth={2.4} className="ai-sparkle-twinkle" />
+                    <Sparkles size={11} color="#1F1F32" strokeWidth={2.4} className="ai-sparkle-twinkle" />
                     <span style={{
-                      fontSize: 10, color: '#1D4ED8', fontWeight: 600,
+                      fontSize: 10, color: '#1F1F32', fontWeight: 600,
                       letterSpacing: '0.06em', textTransform: 'uppercase',
                     }}>
                       AI found {matches.length} {matches.length === 1 ? 'match' : 'matches'}
@@ -3070,7 +4208,7 @@ function GenericScenarioFluid({ kind, prompt, onCancel, onApply }: {
         </div>
         <div className="fluid-stagger-item" style={{
           display: 'flex', alignItems: 'center', gap: 10,
-          padding: '10px 12px', background: C.aiSoft, border: `1px solid rgba(37, 99, 235, 0.18)`, borderRadius: 9,
+          padding: '10px 12px', background: C.aiSoft, border: `1px solid rgba(15, 23, 42, 0.18)`, borderRadius: 9,
         }}>
           <div style={{ width: 28, height: 28, borderRadius: 8, background: '#FFFFFF', border: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <Crosshair size={13} color={C.ai} strokeWidth={2.2} />
@@ -3173,14 +4311,19 @@ function PopupEditor({ template, onBack, onClose, onMin, rules, setRules, picker
   const [showReasoning, setShowReasoning] = useState(false)
   const [highlightedFields, setHighlightedFields] = useState<Set<string>>(new Set())
   const [toast, setToast] = useState(false)
+  // Pre-apply snapshot so the toast's Undo link can restore the rules. Cleared
+  // when the toast dismisses so we never undo into a stale state.
+  const undoSnapshotRef = useRef<VRRules | null>(null)
+  const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Carries a prompt that the inline composer wants to seed the BottomSheet
+  // with, so submit from the inline composer feels like one continuous flow
+  // (compose → drawer opens already pre-filled → processing starts).
+  const [pendingInitialPrompt, setPendingInitialPrompt] = useState<string | null>(null)
+  const [pendingAutoSubmit, setPendingAutoSubmit] = useState(false)
 
-  // When the parent finishes a recording it parks the payload here. Re-open the
-  // drawer so BottomSheet's effect can prefill prompt + attachment.
-  useEffect(() => {
-    if (recordingPayload && !recordingActive) {
-      setShowSheet(true)
-    }
-  }, [recordingPayload, recordingActive])
+  // Recording payload now flows directly to the inline composer in the VR
+  // tab — no drawer reopen needed. We still keep the state hooks around so the
+  // legacy BottomSheet path remains intact for any non-VR entry point.
 
   // Lifted state so the VR loading + typing animation only happen ONCE
   // per popup edit session, even when the user toggles between tabs.
@@ -3197,11 +4340,29 @@ function PopupEditor({ template, onBack, onClose, onMin, rules, setRules, picker
   }, [tab])
 
   const applyRules = (next: Partial<VRRules>, fields: string[]) => {
-    setRules(prev => ({ ...prev, ...next }))
+    if (undoTimerRef.current) clearTimeout(undoTimerRef.current)
+    setRules(prev => {
+      undoSnapshotRef.current = prev
+      return { ...prev, ...next }
+    })
     setHighlightedFields(new Set(fields))
     setToast(true)
     setTimeout(() => setHighlightedFields(new Set()), 900)
-    setTimeout(() => setToast(false), 2400)
+    undoTimerRef.current = setTimeout(() => {
+      setToast(false)
+      undoSnapshotRef.current = null
+    }, 5000)
+  }
+
+  const handleUndo = () => {
+    if (!undoSnapshotRef.current) return
+    setRules(undoSnapshotRef.current)
+    undoSnapshotRef.current = null
+    if (undoTimerRef.current) {
+      clearTimeout(undoTimerRef.current)
+      undoTimerRef.current = null
+    }
+    setToast(false)
   }
 
   return (
@@ -3266,15 +4427,21 @@ function PopupEditor({ template, onBack, onClose, onMin, rules, setRules, picker
               rules={rules}
               setRules={setRules}
               highlightedFields={highlightedFields}
-              onCustomize={() => setShowSheet(true)}
               startPicker={startPicker}
+              stopPicker={stopPicker}
               selectedElement={selectedElement}
               setSelectedElement={setSelectedElement}
+              setPreviewElement={setPreviewElement}
+              pickerActive={pickerActive}
               onOpenReasoning={() => setShowReasoning(true)}
               phase={vrPhase}
               setPhase={setVrPhase}
               hasTypedSummary={hasTypedSummary}
               setHasTypedSummary={setHasTypedSummary}
+              onStartRecording={startRecording}
+              recordingPayload={recordingPayload}
+              consumeRecordingPayload={consumeRecordingPayload}
+              onApplyRules={applyRules}
             />
           )
         }
@@ -3303,23 +4470,43 @@ function PopupEditor({ template, onBack, onClose, onMin, rules, setRules, picker
         </button>
       </div>
 
-      {/* Rule updated toast — slides up from the bottom of the studio */}
+      {/* Rule updated toast — slides up from the bottom of the studio with an
+          Undo affordance so accepting an AI-driven change isn't a one-way door. */}
       {toast && (
         <div className="vr-toast-bottom" style={{
           position: 'absolute', left: '50%', bottom: 88,
           transform: 'translateX(-50%)',
-          background: '#FFFFFF',
-          border: '1px solid #BBF7D0',
-          color: C.success,
-          fontSize: 11.5, fontWeight: 600,
-          padding: '7px 14px', borderRadius: 999,
-          display: 'flex', alignItems: 'center', gap: 6,
-          boxShadow: '0 1px 0 rgba(255, 255, 255, 0.7) inset, 0 6px 16px rgba(22, 163, 74, 0.18), 0 2px 6px rgba(22, 163, 74, 0.10)',
+          background: '#1F1F32',
+          border: '1px solid #1F1F32',
+          color: '#FFFFFF',
+          fontSize: 12, fontWeight: 500,
+          padding: '7px 8px 7px 14px', borderRadius: 999,
+          display: 'flex', alignItems: 'center', gap: 12,
+          boxShadow: '0 1px 0 rgba(255, 255, 255, 0.08) inset, 0 6px 16px rgba(15, 23, 42, 0.20), 0 2px 6px rgba(15, 23, 42, 0.12)',
           letterSpacing: '-0.005em',
           zIndex: 50,
         }}>
-          <Check size={11} strokeWidth={3} />
-          Rule updated
+          <span style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+            <Check size={12} strokeWidth={2.8} color="#86EFAC" />
+            Rule updated
+          </span>
+          <button
+            onClick={handleUndo}
+            style={{
+              background: 'rgba(255, 255, 255, 0.10)',
+              border: '1px solid rgba(255, 255, 255, 0.14)',
+              color: '#FFFFFF',
+              fontSize: 11.5, fontWeight: 600,
+              padding: '3px 10px', borderRadius: 999,
+              cursor: 'pointer',
+              letterSpacing: '-0.005em',
+              transition: 'background 150ms',
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.18)')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.10)')}
+          >
+            Undo
+          </button>
         </div>
       )}
 
@@ -3341,7 +4528,7 @@ function PopupEditor({ template, onBack, onClose, onMin, rules, setRules, picker
 
       <BottomSheet
         open={showSheet}
-        onClose={() => setShowSheet(false)}
+        onClose={() => { setShowSheet(false); setPendingAutoSubmit(false) }}
         onApplyRules={applyRules}
         pickerActive={pickerActive}
         startPicker={startPicker}
@@ -3352,6 +4539,9 @@ function PopupEditor({ template, onBack, onClose, onMin, rules, setRules, picker
         onStartRecording={() => { setShowSheet(false); startRecording() }}
         recordingPayload={recordingPayload}
         consumeRecordingPayload={consumeRecordingPayload}
+        initialPrompt={pendingInitialPrompt}
+        consumeInitialPrompt={() => setPendingInitialPrompt(null)}
+        autoSubmit={pendingAutoSubmit}
       />
 
       {/* Reasoning modal — centered in studio */}
