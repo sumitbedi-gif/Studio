@@ -4970,7 +4970,6 @@ export function PopupOverlayOnApp({ template }: { template: PopupTemplate }) {
     )
   }
 
-  const isMedia = template.variant === 'modal-media'
   return (
     <div style={{
       position: 'absolute', inset: 0, background: 'rgba(15, 23, 42, 0.32)', zIndex: 60,
@@ -4978,46 +4977,45 @@ export function PopupOverlayOnApp({ template }: { template: PopupTemplate }) {
       display: 'flex', alignItems: 'center', justifyContent: 'center',
     }}>
       <div className="popup-overlay-card" style={{
-        background: '#FFFFFF', borderRadius: 16, padding: 32, width: 400,
+        background: '#FFFFFF', borderRadius: 16, padding: 0, width: 450,
         boxShadow: '0 32px 80px rgba(15, 23, 42, 0.30), 0 8px 24px rgba(15, 23, 42, 0.12)',
-        textAlign: 'center', position: 'relative',
+        textAlign: 'center', position: 'relative', overflow: 'hidden',
       }}>
+        {/* Full-bleed illustration banner — top ~40% of the popup, edge to edge. */}
+        <img
+          src="/office-illustration.jpg"
+          alt=""
+          style={{ display: 'block', width: '100%', height: 200, objectFit: 'cover' }}
+        />
         <button style={{
-          position: 'absolute', top: 14, right: 14, background: 'none', border: 'none',
-          cursor: 'pointer', color: '#A3A3A3',
+          position: 'absolute', top: 14, right: 14,
+          background: 'rgba(255, 255, 255, 0.85)', border: 'none',
+          cursor: 'pointer', color: '#525252',
           width: 28, height: 28, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          boxShadow: '0 1px 3px rgba(15, 23, 42, 0.12)',
         }}>
           <X size={16} />
         </button>
-        {isMedia && (
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
-            <div style={{
-              width: 48, height: 48, borderRadius: 12,
-              background: template.accent,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: '#fff', fontSize: 24, fontWeight: 800,
-              boxShadow: `0 8px 20px ${template.accent}40`,
-            }}>W</div>
-          </div>
-        )}
-        <div style={{ fontSize: 19, fontWeight: 700, color: C.textPrimary, marginBottom: 8, letterSpacing: '-0.015em' }}>{template.heading}</div>
-        <div style={{ fontSize: 13.5, color: C.textSecondary, lineHeight: 1.55, marginBottom: 22 }}>{template.body}</div>
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 8 }}>
-          {template.secondaryCta && (
+        <div style={{ padding: 32 }}>
+          <div style={{ fontSize: 19, fontWeight: 700, color: C.textPrimary, marginBottom: 8, letterSpacing: '-0.015em' }}>{template.heading}</div>
+          <div style={{ fontSize: 13.5, color: C.textSecondary, lineHeight: 1.55, marginBottom: 22 }}>{template.body}</div>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 8 }}>
+            {template.secondaryCta && (
+              <button style={{
+                background: '#FFFFFF', color: C.textSecondary, border: `1px solid ${C.border}`,
+                borderRadius: 9, padding: '9px 22px', fontSize: 13, fontWeight: 500, cursor: 'pointer',
+              }}>
+                {template.secondaryCta}
+              </button>
+            )}
             <button style={{
-              background: '#FFFFFF', color: C.textSecondary, border: `1px solid ${C.border}`,
-              borderRadius: 9, padding: '9px 22px', fontSize: 13, fontWeight: 500, cursor: 'pointer',
+              background: template.accent, color: '#ffffff', border: 'none', borderRadius: 9,
+              padding: '9px 22px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+              boxShadow: `0 6px 16px ${template.accent}40`,
             }}>
-              {template.secondaryCta}
+              {template.primaryCta}
             </button>
-          )}
-          <button style={{
-            background: template.accent, color: '#ffffff', border: 'none', borderRadius: 9,
-            padding: '9px 22px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
-            boxShadow: `0 6px 16px ${template.accent}40`,
-          }}>
-            {template.primaryCta}
-          </button>
+          </div>
         </div>
       </div>
     </div>
