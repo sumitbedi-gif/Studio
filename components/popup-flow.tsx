@@ -1239,13 +1239,14 @@ function buildWhenSegments(rules: VRRules): Segment[] {
     segs.push({ kind: 'pill', name: 'dates', pillKey: 'dateStart', value: rules.dateRange.start, field: 'dateRange', dismissible: true })
     segs.push({ kind: 'text', value: ' to ' })
     segs.push({ kind: 'pill', name: 'dates', pillKey: 'dateEnd',   value: rules.dateRange.end,   field: 'dateRange', dismissible: true })
-    segs.push({ kind: 'text', value: ', ' })
   }
+  // Time window only renders once it's actually set — typed via "Edit with
+  // prompt" or picked from the time popover. No "any time" placeholder badge
+  // on the prefilled rules; absence of a time pill already implies any time.
   if (rules.timeWindow) {
+    segs.push({ kind: 'text', value: rules.showDateRange ? ', between ' : 'Between ' })
     segs.push({ kind: 'pill', name: 'time', pillKey: 'timeWindow', value: `${rules.timeWindow.start} – ${rules.timeWindow.end}`, field: 'timeWindow', dismissible: true })
     segs.push({ kind: 'text', value: ' daily' })
-  } else {
-    segs.push({ kind: 'pill', name: 'time', pillKey: 'timeWindow', value: 'any time', field: 'timeWindow' })
   }
   if (rules.weekDays && rules.weekDays.length > 0) {
     segs.push({ kind: 'text', value: ', on ' })
@@ -1311,15 +1312,6 @@ function buildWhoSegments(rules: VRRules): Segment[] {
   }
   return segs
 }
-
-// Chips that appear under the composer at rest as quick scenarios. Match the
-// "Try one" set we used inside the legacy bottom drawer.
-const composerSuggestionChips: { label: string; prompt: string }[] = [
-  { label: 'Change date',     prompt: 'Change the date range to June 1 through June 15' },
-  { label: 'Add audience',    prompt: 'Show this only to Sales team users' },
-  { label: 'Pick an element', prompt: 'Show this only when the user clicks the Login button' },
-  { label: 'Limit shows',     prompt: 'Stop showing after 2 occurrences' },
-]
 
 // Status of the composer's submit pipeline: idle → processing (small inline
 // loader) → clarifier (compact popover above composer) → done (rules applied).
@@ -1418,13 +1410,15 @@ function SummaryView({
   const [promptDrawerOpen, setPromptDrawerOpen] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  // Recording payload arrival — drop the video chip into the composer AND
-  // open the prompt drawer so the user can see the attachment + add any text
-  // before submitting. We intentionally don't prefill text; the recording is
-  // the context.
+  // Recording payload arrival — drop the video chip into the composer, prefill
+  // the textarea with the narration transcript, and open the prompt drawer so
+  // the user sees both the attachment and the captured prompt (which they can
+  // refine) before submitting. The textarea auto-grows to fit the full
+  // transcript.
   useEffect(() => {
     if (recordingPayload) {
       setAttachment(recordingPayload.attachment)
+      setPrompt(recordingPayload.prompt)
       setPromptDrawerOpen(true)
       consumeRecordingPayload()
     }
@@ -1949,10 +1943,6 @@ function SummaryView({
             status={status}
             onSubmit={handleSubmitComposer}
             onStartRecording={onStartRecording}
-            chips={composerSuggestionChips}
-            chipsOpen={chipsOpen}
-            setChipsOpen={setChipsOpen}
-            hasMadeFirstEdit={hasMadeFirstEdit}
             onShowMore={() => setScenariosOpen(true)}
             onClose={() => setPromptDrawerOpen(false)}
           />
@@ -2264,14 +2254,15 @@ function InlineComposer({
     setIsListening(false)
   }
 
-  // Auto-grow the textarea with content up to ~6 rows, then scroll internally.
+  // Auto-grow the textarea with content up to ~10 rows, then scroll internally.
   // Re-runs whenever the prompt changes (typed input, recording transcript
-  // append, suggestion-chip prefill) so the surface always fits its content.
+  // prefill, suggestion-chip prefill) so the surface always fits its content —
+  // a full narration transcript shows in one glance without scrolling.
   useEffect(() => {
     const ta = textareaRef.current
     if (!ta) return
     ta.style.height = 'auto'
-    const maxHeight = 140
+    const maxHeight = 240
     ta.style.height = `${Math.min(ta.scrollHeight, maxHeight)}px`
     ta.style.overflowY = ta.scrollHeight > maxHeight ? 'auto' : 'hidden'
   }, [prompt, textareaRef])
@@ -2592,39 +2583,6 @@ function MicListeningPill({ elapsed, onStop }: { elapsed: number; onStop: () => 
   )
 }
 
-// Horizontal row of suggestion chips. Used both as the always-visible
-// training-wheel row before the first edit and inside the accordion
-// after — same visual treatment, different parents.
-function SuggestionChipsRow({ chips, onPick }: {
-  chips: { label: string; prompt: string }[]
-  onPick: (prompt: string) => void
-}) {
-  return (
-    <div style={{ marginTop: 10, display: 'flex', flexWrap: 'wrap', gap: 5 }}>
-      {chips.map((c) => (
-        <button
-          key={c.label}
-          onClick={() => onPick(c.prompt)}
-          style={{
-            background: '#F4F4F5',
-            border: 'none',
-            borderRadius: 999,
-            padding: '5px 11px',
-            fontSize: 11.5, color: '#525066', cursor: 'pointer',
-            fontWeight: 500, letterSpacing: '-0.005em',
-            transition: 'background 150ms, color 150ms',
-            whiteSpace: 'nowrap',
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.background = '#ECECF3'; e.currentTarget.style.color = '#1F1F32' }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = '#F4F4F5'; e.currentTarget.style.color = '#525066' }}
-        >
-          {c.label}
-        </button>
-      ))}
-    </div>
-  )
-}
-
 // Bottom sheet that lists every demo scenario grouped by category. Picking
 // one fills the composer above and dismisses the sheet — the surface stays
 // the same one the user is editing, no separate "composer" mode.
@@ -2635,7 +2593,7 @@ function PromptDrawer({
   textareaRef, prompt, setPrompt, activeChip, clearChip,
   attachment, clearAttachment,
   status, onSubmit, onStartRecording,
-  chips, chipsOpen, setChipsOpen, hasMadeFirstEdit, onShowMore, onClose,
+  onShowMore, onClose,
 }: {
   textareaRef: React.RefObject<HTMLTextAreaElement | null>
   prompt: string
@@ -2647,10 +2605,6 @@ function PromptDrawer({
   status: ComposerStatus
   onSubmit: () => void
   onStartRecording: () => void
-  chips: { label: string; prompt: string }[]
-  chipsOpen: boolean
-  setChipsOpen: (v: boolean) => void
-  hasMadeFirstEdit: boolean
   onShowMore: () => void
   onClose: () => void
 }) {
@@ -2681,11 +2635,6 @@ function PromptDrawer({
     return () => clearTimeout(t)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
-
-  // Pre-first-edit shows chips inline; post-first-edit collapses them under
-  // the same "Quick prompts" accordion the inline version used.
-  const showChipsInline = !hasMadeFirstEdit
-  const showAccordion   =  hasMadeFirstEdit
 
   return (
     <div
@@ -2730,83 +2679,26 @@ function PromptDrawer({
           onStartRecording={onStartRecording}
         />
 
-        {status === 'idle' && showChipsInline && (
-          <SuggestionChipsRow
-            chips={chips}
-            onPick={(p) => { setPrompt(p); textareaRef.current?.focus() }}
-          />
-        )}
-
-        {status === 'idle' && showAccordion && (
+        {status === 'idle' && (
           <div style={{ marginTop: 10 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-              <button
-                onClick={() => setChipsOpen(!chipsOpen)}
-                style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 4,
-                  background: 'transparent', border: 'none', cursor: 'pointer',
-                  color: '#8C899F', fontSize: 11, fontWeight: 500,
-                  padding: '2px 4px 2px 0', letterSpacing: '-0.005em',
-                  transition: 'color 150ms',
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = '#1F1F32')}
-                onMouseLeave={(e) => (e.currentTarget.style.color = '#8C899F')}
-              >
-                <ChevronDown
-                  size={11}
-                  strokeWidth={2.2}
-                  style={{
-                    transform: chipsOpen ? 'rotate(180deg)' : 'none',
-                    transition: 'transform 200ms cubic-bezier(0.32, 0, 0.15, 1)',
-                  }}
-                />
-                Quick prompts
-              </button>
-              {chipsOpen && (
-                <button
-                  onClick={onShowMore}
-                  style={{
-                    background: 'transparent', border: 'none', cursor: 'pointer',
-                    color: '#8C899F', fontSize: 11, fontWeight: 500,
-                    padding: '2px 4px', letterSpacing: '-0.005em',
-                    whiteSpace: 'nowrap',
-                    transition: 'color 150ms',
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = '#1F1F32')}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = '#8C899F')}
-                >
-                  Show more
-                </button>
-              )}
-            </div>
-            {chipsOpen && (
-              <div className="vr-fade-in" style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 5 }}>
-                {chips.map((c) => (
-                  <button
-                    key={c.label}
-                    onClick={() => {
-                      setPrompt(c.prompt)
-                      textareaRef.current?.focus()
-                      setChipsOpen(false)
-                    }}
-                    style={{
-                      background: '#F4F4F5',
-                      border: 'none',
-                      borderRadius: 999,
-                      padding: '5px 11px',
-                      fontSize: 11.5, color: '#525066', cursor: 'pointer',
-                      fontWeight: 500, letterSpacing: '-0.005em',
-                      transition: 'background 150ms, color 150ms',
-                      whiteSpace: 'nowrap',
-                    }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = '#ECECF3'; e.currentTarget.style.color = '#1F1F32' }}
-                    onMouseLeave={(e) => { e.currentTarget.style.background = '#F4F4F5'; e.currentTarget.style.color = '#525066' }}
-                  >
-                    {c.label}
-                  </button>
-                ))}
-              </div>
-            )}
+            {/* "Try these prompts" entry — a single row whose right-chevron
+                opens the full scenarios drawer. No inline badges, no accordion. */}
+            <button
+              onClick={onShowMore}
+              style={{
+                width: '100%',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
+                background: 'transparent', border: 'none', cursor: 'pointer',
+                color: '#8C899F', fontSize: 11, fontWeight: 500,
+                padding: '2px 0', letterSpacing: '-0.005em',
+                transition: 'color 150ms',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = '#1F1F32')}
+              onMouseLeave={(e) => (e.currentTarget.style.color = '#8C899F')}
+            >
+              <span>Try these prompts</span>
+              <ChevronRight size={13} strokeWidth={2.2} />
+            </button>
           </div>
         )}
       </div>
