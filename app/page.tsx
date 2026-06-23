@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { PopupFlow, PopupOverlayOnApp, type PopupTemplate, type ElementInfo, type RecordingPayload } from '@/components/popup-flow'
-import { AuthoringAgent } from '@/components/authoring-agent'
+import { CreateFlow } from '@/components/create-flow'
 import {
   Plus,
   X,
@@ -916,7 +916,7 @@ function StudioPanel({
       </div>
 
       {/* Main panel */}
-      <div style={{ width: 383, background: '#F2F2F8', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <div style={{ position: 'relative', width: 383, background: '#F2F2F8', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {popupView ? (
           <PopupFlow
             onClose={exitPopupFlow}
@@ -935,7 +935,7 @@ function StudioPanel({
             consumeRecordingPayload={consumeRecordingPayload}
           />
         ) : view === 'authoring' ? (
-          <AuthoringAgent />
+          <CreateFlow />
         ) : view === 'home' ? (
           <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflowY: 'auto', overflowX: 'hidden' }}>
             {/* Header / banner */}

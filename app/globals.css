@@ -540,3 +540,8681 @@
 .fluid-stagger > .fluid-stagger-item:nth-of-type(4) { animation-delay: 240ms; }
 .fluid-stagger > .fluid-stagger-item:nth-of-type(5) { animation-delay: 320ms; }
 .fluid-stagger > .fluid-stagger-item:nth-of-type(6) { animation-delay: 400ms; }
+
+/* ─── Create flow (document → content) ──────────────────────────────────── */
+@keyframes cfFadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.cf-fade-up {
+  animation: cfFadeUp 460ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes cfThinkBounce {
+  0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+  40%           { transform: translateY(-3px); opacity: 1; }
+}
+.cf-think-dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: #C4C3BD; display: inline-block;
+  animation: cfThinkBounce 1.2s ease-in-out infinite;
+}
+
+@keyframes cfSpin { to { transform: rotate(360deg); } }
+.cf-spin { animation: cfSpin 1s linear infinite; transform-origin: center; }
+
+@keyframes cfBarStripes {
+  0%   { background-position: 0 0; }
+  100% { background-position: 28px 0; }
+}
+.cf-bar-stripes {
+  background-image: linear-gradient(
+    -45deg,
+    rgba(255,255,255,0.22) 25%, transparent 25%,
+    transparent 50%, rgba(255,255,255,0.22) 50%,
+    rgba(255,255,255,0.22) 75%, transparent 75%, transparent
+  );
+  background-size: 28px 28px;
+  animation: cfBarStripes 0.9s linear infinite;
+}
+
+@keyframes cfShimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.cf-shimmer {
+  background: linear-gradient(90deg, #ECECF0 0%, #F4F4F7 50%, #ECECF0 100%);
+  background-size: 200% 100%;
+  animation: cfShimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes cfDrawerUp {
+  from { transform: translateY(101%); }
+  to   { transform: translateY(0); }
+}
+.cf-drawer-up {
+  animation: cfDrawerUp 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  will-change: transform;
+}
+
+@keyframes cfBackdropIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.cf-backdrop-in { animation: cfBackdropIn 320ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+@keyframes cfHighlightPulse {
+  0%   { background: #FFEAAF; }
+  100% { background: #FFF3CE; }
+}
+.cf-highlight { animation: cfHighlightPulse 1.4s ease-in-out infinite alternate; }
+
+
+/* ═══ First Draft (wfc-*) styles — copied verbatim from process-discovery for the Create flow ═══ */
+:root {
+  --wfc-accent: #0975D7;
+  --wfc-accent-strong: #0A5FAE;
+  --wfc-accent-soft: rgba(9, 117, 215, 0.08);
+  --wfc-accent-tint: #F2F7FD;
+  --wfc-ai-ambient: rgba(9, 117, 215, 0.05);
+  --wfc-canvas-bg: #FFFFFF;
+  --wfc-canvas-border: #ECECEC;
+  --wfc-text: #1F1F32;
+  --wfc-muted: #8C899F;
+  --wfc-hairline: #E6E4DE;
+  --wfc-canvas-line: rgba(31, 31, 50, 0.018);
+  --wfc-chat-rail-bg: #FFFFFF;
+  --wfc-build-active: #0975D7;
+  --wfc-build-done: #22c55e;
+  --wfc-build-pending: #B4B2A9;
+}
+
+
+/* ── Whatfix Create — empty state composer ───────────────────────────────── */
+.wfc-empty-page {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--wfc-canvas-bg);
+  isolation: isolate;
+  /* Time-of-day tint variables — overridden by data-tod attribute below.
+     Two-color radial: top-tint top-right, ambient-tint bottom-left.
+     Defaults to "day" — no tint visible. */
+  --wfc-tod-top:     transparent;
+  --wfc-tod-bottom:  transparent;
+  transition: background 600ms ease;
+}
+
+
+
+/* Dawn — pale rose hint, top-right */
+.wfc-empty-page[data-tod="dawn"] {
+  --wfc-tod-top:    rgba(255, 196, 168, 0.10);
+  --wfc-tod-bottom: rgba(245, 220, 200, 0.04);
+}
+
+
+
+/* Morning — warm cream, gentle */
+.wfc-empty-page[data-tod="morning"] {
+  --wfc-tod-top:    rgba(255, 220, 168, 0.08);
+  --wfc-tod-bottom: rgba(250, 235, 210, 0.03);
+}
+
+
+
+/* Day — no tint (default) */
+
+/* Afternoon — soft amber, slightly stronger than morning */
+.wfc-empty-page[data-tod="afternoon"] {
+  --wfc-tod-top:    rgba(255, 200, 140, 0.09);
+  --wfc-tod-bottom: rgba(248, 225, 195, 0.04);
+}
+
+
+
+/* Evening — dusty rose-amber, the longest of the warm tints */
+.wfc-empty-page[data-tod="evening"] {
+  --wfc-tod-top:    rgba(255, 170, 130, 0.10);
+  --wfc-tod-bottom: rgba(240, 200, 175, 0.05);
+}
+
+
+
+/* Working late — cool slate, opposite direction from the warm tones.
+   Shifts the canvas from "morning office" to "quiet desk lamp." */
+.wfc-empty-page[data-tod="late"] {
+  --wfc-tod-top:    rgba(120, 140, 180, 0.07);
+  --wfc-tod-bottom: rgba(140, 130, 165, 0.05);
+}
+
+
+
+/* Tint layer — sits under content (z-index: 0), over the canvas bg.
+   Two soft radials from opposite corners. Pointer-events off; pure atmosphere. */
+.wfc-empty-page::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(60% 50% at 90% 10%, var(--wfc-tod-top), transparent 70%),
+    radial-gradient(70% 60% at 10% 95%, var(--wfc-tod-bottom), transparent 75%);
+  pointer-events: none;
+  /* Below the ::before line pattern (also z:0) by using a negative z;
+     `isolation: isolate` on the parent contains the stacking context. */
+  z-index: -1;
+  transition: opacity 600ms ease;
+}
+
+
+
+/* Subtle vertical-line pattern, hidden behind content, faintly visible at the edges */
+.wfc-empty-page::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    to right,
+    var(--wfc-canvas-line) 0,
+    var(--wfc-canvas-line) 1px,
+    transparent 1px,
+    transparent 56px
+  );
+  mask-image: radial-gradient(
+    80% 70% at 50% 45%,
+    transparent 0%,
+    transparent 35%,
+    #000 100%
+  );
+  -webkit-mask-image: radial-gradient(
+    80% 70% at 50% 45%,
+    transparent 0%,
+    transparent 35%,
+    #000 100%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+
+
+.wfc-empty-shell {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: max(120px, 18vh) 32px 64px;
+}
+
+
+
+.wfc-empty-stack {
+  width: 100%;
+  max-width: 720px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 22px;
+}
+
+
+
+.wfc-empty-headline {
+  font-size: 36px;
+  font-weight: 450;
+  font-variation-settings: "wght" 450;
+  letter-spacing: -0.028em;
+  color: #1F1F32;
+  text-align: center;
+  margin: 0;
+  line-height: 1.12;
+}
+
+
+
+.wfc-empty-sub {
+  font-size: 14.5px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: #8C899F;
+  text-align: center;
+  margin: -6px 0 0;
+  letter-spacing: 0;
+}
+
+
+
+/* Time-aware greeting prefix — same weight/size as the headline, slightly
+   muted so the question stays the focal point. */
+.wfc-empty-greeting {
+  color: #6B697B;
+  font-weight: 400;
+  transition: color 600ms ease;
+}
+
+
+
+/* Greeting tint follows the page's time-of-day atmosphere — same palette
+   the background tint uses, just at higher saturation to land as color
+   rather than wash. Day bucket keeps the muted default. */
+.wfc-empty-page[data-tod="morning"]   .wfc-empty-greeting { color: #E45913; }
+
+
+.wfc-empty-page[data-tod="afternoon"] .wfc-empty-greeting { color: #E45913; }
+
+
+.wfc-empty-page[data-tod="evening"]   .wfc-empty-greeting { color: #4A6BB8; }
+
+
+.wfc-empty-page[data-tod="late"]      .wfc-empty-greeting { color: #4A6BB8; }
+
+
+
+/* Composer — soft pill surface, ~100px tall at rest. Mirrors the Manus /
+   Cursor / Base44 vertical proportions (textarea row up top, action row
+   below with breathing room). Rounder + softer shadow than a form input. */
+.wfc-composer {
+  position: relative;
+  z-index: 5;
+  width: 100%;
+  background: #fff;
+  border: 1px solid #ECECEC;
+  border-radius: 14px;
+  padding: 16px 16px 12px;
+  display: flex;
+  flex-direction: column;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.65) inset,
+    0 2px 6px rgba(20, 18, 50, 0.025),
+    0 8px 22px -8px rgba(20, 18, 50, 0.05);
+  transition: border-color 200ms ease, box-shadow 200ms ease;
+}
+
+
+
+.wfc-composer:focus-within {
+  border-color: rgba(9, 117, 215, 0.40);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.65) inset,
+    0 0 0 3px rgba(9, 117, 215, 0.07),
+    0 12px 28px -6px rgba(9, 117, 215, 0.10);
+}
+
+
+
+/* Listening dot — hidden by default, fades in only when composer is focused
+   AND empty. Sits in the textarea's leading edge, above the action row. */
+.wfc-composer-listening-dot {
+  position: absolute;
+  left: 14px;
+  bottom: 14px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #0975D7;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 320ms ease;
+}
+
+
+
+.wfc-composer.is-listening .wfc-composer-listening-dot {
+  opacity: 1;
+  animation: wfc-composer-listen 2.4s ease-in-out infinite;
+}
+
+
+
+@keyframes wfc-composer-listen {
+  0%, 100% {
+    opacity: 0.22;
+    box-shadow: 0 0 0 0 rgba(9, 117, 215, 0.0);
+  }
+  50% {
+    opacity: 0.55;
+    box-shadow: 0 0 0 4px rgba(9, 117, 215, 0.08);
+  }
+}
+
+
+
+.wfc-composer-textarea {
+  width: 100%;
+  min-height: 52px;
+  border: none;
+  outline: none;
+  background: transparent;
+  resize: none;
+  overflow: hidden;
+  font-family: inherit;
+  font-size: 15px;
+  line-height: 1.5;
+  color: #1F1F32;
+  padding: 2px 2px;
+}
+
+
+
+.wfc-composer-textarea::placeholder { color: #9B98A8; }
+
+
+.wfc-composer-textarea { caret-color: var(--wfc-accent); }
+
+
+
+.wfc-composer-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 6px;
+  margin-top: auto;
+}
+
+
+
+/* ── Slash menu (My library) ──────────────────────────────────────────────
+   Opens below the composer when the user types "/" in an empty input. Lists
+   videos and docs from the demo library; pick one and it becomes the
+   attachment. Below-anchored because the composer sits near the vertical
+   midline of the empty state and the menu would otherwise get clipped by
+   the headline above it. */
+.wfc-slash-menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  right: 0;
+  z-index: 30;
+  background: #FFFFFF;
+  border: 1px solid #ECECEC;
+  border-radius: 14px;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.85) inset,
+    0 2px 6px rgba(20, 18, 50, 0.04),
+    0 18px 40px -10px rgba(20, 18, 50, 0.18);
+  padding: 8px;
+  animation: wfc-slash-in 220ms cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+
+
+
+@keyframes wfc-slash-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+
+
+.wfc-slash-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px 8px;
+}
+
+
+
+.wfc-slash-head-icon {
+  color: #8C899F;
+}
+
+
+
+.wfc-slash-head-label {
+  flex: 1;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #8C899F;
+}
+
+
+
+.wfc-slash-head-count {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: #B4B2A9;
+  padding: 1px 7px;
+  background: #F8F7F4;
+  border-radius: 999px;
+}
+
+
+
+.wfc-slash-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+
+
+.wfc-slash-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 120ms ease;
+}
+
+
+
+.wfc-slash-item.is-active {
+  background: rgba(9, 117, 215, 0.06);
+}
+
+
+
+.wfc-slash-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+
+
+.wfc-slash-icon.is-video {
+  background: rgba(9, 117, 215, 0.10);
+  color: #0975D7;
+}
+
+
+
+.wfc-slash-icon.is-doc {
+  background: rgba(107, 105, 123, 0.08);
+  color: #4A4960;
+}
+
+
+
+.wfc-slash-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  flex: 1;
+}
+
+
+
+.wfc-slash-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: #1F1F32;
+  letter-spacing: -0.003em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+
+.wfc-slash-desc {
+  font-size: 11.5px;
+  color: #8C899F;
+  letter-spacing: -0.002em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+
+.wfc-slash-meta {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: #8C899F;
+  letter-spacing: -0.002em;
+  padding-left: 8px;
+}
+
+
+
+.wfc-slash-item.is-active .wfc-slash-meta {
+  color: #6B697B;
+}
+
+
+
+.wfc-slash-empty {
+  padding: 14px 12px;
+  font-size: 12.5px;
+  color: #8C899F;
+  text-align: center;
+  font-style: italic;
+}
+
+
+
+.wfc-slash-foot {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  padding: 8px 10px 4px;
+  border-top: 1px solid #F4F4F2;
+  font-size: 11px;
+  color: #8C899F;
+  letter-spacing: -0.001em;
+}
+
+
+
+.wfc-slash-foot-key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  padding: 1px 5px;
+  background: #FBFBF9;
+  border: 1px solid #ECECEC;
+  border-radius: 4px;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 10px;
+  color: #4A4960;
+}
+
+
+
+.wfc-slash-foot-sep {
+  color: #D8D7D2;
+  margin: 0 4px;
+}
+
+
+
+/* Attachment chip — sits above the textarea, inside the composer chrome */
+.wfc-composer-attachment {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #F6F6F9;
+  border: 1px solid #ECECF3;
+  border-radius: 8px;
+  padding: 5px 8px;
+  font-size: 12.5px;
+  color: #3D3C52;
+  margin-bottom: 8px;
+  align-self: flex-start;
+  max-width: 100%;
+}
+
+
+.wfc-composer-attachment-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 240px;
+}
+
+
+.wfc-composer-attachment-close {
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin-left: 2px;
+  color: #8C899F;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+}
+
+
+.wfc-composer-attachment-close:hover { color: #1F1F32; }
+
+
+
+/* Project chip — inside the action row, replaces the bottom-of-page context
+   pill. Click reopens onboarding in edit mode. Subtle by default; warms up
+   on hover to suggest "this is a control, not just a status badge." */
+.wfc-composer-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+
+
+.wfc-mini-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #6B697B;
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease;
+}
+
+
+.wfc-mini-btn:hover { background: #F6F6F9; color: #3D3C52; border-color: #ECECF3; }
+
+
+
+.wfc-send-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background: var(--wfc-accent);
+  color: #fff;
+  cursor: pointer;
+  transition: background-color 150ms ease, transform 150ms ease, opacity 150ms ease;
+}
+
+
+.wfc-send-btn:hover { background: var(--wfc-accent-strong); }
+
+
+.wfc-send-btn:active { transform: translateY(1px); }
+
+
+.wfc-send-btn[disabled] {
+  background: #ECECEC;
+  color: #B4B2A9;
+  cursor: not-allowed;
+}
+
+
+
+/* "Try these prompts" section — quiet left-aligned label above the grid. */
+.wfc-starter-section {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+
+
+.wfc-starter-heading-label {
+  margin: 0;
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #8C899F;
+  align-self: flex-start;
+}
+
+
+
+/* Template cards — 2x2 grid, transparent fill so the page tint shows
+   through (no white-on-white clash with the composer). Hairline border
+   defines the surface; border tints blue on hover, no fill change.
+   Diagonal arrow sits in the bottom-right corner. */
+.wfc-starter-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  width: 100%;
+}
+
+
+
+.wfc-starter-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-height: 88px;
+  padding: 14px 16px 30px;
+  background: transparent;
+  border: 1px solid #ECECEC;
+  border-radius: 10px;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+  transition:
+    border-color 220ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+
+
+.wfc-starter-card:hover {
+  border-color: rgba(9, 117, 215, 0.32);
+  transform: translateY(-1px);
+}
+
+
+
+.wfc-starter-label {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #1F1F32;
+  line-height: 1.35;
+  letter-spacing: -0.005em;
+}
+
+
+
+.wfc-starter-desc {
+  font-size: 12.5px;
+  font-weight: 400;
+  color: #8C899F;
+  line-height: 1.5;
+  letter-spacing: 0;
+  transition: color 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+
+
+.wfc-starter-card:hover .wfc-starter-desc {
+  color: #6B697B;
+}
+
+
+
+.wfc-starter-arrow {
+  position: absolute;
+  right: 12px;
+  bottom: 10px;
+  font-size: 13px;
+  line-height: 1;
+  color: #C4C3BD;
+  transition:
+    color 220ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+
+
+.wfc-starter-card:hover .wfc-starter-arrow {
+  color: var(--wfc-accent);
+  transform: translate(2px, -2px);
+}
+
+
+
+.wfc-page-toolbar {
+  position: fixed;
+  top: 20px;
+  right: 28px;
+  display: flex;
+  gap: 6px;
+  z-index: 100;
+}
+
+
+
+.wfc-toolbar-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid #ECECEC;
+  border-radius: 8px;
+  color: #6B697B;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease, transform 120ms ease;
+}
+
+
+.wfc-toolbar-btn:hover {
+  background: #fff;
+  color: #1F1F32;
+  border-color: #D8D7D2;
+}
+
+
+.wfc-toolbar-btn:active { transform: scale(0.96); }
+
+
+
+/* Labeled project pill in the top-right toolbar — replaces the gear icon.
+   Same surface chrome as wfc-toolbar-btn but with a label + optional brand
+   initial mark. Opens the onboarding modal in edit mode. */
+.wfc-toolbar-project {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 12px 0 7px;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid #ECECEC;
+  border-radius: 999px;
+  color: #525066;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  letter-spacing: -0.003em;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease, transform 120ms ease;
+}
+
+
+.wfc-toolbar-project:hover {
+  background: #fff;
+  color: #1F1F32;
+  border-color: #D8D7D2;
+}
+
+
+.wfc-toolbar-project:active { transform: scale(0.98); }
+
+
+
+.wfc-toolbar-project-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #4FA3F5, #1E6FE0);
+  color: #fff;
+  font-size: 10.5px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+
+
+/* ── Whatfix Create — animations ─────────────────────────────────────────── */
+@keyframes wfc-modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.94);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+
+.wfc-modal-in {
+  animation: wfc-modal-in 480ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  transform-origin: center 60%;
+}
+
+
+
+@keyframes wfc-swatch-reveal {
+  0%   { background: #E5E5E5; transform: scale(0.9); opacity: 0; }
+  50%  { background: #E5E5E5; transform: scale(1);   opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+
+.wfc-swatch-reveal { animation: wfc-swatch-reveal 600ms ease-out forwards; }
+
+
+
+@keyframes wfc-shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+
+.wfc-shimmer {
+  background: linear-gradient(90deg,
+    rgba(9, 117, 215, 0.06) 0%,
+    rgba(9, 117, 215, 0.12) 50%,
+    rgba(9, 117, 215, 0.06) 100%);
+  background-size: 200% 100%;
+  animation: wfc-shimmer 1.6s ease-in-out infinite;
+}
+
+
+
+@keyframes wfc-activity-in {
+  from { opacity: 0; transform: translateX(-4px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+
+.wfc-activity-in { animation: wfc-activity-in 240ms ease-out forwards; opacity: 0; }
+
+
+
+.wfc-tooltip-pos {
+  transition: top 380ms cubic-bezier(0.16, 1, 0.3, 1),
+              left 380ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+
+
+@keyframes wfc-check-in {
+  0%   { transform: scale(0) rotate(-12deg); opacity: 0; }
+  60%  { transform: scale(1.15) rotate(0); opacity: 1; }
+  100% { transform: scale(1) rotate(0); opacity: 1; }
+}
+
+
+.wfc-check-in { animation: wfc-check-in 320ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+
+
+
+@keyframes wfc-pulse-once {
+  0%   { box-shadow: 0 0 0 0 rgba(9, 117, 215, 0.35); }
+  100% { box-shadow: 0 0 0 8px rgba(9, 117, 215, 0); }
+}
+
+
+.wfc-pulse-once { animation: wfc-pulse-once 600ms ease-out; }
+
+
+
+@keyframes wfc-fade-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+
+.wfc-fade-up { animation: wfc-fade-up 480ms cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; }
+
+
+
+/* ── Whatfix Create — chat stage (Phase 3) ──────────────────────────────── */
+.wfc-chat-stage {
+  position: relative;
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1fr;
+  transition: grid-template-columns 640ms cubic-bezier(0.22, 1, 0.36, 1);
+  background: var(--wfc-canvas-bg);
+}
+
+
+
+.wfc-chat-stage.wfc-chat-split {
+  grid-template-columns: 380px 1fr;
+}
+
+
+
+.wfc-chat-rail {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  /* Center the rail content (thread + composer) when not split */
+  align-items: stretch;
+}
+
+
+
+/* Vertical seam between rail and canvas — fades in during the split */
+.wfc-chat-rail::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--wfc-canvas-border);
+  opacity: 0;
+  transition: opacity 480ms cubic-bezier(0.22, 1, 0.36, 1) 160ms;
+  pointer-events: none;
+}
+
+
+
+.wfc-chat-split .wfc-chat-rail {
+  background: var(--wfc-chat-rail-bg);
+}
+
+
+.wfc-chat-split .wfc-chat-rail::after { opacity: 1; }
+
+
+
+.wfc-chat-thread {
+  flex: 1;
+  overflow-y: auto;
+  padding: 64px 24px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 640px;
+  width: 100%;
+  margin: 0 auto;
+  scrollbar-gutter: stable;
+  transition:
+    max-width 640ms cubic-bezier(0.22, 1, 0.36, 1),
+    padding 640ms cubic-bezier(0.22, 1, 0.36, 1),
+    gap 640ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+
+
+.wfc-chat-split .wfc-chat-thread {
+  padding: 28px 20px 16px;
+  max-width: 100%;
+  gap: 18px;
+}
+
+
+
+/* Messages — quiet, prose-like (Chronicle / Descend / Prompt Kit feel) */
+.wfc-msg { display: flex; }
+
+
+
+.wfc-msg-user {
+  justify-content: flex-end;
+}
+
+
+
+.wfc-msg-user-content {
+  max-width: 78%;
+  padding: 10px 14px;
+  background: #F2F1ED;
+  color: #1F1F32;
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+
+
+.wfc-msg-agent {
+  max-width: 100%;
+  padding: 4px 0;
+}
+
+
+
+.wfc-msg-text {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: #1F1F32;
+  letter-spacing: -0.005em;
+}
+
+
+
+.wfc-msg-agent .wfc-msg-text { color: #1F1F32; }
+
+
+.wfc-msg-agent .wfc-msg-text strong { font-weight: 600; }
+
+
+
+.wfc-msg-file {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  background: rgba(20, 18, 50, 0.04);
+  border-radius: 6px;
+  font-size: 12px;
+  color: #525066;
+  align-self: flex-start;
+}
+
+
+
+/* Thinking dots (used briefly before clarification message resolves) */
+.wfc-thinking-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 0;
+}
+
+
+.wfc-thinking-dots span {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #C4C3BD;
+  animation: wfc-think-bounce 1.2s ease-in-out infinite;
+}
+
+
+.wfc-thinking-dots span:nth-child(2) { animation-delay: 0.15s; }
+
+
+.wfc-thinking-dots span:nth-child(3) { animation-delay: 0.3s; }
+
+
+@keyframes wfc-think-bounce {
+  0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+  40%           { transform: translateY(-3px); opacity: 1; }
+}
+
+
+
+/* System event row — used when the agent acknowledges a user UI action
+   (e.g. "Removed Pop-up · Meet Approval Bot"). Honest framing: not a fake
+   user bubble, just a quiet system note in the chat thread. */
+.wfc-system-event {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+  padding: 4px 10px;
+  background: rgba(20, 18, 50, 0.04);
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-style: italic;
+  color: #8C899F;
+  letter-spacing: 0.005em;
+  max-width: 100%;
+}
+
+
+.wfc-system-event svg { color: #B4B2A9; flex-shrink: 0; }
+
+
+
+/* Plan-ready card — shown in the chat thread when the plan lands. Clickable,
+   summarizes the artifact, persists as a record of the conversation step. */
+.wfc-plan-ready-card {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px 10px 12px;
+  background: #fff;
+  border: 1px solid #E8E7E2;
+  border-radius: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition:
+    background-color 180ms ease,
+    border-color 180ms ease,
+    transform 180ms ease,
+    box-shadow 180ms ease;
+  max-width: 100%;
+}
+
+
+
+.wfc-plan-ready-card:hover {
+  background: #FBFBF9;
+  border-color: #C4C3BD;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(20, 18, 50, 0.05);
+}
+
+
+
+.wfc-plan-ready-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(22, 163, 74, 0.12);
+  color: #16A34A;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+
+
+.wfc-plan-ready-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+
+
+.wfc-plan-ready-title {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #1F1F32;
+  letter-spacing: -0.005em;
+  line-height: 1.25;
+}
+
+
+
+.wfc-plan-ready-meta {
+  font-size: 11.5px;
+  color: #8C899F;
+  margin-top: 2px;
+}
+
+
+
+.wfc-plan-ready-chev {
+  color: #B4B2A9;
+  flex-shrink: 0;
+  margin-left: 6px;
+}
+
+
+
+/* "Current" tag on the active plan-version card */
+.wfc-plan-current-tag {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 6px;
+  background: var(--wfc-accent-tint);
+  color: var(--wfc-accent-strong);
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+
+
+
+.wfc-plan-ready-card.is-current {
+  border-color: rgba(9, 117, 215, 0.35);
+  background: rgba(9, 117, 215, 0.03);
+}
+
+
+
+/* Agent status line — clearly secondary to message text. Italic, smaller,
+   muted, gently pulsing. Reads as a system note, not a reply. */
+.wfc-msg-status {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 400;
+  font-style: italic;
+  color: #8C899F;
+  line-height: 1.55;
+  letter-spacing: 0;
+  animation:
+    wfc-status-enter 360ms cubic-bezier(0.22, 1, 0.36, 1),
+    wfc-status-fade 1.8s ease-in-out 360ms infinite;
+}
+
+
+
+@keyframes wfc-status-enter {
+  from { opacity: 0; transform: translateY(2px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+
+
+@keyframes wfc-status-fade {
+  0%, 100% { opacity: 0.55; }
+  50%      { opacity: 1; }
+}
+
+
+
+/* Clarification — quiet chips, no loud borders */
+.wfc-clarify-row {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 2px 0;
+}
+
+
+
+.wfc-clarify-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+
+
+.wfc-clarify-chip {
+  padding: 7px 14px;
+  background: #fff;
+  border: 1px solid #E8E7E2;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 400;
+  color: #1F1F32;
+  cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease;
+}
+
+
+.wfc-clarify-chip:hover {
+  background: #FBFBF9;
+  border-color: #C4C3BD;
+}
+
+
+
+/* "Something else…" chip — ghost variant. No border at rest, lighter color,
+   so the two real options (Sales Reps / Admins) read as primary and this
+   reads as an escape hatch. Border appears on hover for affordance. */
+.wfc-clarify-chip-other {
+  background: transparent;
+  border-color: transparent;
+  color: #8C899F;
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+
+.wfc-clarify-chip-other:hover {
+  background: #F8F7F4;
+  border-color: #E8E7E2;
+  color: #4A4960;
+}
+
+
+
+.wfc-clarify-input {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 4px 4px 12px;
+  background: #fff;
+  border: 1px solid #E8E7E2;
+  border-radius: 10px;
+  max-width: 360px;
+  transition: border-color 160ms ease;
+}
+
+
+.wfc-clarify-input:focus-within { border-color: #C4C3BD; }
+
+
+.wfc-clarify-input input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 13px;
+  color: #1F1F32;
+  padding: 5px 0;
+}
+
+
+.wfc-clarify-input input::placeholder { color: #8C899F; }
+
+
+.wfc-clarify-input .wfc-send-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  background: #1F1F32;
+}
+
+
+.wfc-clarify-input .wfc-send-btn:hover { background: #0B0B1A; }
+
+
+.wfc-clarify-input .wfc-send-btn[disabled] {
+  background: #E8E7E2;
+  color: #B4B2A9;
+}
+
+
+
+/* Persistent bottom composer — sits in the exact same reading column as the
+   thread (640px max, 24px gutter), so it visually aligns with the conversation. */
+.wfc-chat-refine {
+  padding: 14px 24px 24px;
+  background: transparent;
+  flex-shrink: 0;
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto;
+  transition:
+    max-width 640ms cubic-bezier(0.22, 1, 0.36, 1),
+    padding 640ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+
+
+.wfc-chat-split .wfc-chat-refine {
+  max-width: 100%;
+  padding: 14px 20px 20px;
+}
+
+
+
+.wfc-composer-mini {
+  padding: 12px 14px;
+  border-radius: 13px;
+  border: 1px solid #E8E7E2;
+  box-shadow: 0 1px 0 rgba(20, 18, 50, 0.015), 0 4px 14px rgba(20, 18, 50, 0.04);
+  background: #fff;
+  transition: border-color 200ms ease, box-shadow 200ms ease;
+}
+
+
+
+.wfc-composer-mini:focus-within {
+  border-color: rgba(9, 117, 215, 0.4);
+  box-shadow: 0 0 0 3px rgba(9, 117, 215, 0.06), 0 4px 14px rgba(20, 18, 50, 0.04);
+}
+
+
+
+.wfc-composer-mini .wfc-composer-textarea {
+  min-height: 38px;
+  font-size: 14px;
+  line-height: 1.5;
+  padding: 4px 4px;
+}
+
+
+
+.wfc-composer-mini .wfc-composer-textarea:disabled {
+  cursor: not-allowed;
+  color: #B4B2A9;
+}
+
+
+
+.wfc-composer-mini .wfc-composer-textarea::placeholder {
+  color: #A8A6A0;
+}
+
+
+
+.wfc-composer-mini .wfc-composer-row { padding-top: 0; }
+
+
+
+.wfc-composer-mini .wfc-mini-btn,
+.wfc-composer-mini .wfc-send-btn {
+  width: 30px;
+  height: 30px;
+}
+
+
+
+.wfc-composer-mini .wfc-send-btn[disabled] {
+  background: #ECECEC;
+  color: #B4B2A9;
+  cursor: not-allowed;
+}
+
+
+
+/* Stop button — shown while agent is working. Solid dark, clear interrupt action. */
+.wfc-composer-mini .wfc-stop-btn {
+  background: #1F1F32;
+  color: #fff;
+  cursor: pointer;
+}
+
+
+.wfc-composer-mini .wfc-stop-btn:hover { background: #0B0B1A; }
+
+
+.wfc-composer-mini .wfc-stop-btn[disabled] {
+  background: #1F1F32;
+  color: #fff;
+  opacity: 1;
+  cursor: pointer;
+}
+
+
+
+/* Plan canvas (right pane after split). Slides in from the right with a slight
+   delay so the eye registers the new canvas before content streams in. */
+.wfc-plan-canvas {
+  position: relative;
+  height: 100vh;
+  padding: 28px 32px 32px;
+  overflow-y: auto;
+  background: var(--wfc-canvas-bg);
+}
+
+
+
+@keyframes wfc-pane-in {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+
+
+.wfc-split-in {
+  animation: wfc-pane-in 640ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+
+
+.wfc-plan-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #8C899F;
+  font-size: 13px;
+}
+
+
+
+/* ── Phase 4 — Plan canvas ──────────────────────────────────────────────── */
+.wfc-plan {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  animation: wfc-fade-up 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+
+
+/* Activity section — collapsed chip + expanded log */
+.wfc-activity-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-self: flex-start;
+  max-width: 100%;
+}
+
+
+
+.wfc-activity-collapsed {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  align-self: flex-start;
+  padding: 6px 12px;
+  background: #fff;
+  border: 1px solid #E8E7E2;
+  border-radius: 999px;
+  font-size: 12px;
+  color: #525066;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background-color 160ms ease, color 160ms ease, border-color 160ms ease;
+}
+
+
+.wfc-activity-collapsed:hover { background: #FBFBF9; color: #1F1F32; }
+
+
+.wfc-activity-collapsed-check {
+  color: #16A34A;
+  flex-shrink: 0;
+}
+
+
+
+/* Expanded activity log shown below the chip */
+.wfc-activity-expanded {
+  padding: 14px 16px;
+  background: #fff;
+  border: 1px solid var(--wfc-canvas-border);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-family: var(--font-mono, ui-monospace), monospace;
+  font-size: 11.5px;
+  color: #6B697B;
+  max-width: 640px;
+}
+
+
+
+/* Ribbon wrapper — lifecycle labels above + ribbon row below */
+.wfc-ribbon-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+
+
+/* Lifecycle labels aligned to the visible cards. Uses the same flex layout
+   as the ribbon row (.wfc-ribbon padding: 14px, gap: 8px, chevron ~14px)
+   so each label sits directly above its card. */
+.wfc-ribbon-lifecycle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px;
+}
+
+
+
+/* Mirror .wfc-ribbon-row's flex: 1 + chevron-gap behaviour */
+.wfc-ribbon-lifecycle > .wfc-ribbon-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+
+
+.wfc-ribbon-lifecycle-cell {
+  flex: 1;
+  min-width: 0;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #A8A6A0;
+  padding-left: 14px;
+}
+
+
+
+/* Spacer where a chevron sits in the ribbon row below (chevron icon ~14px). */
+.wfc-ribbon-lifecycle-spacer {
+  width: 14px;
+  flex-shrink: 0;
+}
+
+
+
+/* Journey ribbon — horizontal row of journey cards with chevron separators */
+.wfc-ribbon {
+  display: flex;
+  align-items: stretch;
+  flex-wrap: nowrap;
+  gap: 8px;
+  padding: 14px;
+  background: #fff;
+  border: 1px solid var(--wfc-canvas-border);
+  border-radius: 14px;
+  box-shadow: 0 1px 0 rgba(20, 18, 50, 0.02), 0 6px 18px rgba(20, 18, 50, 0.03);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+
+.wfc-ribbon::-webkit-scrollbar { display: none; }
+
+
+
+.wfc-ribbon-row {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+
+
+.wfc-ribbon-chevron {
+  color: #D8D7D2;
+  flex-shrink: 0;
+  align-self: center;
+}
+
+
+
+/* Journey card — compact two-row layout (type + title) */
+.wfc-journey-card {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  min-height: 78px;
+  padding: 10px 14px 12px;
+  background: #FBFBF9;
+  border: 1px solid #ECECEC;
+  border-radius: 10px;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition:
+    background-color 200ms ease,
+    border-color 200ms ease,
+    transform 200ms ease,
+    box-shadow 200ms ease;
+}
+
+
+
+.wfc-journey-card:hover {
+  background: #fff;
+  border-color: #D8D7D2;
+  transform: translateY(-1px);
+}
+
+
+
+.wfc-journey-card.is-selected {
+  background: #fff;
+  border-color: rgba(9, 117, 215, 0.5);
+  box-shadow: 0 0 0 3px rgba(9, 117, 215, 0.08), 0 4px 14px rgba(9, 117, 215, 0.06);
+  transform: translateY(-1px);
+}
+
+
+
+.wfc-journey-card-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+
+
+/* Confidence dot is now inline in the head row — push it to the far right */
+.wfc-journey-card-head .wfc-journey-card-confidence {
+  margin-left: auto;
+}
+
+
+
+.wfc-journey-card-icon { color: #8C899F; transition: color 200ms ease; }
+
+
+
+.wfc-journey-card.is-selected .wfc-journey-card-icon { color: var(--wfc-accent); }
+
+
+
+.wfc-journey-card-type {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #8C899F;
+  transition: color 200ms ease;
+}
+
+
+
+.wfc-journey-card.is-selected .wfc-journey-card-type { color: var(--wfc-accent); }
+
+
+
+.wfc-journey-card-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: #1F1F32;
+  line-height: 1.35;
+  letter-spacing: -0.005em;
+  /* clamp to 2 lines */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  flex: 1;
+}
+
+
+
+.wfc-journey-card-confidence {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+
+.wfc-journey-card-confidence.high   { background: #16A34A; }
+
+
+.wfc-journey-card-confidence.medium {
+  background: #F59E0B;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.18);
+}
+
+
+.wfc-journey-card-confidence.low    { background: #DC2626; }
+
+
+
+/* Priority chip — the agent's opinion on whether this card is worth shipping.
+   Patrick's ask: make this consultative, not order-taking. Three tiers:
+   must (green pip), nice (amber pip), optional (muted, card slightly dimmed).
+   Lives below the card title so it reads as recommendation, not metadata. */
+.wfc-journey-card-priority {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 2px;
+  padding: 2px 7px 2px 6px;
+  align-self: flex-start;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: -0.001em;
+  transition: background-color 200ms ease, color 200ms ease;
+}
+
+
+
+.wfc-journey-card-priority-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+
+
+.wfc-journey-card-priority.is-pri-must {
+  background: rgba(22, 163, 74, 0.10);
+  color: #14532D;
+}
+
+
+.wfc-journey-card-priority.is-pri-must .wfc-journey-card-priority-dot {
+  background: #16A34A;
+  box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.18);
+}
+
+
+
+.wfc-journey-card-priority.is-pri-nice {
+  background: rgba(245, 158, 11, 0.10);
+  color: #92400E;
+}
+
+
+.wfc-journey-card-priority.is-pri-nice .wfc-journey-card-priority-dot {
+  background: #F59E0B;
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.18);
+}
+
+
+
+.wfc-journey-card-priority.is-pri-optional {
+  background: rgba(107, 105, 123, 0.08);
+  color: #6B697B;
+}
+
+
+.wfc-journey-card-priority.is-pri-optional .wfc-journey-card-priority-dot {
+  background: #A8A6A0;
+}
+
+
+
+/* Optional cards read as quieter so the agent's recommendation comes through
+   the visual hierarchy, not just the label text. Selected state still wins so
+   the user can focus an optional card without it feeling broken. */
+.wfc-journey-card.is-pri-optional:not(.is-selected) {
+  opacity: 0.78;
+}
+
+
+.wfc-journey-card.is-pri-optional:not(.is-selected) .wfc-journey-card-title {
+  color: #4A4960;
+}
+
+
+
+/* "Why this?" affordance — small ? glyph in the card head, opens a popover
+   with rationale framed as user benefit + source citation. Patrick's ask:
+   show me the rationale per card, not just globally in chat. */
+.wfc-journey-card-why {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  color: #B4B2A9;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: color 140ms ease, background-color 140ms ease, border-color 140ms ease;
+}
+
+
+
+.wfc-journey-card-why:hover,
+.wfc-journey-card-why.is-open {
+  color: #0975D7;
+  background: rgba(9, 117, 215, 0.08);
+  border-color: rgba(9, 117, 215, 0.22);
+}
+
+
+
+.wfc-journey-card.is-selected .wfc-journey-card-why {
+  color: #8C899F;
+}
+
+
+.wfc-journey-card.is-selected .wfc-journey-card-why:hover,
+.wfc-journey-card.is-selected .wfc-journey-card-why.is-open {
+  color: #0975D7;
+}
+
+
+
+/* Popover — portaled to document.body and positioned via inline top/left
+   computed from the card's bounding rect. Has to be portaled because the
+   ribbon container uses overflow-x:auto, which would clip an absolutely-
+   positioned popover anchored inside the card. */
+.wfc-why-popover {
+  position: fixed;
+  z-index: 50;
+  padding: 12px 14px 12px;
+  background: #FFFFFF;
+  border: 1px solid #ECECEC;
+  border-radius: 10px;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.85) inset,
+    0 2px 6px rgba(20, 18, 50, 0.04),
+    0 12px 28px -6px rgba(20, 18, 50, 0.18);
+  cursor: default;
+  text-align: left;
+  animation: wfc-why-in 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+
+
+@keyframes wfc-why-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+
+
+.wfc-why-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+
+
+.wfc-why-title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #0975D7;
+}
+
+
+
+.wfc-why-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 5px;
+  color: #8C899F;
+  cursor: pointer;
+  transition: background-color 140ms ease, color 140ms ease;
+}
+
+
+.wfc-why-close:hover {
+  background: #F8F7F4;
+  color: #1F1F32;
+}
+
+
+
+/* Priority row at the top of the popover — mirrors the card chip but with
+   a one-line "tone" explanation so the user understands what the priority
+   actually means (e.g. "Reps will be blocked without this"). */
+.wfc-why-priority {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 7px;
+  margin-bottom: 12px;
+}
+
+
+
+.wfc-why-priority-dot {
+  flex-shrink: 0;
+  margin-top: 5px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+
+
+.wfc-why-priority-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+
+
+.wfc-why-priority-label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: -0.002em;
+}
+
+
+
+.wfc-why-priority-tone {
+  font-size: 11px;
+  line-height: 1.4;
+  letter-spacing: -0.001em;
+}
+
+
+
+.wfc-why-priority.is-pri-must {
+  background: rgba(22, 163, 74, 0.08);
+}
+
+
+.wfc-why-priority.is-pri-must .wfc-why-priority-dot {
+  background: #16A34A;
+  box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.18);
+}
+
+
+.wfc-why-priority.is-pri-must .wfc-why-priority-label { color: #14532D; }
+
+
+.wfc-why-priority.is-pri-must .wfc-why-priority-tone  { color: #166534; }
+
+
+
+.wfc-why-priority.is-pri-nice {
+  background: rgba(245, 158, 11, 0.08);
+}
+
+
+.wfc-why-priority.is-pri-nice .wfc-why-priority-dot {
+  background: #F59E0B;
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.18);
+}
+
+
+.wfc-why-priority.is-pri-nice .wfc-why-priority-label { color: #92400E; }
+
+
+.wfc-why-priority.is-pri-nice .wfc-why-priority-tone  { color: #B45309; }
+
+
+
+.wfc-why-priority.is-pri-optional {
+  background: rgba(107, 105, 123, 0.07);
+}
+
+
+.wfc-why-priority.is-pri-optional .wfc-why-priority-dot {
+  background: #A8A6A0;
+}
+
+
+.wfc-why-priority.is-pri-optional .wfc-why-priority-label { color: #4A4960; }
+
+
+.wfc-why-priority.is-pri-optional .wfc-why-priority-tone  { color: #6B697B; }
+
+
+
+.wfc-why-section {
+  margin-bottom: 10px;
+}
+
+
+
+.wfc-why-section-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #8C899F;
+  margin-bottom: 3px;
+}
+
+
+
+.wfc-why-section-body {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #1F1F32;
+  letter-spacing: -0.002em;
+}
+
+
+
+.wfc-why-source {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid #F4F4F2;
+  font-size: 11px;
+  line-height: 1.45;
+  color: #6B697B;
+  font-style: italic;
+}
+
+
+.wfc-why-source svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: #8C899F;
+}
+
+
+
+/* Expanded preview shell */
+.wfc-expanded {
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid var(--wfc-canvas-border);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 1px 0 rgba(20, 18, 50, 0.02), 0 8px 24px rgba(20, 18, 50, 0.04);
+}
+
+
+
+.wfc-expanded-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--wfc-canvas-border);
+}
+
+
+
+.wfc-expanded-head-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+
+
+.wfc-expanded-head-icon { color: #6B697B; flex-shrink: 0; }
+
+
+
+.wfc-expanded-head-type {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #8C899F;
+}
+
+
+
+.wfc-expanded-head-sep { color: #C4C3BD; }
+
+
+
+.wfc-expanded-head-card-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1F1F32;
+  letter-spacing: -0.005em;
+}
+
+
+
+.wfc-expanded-head-toolbar {
+  display: flex;
+  gap: 4px;
+}
+
+
+
+.wfc-expanded-tool {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid transparent;
+  background: transparent;
+  border-radius: 7px;
+  color: #8C899F;
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease;
+}
+
+
+.wfc-expanded-tool:hover {
+  background: #FBFBF9;
+  border-color: #ECECEC;
+  color: #1F1F32;
+}
+
+
+.wfc-expanded-tool[disabled] { cursor: not-allowed; opacity: 0.55; }
+
+
+.wfc-expanded-tool[disabled]:hover { background: transparent; border-color: transparent; color: #8C899F; }
+
+.wfc-expanded-tool.is-on { background: #1F1F32; border-color: #1F1F32; color: #fff; }
+.wfc-expanded-tool.is-on:hover { background: #0B0B1A; border-color: #0B0B1A; color: #fff; }
+
+/* ── Source pane — the drafted section, highlighted + scrollable in the box ── */
+.wfc-source-pane { position: absolute; inset: 0; z-index: 6; min-height: 420px; background: #fff; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(15,23,42,0.16); border: 1px solid var(--wfc-canvas-border); }
+.wfc-source-bar { display: flex; align-items: center; gap: 8px; padding: 11px 13px; border-bottom: 1px solid var(--wfc-canvas-border); background: #fff; flex-shrink: 0; }
+.wfc-source-bar-icon { color: #D4452F; flex-shrink: 0; }
+.wfc-source-bar-name { font-size: 12.5px; font-weight: 600; color: #1F1F32; white-space: nowrap; }
+.wfc-source-bar-sep { color: #D4D2CB; }
+.wfc-source-bar-section { font-size: 12px; color: #8C899F; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.wfc-source-bar-open { margin-left: auto; font-size: 12px; font-weight: 600; color: #525266; text-decoration: none; padding: 6px 9px; border-radius: 7px; white-space: nowrap; flex-shrink: 0; transition: background 130ms ease; }
+.wfc-source-bar-open:hover { background: #F4F3EF; }
+.wfc-source-bar-close { width: 28px; height: 28px; flex-shrink: 0; border-radius: 7px; border: none; background: #F4F3EF; color: #525266; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 130ms ease, color 130ms ease; }
+.wfc-source-bar-close:hover { background: #E8E7E2; color: #1F1F32; }
+/* Legend strip */
+.wfc-source-legend { display: flex; align-items: center; gap: 7px; padding: 9px 14px; font-size: 11.5px; color: #8C899F; border-bottom: 1px solid #F4F3EF; flex-shrink: 0; background: #fff; }
+.wfc-source-legend-swatch { width: 13px; height: 13px; border-radius: 3px; background: #FFEAAF; border: 1px solid #F2D88A; flex-shrink: 0; }
+/* The actual scroll region — this is what makes it scroll inside the box. */
+.wfc-source-scroll { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; background: #F4F4F7; padding: 16px; }
+.wfc-source-page { background: #fff; border-radius: 10px; border: 1px solid var(--wfc-canvas-border); padding: 26px 28px; box-shadow: 0 6px 20px rgba(15,23,42,0.06); max-width: 620px; margin: 0 auto; }
+.wfc-source-page-meta { font-size: 10.5px; color: #B4B2A9; margin-bottom: 16px; text-align: right; font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace; }
+.wfc-source-page-h { margin: 0 0 14px; font-size: 16px; font-weight: 700; color: #1F1F32; letter-spacing: -0.01em; }
+.wfc-source-page-num { color: var(--wfc-accent); margin-right: 9px; }
+.wfc-source-p { margin: 0 0 13px; font-size: 13px; line-height: 1.8; color: #2A2A38; }
+.wfc-source-p.is-muted { color: #6B697B; }
+.wfc-source-mark { background: #FFEAAF; padding: 1px 2px; border-radius: 2px; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+.wfc-source-list { margin: 0 0 13px; padding-left: 19px; font-size: 13px; line-height: 1.9; color: #6B697B; }
+
+/* Rationale panel — collapsible inline strip */
+.wfc-rationale {
+  border-bottom: 1px solid var(--wfc-canvas-border);
+  background: linear-gradient(180deg, #FBFBF9 0%, #fff 100%);
+}
+
+
+
+.wfc-rationale-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px;
+  background: transparent;
+  border: none;
+  font-size: 12px;
+  color: #6B697B;
+  cursor: pointer;
+  font-family: inherit;
+  transition: color 150ms ease;
+}
+
+
+.wfc-rationale-trigger:hover { color: #1F1F32; }
+
+
+.wfc-rationale-trigger svg:first-of-type { color: var(--wfc-accent); }
+
+
+
+.wfc-rationale-chev {
+  transition: transform 240ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+
+
+.wfc-rationale-body {
+  padding: 4px 18px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+
+
+.wfc-rationale-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+
+
+.wfc-rationale-q {
+  font-size: 12px;
+  font-weight: 600;
+  color: #1F1F32;
+  letter-spacing: -0.005em;
+}
+
+
+
+.wfc-rationale-a {
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: #525066;
+  max-width: 640px;
+}
+
+
+
+/* Preview body */
+.wfc-expanded-body {
+  padding: 24px;
+  background: #FBFBF9;
+}
+
+
+
+/* Pop-up preview — stage with Salesforce mock backdrop */
+.wfc-preview-stage {
+  position: relative;
+  border-radius: 10px;
+  overflow: hidden;
+  height: 540px;
+  isolation: isolate;
+}
+
+
+
+.wfc-sf-mock {
+  position: absolute;
+  inset: 0;
+  background: #F4F5F7;
+  display: flex;
+  flex-direction: column;
+  filter: blur(1.2px) saturate(0.85);
+  opacity: 0.65;
+  z-index: 0;
+}
+
+
+
+.wfc-sf-header {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  height: 44px;
+  padding: 0 18px;
+  background: #FFFFFF;
+  border-bottom: 1px solid #E1E5EB;
+}
+
+
+
+.wfc-sf-logo-dot {
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  background: #00A1E0; /* Salesforce blue */
+  flex-shrink: 0;
+}
+
+
+
+.wfc-sf-nav {
+  display: flex;
+  gap: 18px;
+  font-size: 12px;
+  color: #555;
+}
+
+
+
+.wfc-sf-header-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+
+
+.wfc-sf-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #C4D6E7;
+}
+
+
+
+.wfc-sf-body {
+  flex: 1;
+  padding: 16px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+
+
+.wfc-sf-panel {
+  background: #fff;
+  border: 1px solid #E1E5EB;
+  border-radius: 6px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+
+
+.wfc-sf-panel-head {
+  height: 14px;
+  width: 70%;
+  border-radius: 3px;
+  background: #C4D6E7;
+}
+
+
+
+.wfc-sf-panel-row {
+  height: 10px;
+  width: 100%;
+  border-radius: 3px;
+  background: #E1E8EF;
+}
+
+
+
+.wfc-sf-panel-row.short { width: 55%; }
+
+
+
+/* The actual popup card — hero illustration top, content bottom, anchored center. */
+.wfc-popup-card {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 2;
+  width: min(460px, 80%);
+  background: #fff;
+  border-radius: 14px;
+  box-shadow:
+    0 1px 0 rgba(20, 18, 50, 0.04),
+    0 26px 60px rgba(0, 113, 210, 0.22);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: wfc-popup-in 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+
+
+@keyframes wfc-popup-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-50% + 8px)) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+
+
+/* Hero illustration — bleeds edge-to-edge at the top of the popup */
+.wfc-popup-hero {
+  position: relative;
+  width: 100%;
+  height: 200px;
+  background: linear-gradient(180deg, #F4F8FE 0%, #E8F1FB 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+
+
+.wfc-popup-hero img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+
+
+.wfc-popup-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 22px 24px 24px;
+}
+
+
+
+.wfc-popup-title {
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.014em;
+  color: #080707;
+  line-height: 1.2;
+}
+
+
+
+.wfc-popup-body {
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: #525066;
+}
+
+
+
+.wfc-popup-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+
+
+.wfc-popup-cta-primary {
+  padding: 8px 14px;
+  background: #0071D2;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+  font-family: inherit;
+}
+
+
+.wfc-popup-cta-primary:hover { background: #005FB2; }
+
+
+
+.wfc-popup-cta-secondary {
+  padding: 8px 14px;
+  background: transparent;
+  color: #6B697B;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 150ms ease, background-color 150ms ease;
+  font-family: inherit;
+}
+
+
+.wfc-popup-cta-secondary:hover { color: #1F1F32; background: #F4F4F0; }
+
+
+
+/* ── Flow preview ───────────────────────────────────────────────────────── */
+/* Salesforce Setup mock — sidebar + main panel layout */
+.wfc-sf-mock-setup .wfc-sf-setup-body {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: 0;
+}
+
+
+
+.wfc-sf-setup-sidebar {
+  background: #fff;
+  border-right: 1px solid #E1E5EB;
+  padding: 12px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+
+
+.wfc-sf-setup-sidebar-search {
+  height: 24px;
+  border: 1px solid #E1E5EB;
+  border-radius: 4px;
+  background: #F4F5F7;
+}
+
+
+
+.wfc-sf-setup-sidebar-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+
+
+.wfc-sf-setup-sidebar-row {
+  height: 8px;
+  width: 80%;
+  background: #E1E8EF;
+  border-radius: 3px;
+}
+
+
+.wfc-sf-setup-sidebar-row.active {
+  background: #C4DCF4;
+  width: 90%;
+}
+
+
+
+.wfc-sf-setup-main {
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: #F4F5F7;
+}
+
+
+
+.wfc-sf-setup-bread {
+  height: 8px;
+  width: 35%;
+  background: #C4D6E7;
+  border-radius: 3px;
+}
+
+
+
+.wfc-sf-setup-h1 {
+  height: 14px;
+  width: 50%;
+  background: #C4D6E7;
+  border-radius: 3px;
+}
+
+
+
+.wfc-sf-setup-row {
+  height: 10px;
+  width: 100%;
+  background: #E1E8EF;
+  border-radius: 3px;
+}
+
+
+.wfc-sf-setup-row.tall { height: 28px; }
+
+
+.wfc-sf-setup-row.short { width: 60%; }
+
+
+
+.wfc-sf-setup-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 0;
+}
+
+
+
+.wfc-sf-setup-toggle-label {
+  height: 10px;
+  width: 35%;
+  background: #C4D6E7;
+  border-radius: 3px;
+}
+
+
+
+.wfc-sf-setup-toggle {
+  width: 32px;
+  height: 16px;
+  border-radius: 999px;
+  background: #00A1E0;
+  position: relative;
+}
+
+
+.wfc-sf-setup-toggle::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #fff;
+}
+
+
+
+/* ── Flow preview — scrollable storyboard (16 stacked frames) ─────────── */
+
+.wfc-flow-storyboard {
+  display: block;
+}
+
+
+
+/* Sticky step progress bar at the top of the scroll */
+.wfc-sb-progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: #fff;
+  border: 1px solid var(--wfc-canvas-border);
+  border-radius: 10px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 8px rgba(20, 18, 50, 0.04);
+}
+
+
+
+.wfc-sb-progress-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #525066;
+  flex-shrink: 0;
+}
+
+
+
+.wfc-sb-progress-track {
+  flex: 1;
+  height: 3px;
+  background: #ECECEC;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+
+
+.wfc-sb-progress-fill {
+  height: 100%;
+  background: var(--wfc-accent);
+  border-radius: 3px;
+  transition: width 380ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+
+
+/* Vertical list of step frames — scrolls internally so the page stays put. */
+.wfc-sb-scroller {
+  display: block;
+  max-height: 640px;
+  overflow-y: auto;
+  padding-right: 4px;
+  scrollbar-gutter: stable;
+}
+
+
+.wfc-sb-scroller > * + * { margin-top: 16px; }
+
+
+
+.wfc-sb-scroller::-webkit-scrollbar { width: 6px; }
+
+
+.wfc-sb-scroller::-webkit-scrollbar-track { background: transparent; }
+
+
+.wfc-sb-scroller::-webkit-scrollbar-thumb { background: #D8D7D2; border-radius: 3px; }
+
+
+.wfc-sb-scroller::-webkit-scrollbar-thumb:hover { background: #B4B2A9; }
+
+
+
+/* Each step frame — a self-contained mock + tooltip card */
+.wfc-sb-frame {
+  display: block;
+  background: #fff;
+  border: 1px solid var(--wfc-canvas-border);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: border-color 200ms ease, box-shadow 200ms ease;
+}
+
+
+
+.wfc-sb-frame:hover {
+  border-color: rgba(9, 117, 215, 0.2);
+  box-shadow: 0 4px 18px rgba(20, 18, 50, 0.05);
+}
+
+
+
+.wfc-sb-frame-stage {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 520px;
+  min-height: 520px;
+  overflow: hidden;
+  isolation: isolate;
+  background: #F4F5F7;
+}
+
+
+
+/* Caption strip below the mock — step number + title + anchor reference */
+.wfc-sb-frame-caption {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--wfc-canvas-border);
+  background: #FBFBF9;
+}
+
+
+
+.wfc-sb-frame-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 22px;
+  padding: 0 7px;
+  background: #fff;
+  border: 1px solid var(--wfc-canvas-border);
+  border-radius: 6px;
+  font-family: var(--font-mono, ui-monospace), monospace;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #525066;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+
+
+
+.wfc-sb-frame-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: #1F1F32;
+  letter-spacing: -0.005em;
+}
+
+
+
+.wfc-sb-frame-anchor {
+  font-size: 11.5px;
+  color: #8C899F;
+  margin-left: auto;
+}
+
+
+
+/* Caption action row — pencil + trash, both hover-reveal */
+.wfc-sb-frame-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+
+
+
+.wfc-sb-frame:hover .wfc-sb-frame-actions { opacity: 1; }
+
+
+
+/* ── Phase 6 — inline editing, reference chips, undo toast ─────────────── */
+
+/* ── Inline edit + floating toolbar ──────────────────────────────────────
+   Wrapper anchors the toolbar above the editable element. Display:contents
+   so it doesn't affect layout when the toolbar is hidden — the wrapper is
+   purely a positioning context for the floating chrome. */
+.wfc-inline-edit-wrap {
+  position: relative;
+  display: inline;
+}
+
+
+
+/* Floating rich-text toolbar. Appears above the editable element while
+   editing. Pinned to the wrap's top edge with a translate-up so it floats
+   clear of the text. Chrome reads as a small command palette: format
+   toggles, font size, color swatches, AI Rewrite. */
+.wfc-inline-toolbar {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  z-index: 40;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  background: #FFFFFF;
+  border: 1px solid #ECECEC;
+  border-radius: 10px;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.85) inset,
+    0 1px 2px rgba(20, 18, 50, 0.06),
+    0 10px 24px -8px rgba(20, 18, 50, 0.18);
+  white-space: nowrap;
+  user-select: none;
+  /* Prevent the toolbar from inheriting italic / bold from its editing parent */
+  font-style: normal;
+  font-weight: 400;
+  text-decoration: none;
+  color: #1F1F32;
+}
+
+
+
+.wfc-inline-tb-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: #4A4960;
+  cursor: pointer;
+  transition: background-color 140ms ease, color 140ms ease;
+}
+
+
+
+.wfc-inline-tb-btn:hover {
+  background: #F8F7F4;
+  color: #0B0B1A;
+}
+
+
+
+.wfc-inline-tb-btn.is-on {
+  background: rgba(9, 117, 215, 0.10);
+  color: #0975D7;
+}
+
+
+
+.wfc-inline-tb-sep {
+  width: 1px;
+  height: 16px;
+  background: #ECECEC;
+  margin: 0 4px;
+  flex-shrink: 0;
+}
+
+
+
+/* Font-size pill — icon + S/M/L label, cycles on click */
+.wfc-inline-tb-size {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 26px;
+  padding: 0 8px 0 7px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: #4A4960;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 140ms ease, color 140ms ease;
+}
+
+
+
+.wfc-inline-tb-size:hover {
+  background: #F8F7F4;
+  color: #0B0B1A;
+}
+
+
+
+.wfc-inline-tb-size-label {
+  font-variant-numeric: tabular-nums;
+}
+
+
+
+/* Color swatches — 5 small circles in a row */
+.wfc-inline-tb-colors {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 2px;
+}
+
+
+
+.wfc-inline-tb-color {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1.5px solid transparent;
+  padding: 0;
+  cursor: pointer;
+  box-shadow: 0 0 0 1px rgba(20, 18, 50, 0.10);
+  transition: transform 140ms cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 140ms ease;
+}
+
+
+
+.wfc-inline-tb-color:hover {
+  transform: scale(1.12);
+}
+
+
+
+.wfc-inline-tb-color.is-on {
+  border-color: #fff;
+  box-shadow: 0 0 0 2px rgba(9, 117, 215, 0.45);
+}
+
+
+
+/* Rewrite with AI — sparkle + label, the demo signal */
+.wfc-inline-tb-rewrite {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 26px;
+  padding: 0 10px 0 8px;
+  background: linear-gradient(135deg, #1F1F32 0%, #0B0B1A 100%);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: -0.003em;
+  cursor: pointer;
+  transition: filter 160ms ease, transform 160ms ease;
+}
+
+
+
+.wfc-inline-tb-rewrite svg {
+  color: #FBBF24;
+  filter: drop-shadow(0 0 4px rgba(251, 191, 36, 0.50));
+}
+
+
+
+.wfc-inline-tb-rewrite:hover {
+  filter: brightness(1.15);
+  transform: translateY(-1px);
+}
+
+
+
+.wfc-inline-tb-rewrite.is-rewriting {
+  pointer-events: none;
+}
+
+
+.wfc-inline-tb-rewrite.is-rewriting svg {
+  animation: wfc-rewrite-spin 900ms cubic-bezier(0.4, 0, 0.6, 1);
+}
+
+
+
+@keyframes wfc-rewrite-spin {
+  from { transform: rotate(0deg) scale(1); }
+  50%  { transform: rotate(180deg) scale(1.2); }
+  to   { transform: rotate(360deg) scale(1); }
+}
+
+
+
+/* While "rewriting," wash the editable with a subtle pulse so the dummy
+   action feels alive even though no text actually changes. */
+.wfc-inline-edit.is-rewriting {
+  animation: wfc-rewrite-wash 900ms cubic-bezier(0.4, 0, 0.6, 1);
+}
+
+
+
+@keyframes wfc-rewrite-wash {
+  0%, 100% { background: rgba(255, 255, 255, 0.12); }
+  50%      { background: rgba(251, 191, 36, 0.16); }
+}
+
+
+
+/* Inline-editable text — chromeless at rest with a hairline dotted underline
+   that whispers "interactive." Hover reveals a soft blue tint + ring. */
+.wfc-inline-edit {
+  cursor: text;
+  border-radius: 4px;
+  transition: background-color 140ms ease, box-shadow 140ms ease;
+  outline: none;
+  position: relative;
+}
+
+
+
+.wfc-inline-edit:hover:not(.is-editing) {
+  background: rgba(9, 117, 215, 0.06);
+  box-shadow: 0 0 0 2px rgba(9, 117, 215, 0.08);
+}
+
+
+
+.wfc-inline-edit.is-editing {
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 0 0 2px rgba(9, 117, 215, 0.4);
+  cursor: text;
+}
+
+
+
+/* On light-colored containers (popup, article, flow tooltip), white-on-white
+   would be invisible — switch to a true white editing surface for those. */
+.wfc-popup-content .wfc-inline-edit.is-editing,
+.wfc-article .wfc-inline-edit.is-editing,
+.wfc-flow-tooltip .wfc-inline-edit.is-editing {
+  background: #fff;
+  box-shadow: 0 0 0 2px rgba(9, 117, 215, 0.4);
+}
+
+
+
+/* Smart Tip is solid blue — editing keeps a translucent white wash + white ring */
+.wfc-smarttip-tip .wfc-inline-edit:hover:not(.is-editing) {
+  background: rgba(255, 255, 255, 0.10);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.18);
+}
+
+
+.wfc-smarttip-tip .wfc-inline-edit.is-editing {
+  background: rgba(255, 255, 255, 0.18);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.45);
+}
+
+
+
+.wfc-inline-edit:empty::before {
+  content: attr(data-placeholder);
+  color: #B4B2A9;
+  pointer-events: none;
+}
+
+
+
+/* Chat composer reference chip — shown when user clicks pencil on a card */
+.wfc-composer-ref-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px 4px 10px;
+  margin-bottom: 6px;
+  background: var(--wfc-accent-tint);
+  border: 1px solid rgba(9, 117, 215, 0.25);
+  border-radius: 999px;
+  font-size: 11.5px;
+  color: var(--wfc-accent-strong);
+  max-width: 100%;
+  width: fit-content;
+}
+
+
+
+.wfc-composer-ref-chip-pin { flex-shrink: 0; }
+
+
+.wfc-composer-ref-chip-label {
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 240px;
+}
+
+
+.wfc-composer-ref-chip-sub {
+  color: rgba(9, 117, 215, 0.7);
+  margin-left: 2px;
+}
+
+
+.wfc-composer-ref-chip-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: rgba(9, 117, 215, 0.55);
+  cursor: pointer;
+  padding: 0;
+  margin-left: 2px;
+}
+
+
+.wfc-composer-ref-chip-close:hover {
+  background: rgba(9, 117, 215, 0.15);
+  color: var(--wfc-accent-strong);
+}
+
+
+
+/* Post-build banner — sits between the header and the ribbon once a build
+   has shipped to Draft. Makes the v+1 implication explicit so the user
+   understands further edits don't overwrite the live artifact. */
+.wfc-plan-built-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 4px 10px;
+  padding: 8px 12px;
+  background: rgba(22, 163, 74, 0.06);
+  border: 1px solid rgba(22, 163, 74, 0.22);
+  border-radius: 8px;
+  font-size: 12.5px;
+  letter-spacing: -0.002em;
+  color: #15803D;
+  animation: wfc-fade-up 380ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+
+
+.wfc-plan-built-banner-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #16A34A;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+
+
+.wfc-plan-built-banner-text strong {
+  font-weight: 600;
+  color: #14532D;
+}
+
+
+
+.wfc-plan-built-banner-sep {
+  margin: 0 7px;
+  color: rgba(22, 163, 74, 0.45);
+}
+
+
+
+/* Plan canvas empty state — appears when every card has been deleted.
+   Quiet center-stack: dashed circle mark + headline + sub + a single Restore
+   primary. Reads as a pause point, not a dead end. */
+.wfc-plan-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 56px 24px 64px;
+  margin: 8px 4px 0;
+  background: #FBFBF9;
+  border: 1px dashed #E0DFD8;
+  border-radius: 14px;
+  animation: wfc-fade-up 460ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+
+
+.wfc-plan-empty-mark {
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 14px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.65);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.85) inset,
+              0 2px 8px rgba(20, 18, 50, 0.04);
+}
+
+
+
+.wfc-plan-empty-title {
+  margin: 0 0 6px;
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: -0.014em;
+  color: #1F1F32;
+}
+
+
+
+.wfc-plan-empty-sub {
+  margin: 0 0 18px;
+  max-width: 380px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: #6B697B;
+  letter-spacing: -0.002em;
+}
+
+
+
+.wfc-plan-empty-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+
+
+.wfc-plan-empty-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 16px;
+  background: #1F1F32;
+  color: #fff;
+  border: none;
+  border-radius: 9px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: -0.003em;
+  cursor: pointer;
+  transition: background-color 160ms ease, transform 160ms ease;
+}
+
+
+
+.wfc-plan-empty-primary:hover {
+  background: #0B0B1A;
+  transform: translateY(-1px);
+}
+
+
+
+/* Undo toast — bottom-center, persists 5s */
+.wfc-undo-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px 10px 16px;
+  background: #1F1F32;
+  color: #fff;
+  border-radius: 10px;
+  box-shadow: 0 12px 32px rgba(20, 18, 50, 0.25);
+  font-size: 13px;
+  animation: wfc-toast-in 320ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+
+
+@keyframes wfc-toast-in {
+  from { opacity: 0; transform: translate(-50%, 12px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+
+
+
+.wfc-undo-toast-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  flex-shrink: 0;
+}
+
+
+
+.wfc-undo-toast-text {
+  color: rgba(255, 255, 255, 0.92);
+}
+
+
+
+.wfc-undo-toast-btn {
+  margin-left: 4px;
+  padding: 4px 10px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background-color 150ms ease, border-color 150ms ease;
+}
+
+
+.wfc-undo-toast-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+
+
+/* Card removal animation — used when a journey card is deleted */
+@keyframes wfc-card-out {
+  from { opacity: 1; transform: scale(1); max-width: 200px; }
+  to   { opacity: 0; transform: scale(0.85); max-width: 0; }
+}
+
+
+.wfc-journey-card.is-removing {
+  animation: wfc-card-out 320ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+
+
+/* Refresh shimmer — overlays the expanded preview when Refresh is clicked */
+.wfc-refresh-shimmer {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(9, 117, 215, 0.10) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  background-size: 200% 100%;
+  animation: wfc-refresh-shimmer-anim 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+}
+
+
+
+@keyframes wfc-refresh-shimmer-anim {
+  from { background-position: 200% 0; opacity: 0; }
+  20%, 80% { opacity: 1; }
+  to { background-position: -200% 0; opacity: 0; }
+}
+
+
+
+/* Per-frame edit affordance — routes to chat composer in Phase 6 */
+.wfc-sb-frame-edit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #8C899F;
+  cursor: pointer;
+  transition: background-color 160ms ease, color 160ms ease, border-color 160ms ease;
+  flex-shrink: 0;
+}
+
+
+
+.wfc-sb-frame-edit:hover {
+  background: #fff;
+  border-color: rgba(9, 117, 215, 0.3);
+  color: var(--wfc-accent);
+}
+
+
+
+/* Override the Pop-up backdrop blur — Setup mock needs to be crisp */
+.wfc-sf-mock-crisp {
+  filter: none !important;
+  opacity: 1 !important;
+}
+
+
+
+/* ── Flow preview — interactive 16-step tooltip animation ─────────────── */
+
+/* Tooltip overlay — refined: white card with subtle inner blue glow (no
+   harsh top border), mono step chip, anchor label in tracked caps.
+   Hidden initially; fades + lifts in when its frame enters view. */
+.wfc-flow-tooltip {
+  position: absolute;
+  z-index: 3;
+  width: 264px;
+  padding: 14px 16px;
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 113, 210, 0.18);
+  box-shadow:
+    0 0 0 1px rgba(0, 113, 210, 0.06) inset,
+    0 1px 0 rgba(20, 18, 50, 0.04),
+    0 14px 36px rgba(0, 113, 210, 0.14);
+  opacity: 0;
+  transform: translateY(8px) scale(0.98);
+  transition:
+    opacity 480ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 480ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+
+
+.wfc-sb-frame.is-visible .wfc-flow-tooltip {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  transition-delay: 120ms;
+}
+
+
+
+/* Pointer matches the tooltip — same border + bg so it reads as one shape. */
+
+/* Pointer — direction depends on tooltip placement vs. the anchor */
+.wfc-flow-tooltip-pointer {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background: #fff;
+  transform: rotate(45deg);
+}
+
+
+
+.wfc-flow-tooltip-pointer {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background: #fff;
+  transform: rotate(45deg);
+}
+
+
+
+/* Each placement: pointer sits on the side facing the anchor, with the two
+   adjacent borders that ARE visible (the rotated edges facing outward). */
+.wfc-flow-tooltip-below .wfc-flow-tooltip-pointer {
+  top: -7px;
+  left: 22px;
+  border-top: 1px solid rgba(0, 113, 210, 0.18);
+  border-left: 1px solid rgba(0, 113, 210, 0.18);
+}
+
+
+
+.wfc-flow-tooltip-above .wfc-flow-tooltip-pointer {
+  bottom: -7px;
+  left: 22px;
+  border-bottom: 1px solid rgba(0, 113, 210, 0.18);
+  border-right: 1px solid rgba(0, 113, 210, 0.18);
+}
+
+
+
+.wfc-flow-tooltip-right .wfc-flow-tooltip-pointer {
+  left: -7px;
+  top: 20px;
+  border-left: 1px solid rgba(0, 113, 210, 0.18);
+  border-bottom: 1px solid rgba(0, 113, 210, 0.18);
+}
+
+
+
+/* Head row — mono step chip + anchor label */
+.wfc-flow-tooltip-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+
+
+.wfc-flow-tooltip-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  font-family: var(--font-mono, ui-monospace), monospace;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #0071D2;
+  background: rgba(0, 113, 210, 0.08);
+  border-radius: 5px;
+  letter-spacing: 0.02em;
+  flex-shrink: 0;
+}
+
+
+
+.wfc-flow-tooltip-chip-sep {
+  color: rgba(0, 113, 210, 0.45);
+  margin: 0 1px;
+}
+
+
+
+.wfc-flow-tooltip-anchor {
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #8C899F;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+
+.wfc-flow-tooltip-title {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: #080707;
+  letter-spacing: -0.012em;
+  line-height: 1.3;
+  margin-bottom: 6px;
+}
+
+
+
+.wfc-flow-tooltip-body {
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: #525066;
+}
+
+
+
+.wfc-flow-tooltip-body strong {
+  color: #080707;
+  font-weight: 600;
+}
+
+
+
+/* ── Smart Tip preview ──────────────────────────────────────────────────── */
+.wfc-smarttip-banner {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  right: 16px;
+  z-index: 4;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 14px;
+  background: rgba(255, 251, 235, 0.96);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  border-radius: 10px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 4px 14px rgba(20, 18, 50, 0.05);
+}
+
+
+.wfc-smarttip-banner > svg {
+  color: #B45309;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+
+.wfc-smarttip-banner-body {
+  flex: 1;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #5C3A00;
+}
+
+
+.wfc-smarttip-banner-body strong { color: #422100; font-weight: 600; }
+
+
+.wfc-smarttip-banner-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+
+.wfc-smarttip-banner-btn {
+  font-size: 11.5px;
+  font-weight: 500;
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(245, 158, 11, 0.5);
+  background: transparent;
+  color: #5C3A00;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background-color 150ms ease;
+}
+
+
+.wfc-smarttip-banner-btn:hover { background: rgba(245, 158, 11, 0.10); }
+
+
+.wfc-smarttip-banner-btn-primary {
+  background: #B45309;
+  color: #fff;
+  border-color: #B45309;
+}
+
+
+.wfc-smarttip-banner-btn-primary:hover { background: #92400E; }
+
+
+
+/* Replaces the amber banner once Looks right is clicked */
+.wfc-smarttip-confirmed {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  right: 16px;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(240, 253, 244, 0.96);
+  border: 1px solid rgba(22, 163, 74, 0.4);
+  border-radius: 10px;
+  font-size: 12.5px;
+  color: #14532D;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 4px 14px rgba(20, 18, 50, 0.05);
+}
+
+
+.wfc-smarttip-confirmed-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #16A34A;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+
+
+/* Anchor highlight — pulses on whichever button the tooltip is pointing at */
+.wfc-sf-opp-btn.target.is-active-anchor {
+  box-shadow: 0 0 0 3px rgba(0, 113, 210, 0.25);
+  transition: box-shadow 320ms ease;
+}
+
+
+
+.wfc-sf-opp-link-row {
+  display: flex;
+  align-items: center;
+  padding: 6px 2px 0;
+}
+
+
+
+.wfc-sf-opp-link {
+  font-size: 11.5px;
+  color: #0071D2;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: box-shadow 320ms ease;
+}
+
+
+
+.wfc-sf-opp-link.is-active-anchor {
+  box-shadow: 0 0 0 3px rgba(0, 113, 210, 0.25);
+}
+
+
+
+/* Salesforce Opportunity mock */
+.wfc-sf-mock-opp .wfc-sf-opp-body {
+  flex: 1;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+
+
+.wfc-sf-opp-title {
+  height: 16px;
+  width: 35%;
+  background: #00A1E0;
+  border-radius: 3px;
+  opacity: 0.65;
+}
+
+
+
+.wfc-sf-opp-meta {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+
+
+.wfc-sf-opp-meta-cell {
+  height: 24px;
+  background: #fff;
+  border: 1px solid #E1E5EB;
+  border-radius: 4px;
+}
+
+
+
+.wfc-sf-opp-action-ribbon {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  background: #fff;
+  border: 1px solid #E1E5EB;
+  border-radius: 6px;
+  position: relative;
+}
+
+
+
+.wfc-sf-opp-btn {
+  height: 22px;
+  border-radius: 4px;
+  background: #F4F5F7;
+  border: 1px solid #E1E5EB;
+  font-size: 11px;
+  color: #555;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+
+.wfc-sf-opp-btn.ghost { width: 60px; }
+
+
+.wfc-sf-opp-btn.target {
+  background: #0071D2;
+  border-color: #0071D2;
+  color: #fff;
+  position: relative;
+}
+
+
+
+.wfc-sf-opp-panel {
+  flex: 1;
+  background: #fff;
+  border: 1px solid #E1E5EB;
+  border-radius: 6px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+
+
+/* Smart Tip tooltip — solid blue card, white text. Animates between primary
+   and alternative anchors when the user clicks "Show alternative." */
+.wfc-smarttip-tip {
+  position: absolute;
+  z-index: 3;
+  width: 240px;
+  transform: translateX(-50%);
+  padding: 14px 16px;
+  background: #0071D2;
+  color: #fff;
+  border-radius: 12px;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.1) inset,
+    0 18px 44px rgba(0, 113, 210, 0.30);
+  animation: wfc-smarttip-in 520ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition:
+    bottom 440ms cubic-bezier(0.16, 1, 0.3, 1),
+    left   440ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+
+
+@keyframes wfc-smarttip-in {
+  from { opacity: 0; transform: translate(-50%, 6px); }
+  to   { opacity: 1; transform: translateX(-50%); }
+}
+
+
+
+.wfc-smarttip-tip-pointer {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%) rotate(45deg);
+  width: 14px;
+  height: 14px;
+  background: #0071D2;
+}
+
+
+
+/* Pointer faces the anchor: bottom = anchor below the tip; top = anchor above the tip */
+.wfc-smarttip-tip-bottom .wfc-smarttip-tip-pointer { bottom: -6px; }
+
+
+.wfc-smarttip-tip-top    .wfc-smarttip-tip-pointer { top: -6px; }
+
+
+
+.wfc-smarttip-tip-title {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #fff;
+  letter-spacing: -0.005em;
+  margin-bottom: 4px;
+}
+
+
+
+.wfc-smarttip-tip-body {
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+
+
+/* Article preview */
+.wfc-article {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 16px 8px;
+  background: transparent;
+}
+
+
+
+.wfc-article-hero {
+  width: 100%;
+  height: 240px;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 18px;
+  background: #ECECEC;
+}
+
+
+
+.wfc-article-hero img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+
+
+.wfc-article-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11.5px;
+  color: #8C899F;
+  letter-spacing: 0.02em;
+}
+
+
+.wfc-article-meta-dot { color: #C4C3BD; }
+
+
+
+.wfc-article-title {
+  margin: 8px 0 0;
+  font-size: 26px;
+  font-weight: 500;
+  letter-spacing: -0.022em;
+  color: #1F1F32;
+  line-height: 1.2;
+}
+
+
+
+.wfc-article-rule {
+  margin: 16px 0;
+  border: none;
+  border-top: 1px solid var(--wfc-canvas-border);
+}
+
+
+
+.wfc-article-body {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+
+
+.wfc-article-section { display: flex; flex-direction: column; gap: 6px; }
+
+
+
+.wfc-article-heading {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1F1F32;
+  letter-spacing: -0.005em;
+}
+
+
+
+.wfc-article-para {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.65;
+  color: #3D3C52;
+}
+
+
+
+/* Stub for not-yet-implemented previews */
+.wfc-preview-stub {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 64px 24px;
+  color: #8C899F;
+  font-size: 13px;
+}
+
+
+
+.wfc-preview-stub-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  background: #F4F4F0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #B4B2A9;
+}
+
+
+
+.wfc-preview-stub-meta {
+  font-size: 12px;
+  color: #B4B2A9;
+}
+
+
+
+/* Activity stream — used inside the DraftingStage card */
+.wfc-activity {
+  position: relative;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  border: none;
+  isolation: isolate;
+}
+
+
+
+.wfc-activity-ambient {
+  display: none;
+}
+
+
+
+.wfc-activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-family: var(--font-mono, ui-monospace), monospace;
+  font-size: 12px;
+  color: #6B697B;
+}
+
+
+
+.wfc-activity-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  line-height: 1.5;
+}
+
+
+
+.wfc-activity-in {
+  animation: wfc-activity-in 280ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+
+
+.wfc-activity-icon-main {
+  color: var(--wfc-accent);
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+
+
+
+.wfc-activity-main { color: #1F1F32; font-weight: 500; }
+
+
+
+.wfc-activity-sub {
+  padding-left: 20px;
+  color: #8C899F;
+}
+
+
+.wfc-activity-elbow { color: #C4C3BD; font-family: var(--font-mono, monospace); }
+
+
+
+.wfc-activity-sublist {
+  flex-direction: column;
+  padding-left: 28px;
+  gap: 4px;
+  color: #525066;
+}
+
+
+.wfc-activity-sublist-item { display: flex; gap: 8px; }
+
+
+.wfc-activity-sublist-num { color: var(--wfc-accent); }
+
+
+
+.wfc-activity-done {
+  color: #16A34A;
+  font-weight: 500;
+  padding-top: 4px;
+}
+
+
+.wfc-activity-icon-done {
+  color: #16A34A;
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+
+
+
+/* ── Drafting stage — the cinematic 'wait' moment before the plan reveals ── */
+.wfc-drafting {
+  width: 100%;
+  max-width: 1200px;
+  margin: 8px auto 0;
+  padding: 22px 24px 24px;
+  background: #fff;
+  border: 1px solid var(--wfc-canvas-border);
+  border-radius: 16px;
+  box-shadow:
+    0 1px 0 rgba(20, 18, 50, 0.02),
+    0 12px 32px rgba(20, 18, 50, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  animation: wfc-drafting-in 600ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+
+
+@keyframes wfc-drafting-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.99); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+
+
+.wfc-drafting-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 4px;
+}
+
+
+
+.wfc-drafting-spinner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--wfc-accent-tint);
+  color: var(--wfc-accent);
+  flex-shrink: 0;
+}
+
+
+
+.wfc-drafting-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1F1F32;
+  letter-spacing: -0.005em;
+}
+
+
+
+.wfc-drafting-meta {
+  margin-left: auto;
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #8C899F;
+}
+
+
+
+/* Live status ticker — single line, always visible. Replaces the multi-line
+   log so the upper half of the drafting card is never blank. */
+.wfc-drafting-ticker {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 2px 4px;
+  font-size: 13.5px;
+  color: #525066;
+  font-style: italic;
+  min-height: 28px;
+  overflow: hidden;
+}
+
+
+
+.wfc-drafting-ticker-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--wfc-accent);
+  flex-shrink: 0;
+  animation: wfc-ticker-dot-pulse 1.6s ease-in-out infinite;
+}
+
+
+
+@keyframes wfc-ticker-dot-pulse {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50%      { opacity: 1;   transform: scale(1.25); }
+}
+
+
+
+.wfc-drafting-ticker-text {
+  animation: wfc-ticker-in 380ms cubic-bezier(0.16, 1, 0.3, 1);
+  letter-spacing: -0.005em;
+}
+
+
+
+.wfc-drafting-ticker-text.is-done {
+  color: #16A34A;
+  font-style: normal;
+  font-weight: 500;
+}
+
+
+
+@keyframes wfc-ticker-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+
+
+.wfc-drafting-divider {
+  height: 1px;
+  background: var(--wfc-canvas-border);
+}
+
+
+
+/* Skeleton card grid — cards appear progressively, sharing available width.
+   Flex (not grid) so visible cards grow to fill, instead of leaving empty slots. */
+.wfc-drafting-grid {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  min-height: 96px;
+}
+
+
+
+.wfc-drafting-grid > * {
+  flex: 1;
+  min-width: 0;
+}
+
+
+
+/* Skeleton card — three states: pending / drafting / ready */
+.wfc-skeleton-card {
+  position: relative;
+  padding: 12px 14px;
+  background: #FBFBF9;
+  border: 1px solid #ECECEC;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 78px;
+  transition:
+    background-color 360ms ease,
+    border-color 360ms ease;
+}
+
+
+
+.wfc-skeleton-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+
+
+/* Per-card status — spinner while drafting, checkmark when ready */
+.wfc-skeleton-status {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: background-color 240ms ease, color 240ms ease;
+}
+
+
+
+.wfc-skeleton-drafting .wfc-skeleton-status {
+  background: rgba(9, 117, 215, 0.10);
+  color: var(--wfc-accent);
+}
+
+
+
+.wfc-skeleton-ready .wfc-skeleton-status {
+  background: rgba(22, 163, 74, 0.14);
+  color: #16A34A;
+  animation: wfc-status-check-in 360ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+
+
+@keyframes wfc-status-check-in {
+  0%   { transform: scale(0.4) rotate(-10deg); opacity: 0; }
+  60%  { transform: scale(1.15) rotate(0); opacity: 1; }
+  100% { transform: scale(1) rotate(0); opacity: 1; }
+}
+
+
+
+.wfc-skeleton-icon {
+  color: #B4B2A9;
+  flex-shrink: 0;
+  transition: color 360ms ease;
+}
+
+
+
+.wfc-skeleton-type {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #B4B2A9;
+  transition: color 360ms ease;
+}
+
+
+
+.wfc-skeleton-line {
+  height: 8px;
+  border-radius: 4px;
+  background: #ECECEC;
+}
+
+
+.wfc-skeleton-line-1 { width: 72%; }
+
+
+.wfc-skeleton-line-2 { width: 44%; }
+
+
+
+/* DRAFTING state — currently being generated. Shimmer + accent tinge. */
+.wfc-skeleton-drafting {
+  background: linear-gradient(180deg, #F4F8FE 0%, #FBFBF9 100%);
+  border-color: rgba(9, 117, 215, 0.25);
+}
+
+
+.wfc-skeleton-drafting .wfc-skeleton-icon,
+.wfc-skeleton-drafting .wfc-skeleton-type {
+  color: var(--wfc-accent);
+}
+
+
+.wfc-skeleton-drafting .wfc-skeleton-line {
+  background: linear-gradient(
+    90deg,
+    rgba(9, 117, 215, 0.10) 0%,
+    rgba(9, 117, 215, 0.22) 50%,
+    rgba(9, 117, 215, 0.10) 100%
+  );
+  background-size: 200% 100%;
+  animation: wfc-skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+
+
+@keyframes wfc-skeleton-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+
+
+/* READY state — content has arrived (or will arrive shortly). Soft green check tinge. */
+.wfc-skeleton-ready {
+  background: #fff;
+  border-color: rgba(22, 163, 74, 0.25);
+}
+
+
+.wfc-skeleton-ready .wfc-skeleton-icon { color: #16A34A; }
+
+
+.wfc-skeleton-ready .wfc-skeleton-type { color: #16A34A; }
+
+
+.wfc-skeleton-ready .wfc-skeleton-line {
+  background: rgba(22, 163, 74, 0.14);
+}
+
+
+
+/* Trim the activity log's font slightly inside drafting */
+.wfc-drafting-log .wfc-activity-list {
+  font-size: 11.5px;
+  gap: 6px;
+}
+
+
+
+/* ── Whatfix Create — onboarding modal ────────────────────────────────────── */
+.wfc-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 18, 50, 0.42);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: wfc-backdrop-in 360ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+
+
+@keyframes wfc-backdrop-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+
+
+.wfc-modal {
+  position: relative;
+  width: 560px;
+  max-width: 100%;
+  min-height: 520px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 24px 64px rgba(20, 18, 50, 0.18), 0 1px 0 rgba(255, 255, 255, 0.6) inset;
+  display: flex;
+  flex-direction: column;
+}
+
+
+
+.wfc-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px 16px;
+}
+
+
+
+.wfc-modal-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #6B697B;
+  letter-spacing: 0.01em;
+}
+
+
+.wfc-modal-brand-suffix { color: #B4B2A9; font-weight: 400; }
+
+
+
+.wfc-modal-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: #8C899F;
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+
+.wfc-modal-close:hover { background: #F6F6F9; color: #1F1F32; }
+
+
+
+.wfc-modal-close-floating {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 2;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+
+.wfc-modal-close-floating:hover { background: #fff; }
+
+
+
+.wfc-modal-steps {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 24px 12px;
+}
+
+
+
+.wfc-modal-steps-segment {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+}
+
+
+.wfc-modal-steps-segment[data-last="true"] { flex: 0; }
+
+
+
+.wfc-step-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #ECECEC;
+  transition: background-color 240ms ease, transform 240ms ease;
+}
+
+
+.wfc-step-dot.active { background: var(--wfc-accent); transform: scale(1.1); }
+
+
+.wfc-step-dot.done   { background: var(--wfc-accent-strong); }
+
+
+
+.wfc-step-bar {
+  flex: 1;
+  height: 1px;
+  background: #ECECEC;
+  border-radius: 1px;
+  overflow: hidden;
+  position: relative;
+}
+
+
+.wfc-step-bar::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: var(--bar-fill, 0%);
+  background: var(--wfc-accent-strong);
+  transition: width 320ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+
+
+.wfc-modal-body {
+  flex: 1;
+  padding: 24px 32px 8px;
+  overflow: hidden;
+  position: relative;
+}
+
+
+
+/* Welcome mode: drop padding so the illustration can fill the modal's top edge. */
+.wfc-modal-body-welcome {
+  padding: 0 32px 8px;
+}
+
+
+
+.wfc-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px 20px;
+  border-top: 1px solid #F2F1F6;
+}
+
+
+
+.wfc-skip-link {
+  font-size: 13px;
+  font-weight: 500;
+  color: #6B697B;
+  background: none;
+  border: none;
+  padding: 6px 8px;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: color 150ms ease, background-color 150ms ease;
+}
+
+
+.wfc-skip-link:hover { color: #1F1F32; background: #F6F6F9; }
+
+
+
+.wfc-modal-next {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 16px;
+  background: var(--wfc-accent);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+
+.wfc-modal-next:hover { background: var(--wfc-accent-strong); }
+
+
+.wfc-modal-next[disabled] {
+  background: #ECECEC;
+  color: #B4B2A9;
+  cursor: not-allowed;
+}
+
+
+
+/* Footer right-cluster: Back sits to the left of Next, visually grouped. */
+.wfc-modal-footer-end {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+
+
+/* Back: ghost variant of Next. Same height/padding so they align. */
+.wfc-modal-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 14px;
+  background: transparent;
+  color: #525066;
+  border: 1px solid #ECECEC;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+
+
+.wfc-modal-back:hover {
+  background: #F6F6F9;
+  border-color: #DCDCE6;
+  color: #1F1F32;
+}
+
+
+
+.wfc-slide {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  animation: wfc-slide-in 280ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+
+
+@keyframes wfc-slide-in {
+  from { opacity: 0; transform: translateX(8px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+
+
+.wfc-slide-title {
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: #1F1F32;
+  margin: 0;
+}
+
+
+
+.wfc-slide-sub {
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: #6B697B;
+  margin: 0;
+}
+
+
+
+/* Welcome slide */
+.wfc-welcome-slide {
+  gap: 20px;
+  align-items: center;
+  text-align: center;
+  padding-bottom: 40px;
+}
+
+
+
+.wfc-welcome-illo {
+  position: relative;
+  width: calc(100% + 64px);
+  margin: 0 -32px 0;
+  height: 260px;
+  background:
+    radial-gradient(80% 100% at 50% 50%, rgba(9, 117, 215, 0.08), transparent 70%),
+    linear-gradient(180deg, #F4F8FE 0%, #FBFBF9 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+  animation: wfc-illo-rise 600ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+
+
+.wfc-welcome-illo svg {
+  display: block;
+  width: 86%;
+  height: 86%;
+  max-height: 220px;
+}
+
+
+
+@keyframes wfc-illo-rise {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+
+
+/* Output card staggered entry — opacity only; transform is owned by SVG attribute */
+.wfc-illo-out {
+  opacity: 0;
+  animation: wfc-illo-card-in 600ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+
+
+@keyframes wfc-illo-card-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+
+
+.wfc-welcome-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+
+
+.wfc-welcome-title {
+  font-size: 22px;
+  font-weight: 500;
+  letter-spacing: -0.022em;
+  color: #1F1F32;
+  margin: 0;
+  line-height: 1.2;
+}
+
+
+
+.wfc-welcome-sub {
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: #6B697B;
+  margin: 0;
+}
+
+
+
+.wfc-welcome-pills {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+
+
+.wfc-welcome-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px 6px 8px;
+  background: #fff;
+  border: 1px solid #ECECEC;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #1F1F32;
+  white-space: nowrap;
+}
+
+
+
+.wfc-welcome-pill-num {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--wfc-accent-tint);
+  color: var(--wfc-accent-strong);
+  font-size: 10.5px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+
+
+.wfc-welcome-pill-sep {
+  color: #C4C3BD;
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+}
+
+
+
+/* Brand fetch slide */
+.wfc-url-input {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #F6F6F9;
+  border: 1px solid #ECECF3;
+  border-radius: 10px;
+  transition: border-color 180ms ease, background-color 180ms ease;
+}
+
+
+.wfc-url-input:focus-within {
+  border-color: rgba(9, 117, 215, 0.35);
+  background: #fff;
+}
+
+
+.wfc-url-input.locked { background: #F2F1F6; opacity: 0.7; }
+
+
+.wfc-url-input input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 14px;
+  color: #1F1F32;
+}
+
+
+.wfc-url-input input::placeholder { color: #8C899F; }
+
+
+.wfc-url-input input:disabled { color: #8C899F; cursor: not-allowed; }
+
+
+
+.wfc-fetch-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 10px 16px;
+  background: var(--wfc-accent);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+
+.wfc-fetch-btn:hover { background: var(--wfc-accent-strong); }
+
+
+.wfc-fetch-btn[disabled] {
+  background: #ECECEC;
+  color: #B4B2A9;
+  cursor: not-allowed;
+}
+
+
+.wfc-fetch-btn.busy {
+  background: var(--wfc-accent);
+  color: #fff;
+  cursor: wait;
+  opacity: 0.85;
+}
+
+
+
+.wfc-doc-link {
+  background: none;
+  border: none;
+  color: #525066;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 4px 0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: #C4C3D0;
+  transition: color 150ms ease, text-decoration-color 150ms ease;
+}
+
+
+.wfc-doc-link:hover { color: #1F1F32; text-decoration-color: #1F1F32; }
+
+
+
+.wfc-ambient {
+  position: relative;
+}
+
+
+.wfc-ambient::before {
+  content: "";
+  position: absolute;
+  inset: -24px -32px;
+  background: radial-gradient(120% 80% at 50% 0%, var(--wfc-ai-ambient), transparent 70%);
+  opacity: 0;
+  transition: opacity 320ms ease;
+  pointer-events: none;
+  z-index: 0;
+}
+
+
+.wfc-ambient.active::before { opacity: 1; }
+
+
+.wfc-ambient > * { position: relative; z-index: 1; }
+
+
+
+.wfc-kit-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+
+
+.wfc-kit-swatch {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 12px;
+  background: #fff;
+  border: 1px solid #ECECF3;
+  border-radius: 10px;
+}
+
+
+
+.wfc-kit-swatch-label {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #8C899F;
+}
+
+
+
+.wfc-kit-swatch-chip {
+  width: 100%;
+  height: 32px;
+  border-radius: 6px;
+  background: #E5E5E5;
+}
+
+
+
+.wfc-kit-swatch-hex {
+  font-family: var(--font-mono, ui-monospace), monospace;
+  font-size: 11.5px;
+  color: #525066;
+}
+
+
+
+.wfc-kit-meta {
+  display: grid;
+  grid-template-columns: 1fr 96px;
+  gap: 10px;
+}
+
+
+
+.wfc-kit-font, .wfc-kit-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: #fff;
+  border: 1px solid #ECECF3;
+  border-radius: 10px;
+}
+
+
+
+.wfc-kit-font-glyph {
+  font-size: 22px;
+  font-weight: 600;
+  color: #1F1F32;
+  line-height: 1;
+  width: 32px;
+}
+
+
+
+.wfc-kit-font-meta { display: flex; flex-direction: column; gap: 2px; }
+
+
+.wfc-kit-font-name { font-size: 13px; font-weight: 600; color: #1F1F32; }
+
+
+.wfc-kit-font-sub  { font-size: 11.5px; color: #8C899F; }
+
+
+
+.wfc-kit-logo {
+  justify-content: center;
+  padding: 8px;
+  min-height: 56px;
+}
+
+
+.wfc-kit-logo img { max-width: 100%; max-height: 32px; }
+
+
+
+.wfc-kit-confirm {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #1F1F32;
+}
+
+
+.wfc-kit-confirm-mark {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(34, 197, 94, 0.15);
+  color: #16A34A;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+
+
+/* ── Context slide (step 2) ─────────────────────────────────────────────
+   Custom instructions textarea + dropzone for context files. Replaces the
+   structured rules list with a Claude-projects-style free-form surface. */
+
+.wfc-context-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+
+
+.wfc-context-field-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #6B697B;
+}
+
+
+
+.wfc-context-field-hint {
+  font-size: 12px;
+  color: #8C899F;
+  letter-spacing: -0.002em;
+}
+
+
+
+.wfc-context-textarea {
+  width: 100%;
+  min-height: 132px;
+  padding: 12px 14px;
+  background: #FFFFFF;
+  border: 1px solid #E8E7E2;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: #1F1F32;
+  letter-spacing: -0.003em;
+  resize: vertical;
+  outline: none;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.65) inset;
+}
+
+
+
+.wfc-context-textarea::placeholder {
+  color: #B4B2A9;
+  white-space: pre-line;
+}
+
+
+
+.wfc-context-textarea:hover {
+  border-color: #C4C3BD;
+}
+
+
+
+.wfc-context-textarea:focus {
+  border-color: rgba(9, 117, 215, 0.45);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.65) inset,
+    0 0 0 3px rgba(9, 117, 215, 0.10);
+}
+
+
+
+/* Files block */
+.wfc-context-files {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+
+
+.wfc-context-files-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+
+
+.wfc-context-files-count {
+  font-size: 11.5px;
+  color: #8C899F;
+  letter-spacing: -0.002em;
+}
+
+
+
+/* Dropzone — dashed border + soft tinted bg, click adds dummy files */
+.wfc-context-dropzone {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 16px;
+  background: #FBFBF9;
+  border: 1px dashed #D7D6CE;
+  border-radius: 10px;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease;
+}
+
+
+
+.wfc-context-dropzone:hover {
+  background: rgba(9, 117, 215, 0.04);
+  border-color: rgba(9, 117, 215, 0.36);
+}
+
+
+
+.wfc-context-dropzone.is-dragover {
+  background: rgba(9, 117, 215, 0.08);
+  border-color: rgba(9, 117, 215, 0.55);
+  border-style: solid;
+  transform: translateY(-1px);
+}
+
+
+
+.wfc-context-dropzone-icon {
+  flex-shrink: 0;
+  color: #6B697B;
+}
+
+
+
+.wfc-context-dropzone:hover .wfc-context-dropzone-icon,
+.wfc-context-dropzone.is-dragover .wfc-context-dropzone-icon {
+  color: #0975D7;
+}
+
+
+
+.wfc-context-dropzone-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+
+
+.wfc-context-dropzone-primary {
+  font-size: 13px;
+  font-weight: 500;
+  color: #1F1F32;
+  letter-spacing: -0.003em;
+}
+
+
+
+.wfc-context-dropzone-secondary {
+  font-size: 12px;
+  color: #8C899F;
+  letter-spacing: -0.002em;
+}
+
+
+
+/* File rows */
+.wfc-context-file-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+
+
+.wfc-context-file-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  background: #FFFFFF;
+  border: 1px solid #ECECEC;
+  border-radius: 9px;
+  transition: border-color 140ms ease, background-color 140ms ease;
+  animation: wfc-fade-up 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+
+
+.wfc-context-file-row:hover {
+  border-color: #C4C3BD;
+  background: #FBFBF9;
+}
+
+
+
+.wfc-context-file-glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  background: rgba(199, 73, 0, 0.06);
+  flex-shrink: 0;
+}
+
+
+
+.wfc-context-file-row:has(.wfc-context-file-glyph svg[color="#0975D7"]) .wfc-context-file-glyph {
+  background: rgba(9, 117, 215, 0.08);
+}
+
+
+.wfc-context-file-row:has(.wfc-context-file-glyph svg[color="#15803D"]) .wfc-context-file-glyph {
+  background: rgba(22, 163, 74, 0.08);
+}
+
+
+.wfc-context-file-row:has(.wfc-context-file-glyph svg[color="#6B697B"]) .wfc-context-file-glyph {
+  background: rgba(107, 105, 123, 0.10);
+}
+
+
+
+.wfc-context-file-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: #1F1F32;
+  letter-spacing: -0.003em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+
+.wfc-context-file-size {
+  flex-shrink: 0;
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  color: #8C899F;
+  letter-spacing: -0.002em;
+}
+
+
+
+.wfc-context-file-remove {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: #8C899F;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 140ms ease, background-color 140ms ease, color 140ms ease;
+}
+
+
+
+.wfc-context-file-row:hover .wfc-context-file-remove {
+  opacity: 1;
+}
+
+
+
+.wfc-context-file-remove:hover {
+  background: #F8F7F4;
+  color: #1F1F32;
+}
+
+
+
+/* System rules slide */
+.wfc-rules-card {
+  border: 1px solid #ECECF3;
+  border-radius: 10px;
+  background: #fff;
+  overflow: hidden;
+}
+
+
+
+.wfc-rule-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid #F2F1F6;
+  transition: background-color 150ms ease;
+}
+
+
+.wfc-rule-row:last-child { border-bottom: none; }
+
+
+.wfc-rule-row:hover { background: #FAFAFB; }
+
+
+
+.wfc-rule-bullet {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #B4B2A9;
+  flex-shrink: 0;
+}
+
+
+
+.wfc-rule-text {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 13.5px;
+  color: #1F1F32;
+  font-family: inherit;
+}
+
+
+.wfc-rule-text::placeholder { color: #8C899F; }
+
+
+
+.wfc-rule-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: #B4B2A9;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 150ms ease, background-color 150ms ease, color 150ms ease;
+}
+
+
+.wfc-rule-row:hover .wfc-rule-remove { opacity: 1; }
+
+
+.wfc-rule-remove:hover { background: #FAFAFB; color: #1F1F32; }
+
+
+
+.wfc-rule-add {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #525066;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+
+.wfc-rule-add:hover { background: #FAFAFB; color: #1F1F32; }
+
+
+
+.wfc-rule-suggestions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+
+.wfc-rule-suggestions-label {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #8C899F;
+}
+
+
+.wfc-rule-suggestion-row { display: flex; flex-wrap: wrap; gap: 6px; }
+
+
+
+.wfc-suggestion-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  background: #fff;
+  border: 1px dashed #DFDDE7;
+  border-radius: 999px;
+  font-size: 12px;
+  color: #525066;
+  cursor: pointer;
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+
+
+.wfc-suggestion-chip:hover {
+  background: var(--wfc-accent-tint);
+  border-color: rgba(9, 117, 215, 0.35);
+  border-style: solid;
+  color: #1F1F32;
+}
+
+
+
+/* Connectors slide */
+.wfc-conn-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+
+
+.wfc-conn-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px 12px 10px;
+  background: #fff;
+  border: 1px solid #ECECEC;
+  border-radius: 10px;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 160ms ease, background-color 160ms ease, transform 160ms ease;
+}
+
+
+.wfc-conn-tile:hover { border-color: #D8D7D2; }
+
+
+.wfc-conn-tile:disabled { cursor: progress; }
+
+
+
+.wfc-conn-tile.is-connected {
+  border-color: rgba(22, 163, 74, 0.35);
+  background: #fff;
+}
+
+
+.wfc-conn-tile.is-connected:hover {
+  border-color: rgba(22, 163, 74, 0.55);
+  background: #FBFBF9;
+}
+
+
+
+.wfc-conn-row-top {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+
+
+.wfc-conn-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  background: #F6F6F4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+
+.wfc-conn-icon img { width: 100%; height: 100%; object-fit: cover; }
+
+
+
+.wfc-conn-mark {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #16A34A;
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+
+
+.wfc-conn-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: #1F1F32;
+  letter-spacing: -0.01em;
+}
+
+
+
+.wfc-conn-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: #8C899F;
+  transition: color 150ms ease;
+}
+
+
+.wfc-conn-tile.is-connected .wfc-conn-status { color: #16A34A; }
+
+
+.wfc-conn-tile.is-connected:hover .wfc-conn-status { color: #1F1F32; }
+
+
+
+.wfc-conn-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+}
+
+
+
+.wfc-browse-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  color: #6B697B;
+  font-size: 12.5px;
+  cursor: pointer;
+  padding: 6px 0;
+  transition: color 150ms ease;
+}
+
+
+.wfc-browse-all:hover { color: #1F1F32; }
+
+
+
+.wfc-conn-count {
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: #8C899F;
+}
+
+
+
+@keyframes wfc-spin {
+  to { transform: rotate(360deg); }
+}
+
+
+.wfc-spin { animation: wfc-spin 0.8s linear infinite; display: inline-flex; }
+
+
+
+/* ── Phase 7 — Build flow ────────────────────────────────────────────────── */
+
+/* Plan canvas header — sits above the journey ribbon */
+.wfc-plan-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 4px 4px 0;
+  margin-bottom: 4px;
+}
+
+
+
+.wfc-plan-head-text {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+
+
+.wfc-plan-head-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 500;
+  letter-spacing: -0.018em;
+  color: #1F1F32;
+  line-height: 1.2;
+}
+
+
+
+/* Status sub-row — universal AI-canvas convention. Dot + label + dot-separated
+   metadata chips. Always present, always at the same scale, so the header
+   reads as a stable status surface across draft / building / built states. */
+.wfc-plan-head-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: #8C899F;
+  letter-spacing: -0.002em;
+}
+
+
+
+.wfc-plan-head-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 500;
+  color: #6B697B;
+}
+
+
+
+.wfc-plan-head-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #0975D7;
+  box-shadow: 0 0 0 3px rgba(9, 117, 215, 0.10);
+}
+
+
+
+.wfc-plan-head-status.is-draft .wfc-plan-head-status-dot {
+  background: #F59E0B;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.14);
+  animation: wfc-status-row-pulse 1.8s ease-in-out infinite;
+}
+
+
+
+.wfc-plan-head-status.is-built {
+  color: #15803D;
+}
+
+
+.wfc-plan-head-status.is-built .wfc-plan-head-status-dot {
+  background: #16A34A;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.14);
+  animation: none;
+}
+
+
+
+.wfc-plan-head-meta-sep {
+  color: #D1D0C9;
+  font-size: 11px;
+}
+
+
+
+.wfc-plan-head-version {
+  font-variant-numeric: tabular-nums;
+  color: #6B697B;
+  font-weight: 500;
+}
+
+
+
+.wfc-plan-head-count {
+  color: #8C899F;
+}
+
+
+
+/* Right-aligned action cluster — overflow → Share → primary. Tight gap so
+   the three read as a unit; the icon button anchors visually with the Share
+   pill, and the primary Build/Open button anchors as the heaviest element. */
+.wfc-plan-head-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+
+
+.wfc-plan-head-menu-wrap {
+  position: relative;
+}
+
+
+
+.wfc-plan-head-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: #6B697B;
+  cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+
+
+.wfc-plan-head-icon-btn:hover {
+  background: #F8F7F4;
+  border-color: #E8E7E2;
+  color: #1F1F32;
+}
+
+
+
+/* Overflow menu — small floating panel anchored under the … button. Hairline
+   border + soft shadow, same vocabulary as the share dialog. */
+.wfc-plan-head-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 30;
+  min-width: 184px;
+  padding: 4px;
+  background: #FFFFFF;
+  border: 1px solid #ECECEC;
+  border-radius: 10px;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.65) inset,
+    0 2px 6px rgba(20, 18, 50, 0.04),
+    0 12px 28px -6px rgba(20, 18, 50, 0.14);
+}
+
+
+
+.wfc-plan-head-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 7px 10px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: #1F1F32;
+  font-family: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 120ms ease;
+}
+
+
+
+.wfc-plan-head-menu-item:hover {
+  background: #F8F7F4;
+}
+
+
+
+.wfc-plan-head-menu-item svg {
+  color: #6B697B;
+  flex-shrink: 0;
+}
+
+
+
+.wfc-plan-head-menu-sep {
+  height: 1px;
+  background: #ECECEC;
+  margin: 4px 6px;
+}
+
+
+
+/* Share button — secondary outline. Sits between overflow and primary. */
+.wfc-plan-head-share {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 13px;
+  background: #FFFFFF;
+  color: #1F1F32;
+  border: 1px solid #E8E7E2;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  letter-spacing: -0.003em;
+  transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease;
+}
+
+
+
+.wfc-plan-head-share:hover {
+  background: #FBFBF9;
+  border-color: #C4C3BD;
+  transform: translateY(-1px);
+}
+
+
+
+.wfc-plan-head-share svg {
+  color: #4A4960;
+}
+
+
+
+.wfc-plan-head-build {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 14px;
+  background: #1F1F32;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  letter-spacing: -0.005em;
+  transition: background-color 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+}
+
+
+
+.wfc-plan-head-build:hover {
+  background: #0B0B1A;
+  transform: translateY(-1px);
+}
+
+
+
+.wfc-plan-head-build:disabled {
+  background: #C4C3BD;
+  cursor: not-allowed;
+  transform: none;
+}
+
+
+
+.wfc-plan-head-build.is-done {
+  background: #15803D;
+}
+
+
+.wfc-plan-head-build.is-done:hover {
+  background: #14532D;
+}
+
+
+
+/* Building: same dark base but with a slow inner shimmer so the button reads
+   as actively working. */
+.wfc-plan-head-build.is-building {
+  background: #1F1F32;
+  position: relative;
+  overflow: hidden;
+}
+
+
+.wfc-plan-head-build.is-building::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.10) 50%,
+    transparent 100%
+  );
+  transform: translateX(-100%);
+  animation: wfc-build-shimmer 1.8s linear infinite;
+  pointer-events: none;
+}
+
+
+.wfc-plan-head-build.is-building:hover {
+  background: #0B0B1A;
+}
+
+
+
+@keyframes wfc-build-shimmer {
+  to { transform: translateX(100%); }
+}
+
+
+
+/* Paused: muted treatment to signal "waiting on user action" */
+.wfc-plan-head-build.is-paused {
+  background: #525066;
+}
+
+
+.wfc-plan-head-build.is-paused:hover {
+  background: #3D3C52;
+}
+
+
+
+/* Per-card build states on the ribbon */
+.wfc-journey-card.is-build-queued {
+  opacity: 0.55;
+  filter: grayscale(0.3);
+}
+
+
+
+.wfc-journey-card.is-build-building {
+  border-color: rgba(9, 117, 215, 0.5);
+  background: #fff;
+  position: relative;
+  overflow: hidden;
+}
+
+
+.wfc-journey-card.is-build-building::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(9, 117, 215, 0.10) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  background-size: 200% 100%;
+  animation: wfc-card-shimmer 1.2s ease-in-out infinite;
+  pointer-events: none;
+}
+
+
+@keyframes wfc-card-shimmer {
+  from { background-position: 200% 0; }
+  to   { background-position: -200% 0; }
+}
+
+
+
+.wfc-journey-card.is-build-built {
+  border-color: rgba(22, 163, 74, 0.45);
+  background: #fff;
+}
+
+
+
+/* Build-state status icon (replaces confidence dot during build) */
+.wfc-journey-card-build-icon {
+  margin-left: auto;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(9, 117, 215, 0.12);
+  color: var(--wfc-accent);
+  flex-shrink: 0;
+}
+
+
+.wfc-journey-card-build-icon.is-built {
+  background: rgba(22, 163, 74, 0.14);
+  color: #16A34A;
+  animation: wfc-check-pop 360ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+
+
+@keyframes wfc-check-pop {
+  0%   { transform: scale(0.4) rotate(-10deg); opacity: 0; }
+  60%  { transform: scale(1.18) rotate(0); opacity: 1; }
+  100% { transform: scale(1) rotate(0); opacity: 1; }
+}
+
+
+
+/* ── Build mini-control — sits above the chat composer during build ───── */
+.wfc-build-mini {
+  background: #fff;
+  border: 1px solid #E8E7E2;
+  border-radius: 10px;
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+
+
+
+.wfc-build-mini-progress {
+  height: 2px;
+  background: #F2F1ED;
+  overflow: hidden;
+}
+
+
+.wfc-build-mini-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--wfc-accent) 0%, #5AA7E8 100%);
+  transition: width 480ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+
+
+.wfc-build-mini-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+}
+
+
+
+.wfc-build-mini-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
+
+
+.wfc-build-mini-spark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--wfc-accent-tint);
+  color: var(--wfc-accent);
+  flex-shrink: 0;
+}
+
+
+
+.wfc-build-mini-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+
+
+.wfc-build-mini-status {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #1F1F32;
+  letter-spacing: 0.01em;
+}
+
+
+
+.wfc-build-mini-subtitle {
+  font-size: 11px;
+  color: #8C899F;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+}
+
+
+
+.wfc-build-mini-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+
+
+.wfc-build-mini-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: transparent;
+  border: 1px solid #ECECEC;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: #525066;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+
+
+.wfc-build-mini-btn:hover {
+  background: #FBFBF9;
+  border-color: #C4C3BD;
+  color: #1F1F32;
+}
+
+
+
+.wfc-build-mini-btn-primary {
+  background: var(--wfc-accent);
+  color: #fff;
+  border-color: var(--wfc-accent);
+}
+
+
+.wfc-build-mini-btn-primary:hover {
+  background: var(--wfc-accent-strong);
+  border-color: var(--wfc-accent-strong);
+  color: #fff;
+}
+
+
+
+/* ── Build summary card — appears in chat thread on completion ────────── */
+.wfc-build-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  background: #fff;
+  border: 1px solid rgba(22, 163, 74, 0.3);
+  border-radius: 12px;
+  max-width: 100%;
+  box-shadow: 0 1px 0 rgba(20, 18, 50, 0.02), 0 6px 18px rgba(22, 163, 74, 0.08);
+}
+
+
+
+.wfc-build-summary-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+
+
+.wfc-build-summary-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(22, 163, 74, 0.14);
+  color: #16A34A;
+  flex-shrink: 0;
+  animation: wfc-check-pop 380ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+
+
+.wfc-build-summary-title {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #1F1F32;
+  letter-spacing: -0.005em;
+}
+
+
+
+.wfc-build-summary-meta {
+  font-size: 11.5px;
+  color: #8C899F;
+  margin-left: 2px;
+}
+
+
+
+.wfc-build-summary-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+
+
+.wfc-build-summary-list li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: #1F1F32;
+}
+
+
+
+.wfc-build-summary-li-check {
+  color: #16A34A;
+  flex-shrink: 0;
+}
+
+
+
+.wfc-build-summary-foot {
+  margin: 0;
+  font-size: 11.5px;
+  color: #8C899F;
+  font-style: italic;
+}
+
+
+
+/* Footer row: italic "all saved" note on the left, Go-to-Draft CTA on the right. */
+.wfc-build-summary-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+
+
+.wfc-build-summary-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px 6px 11px;
+  background: #fff;
+  color: #0975D7;
+  border: 1px solid rgba(9, 117, 215, 0.30);
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: -0.003em;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease;
+}
+
+
+
+.wfc-build-summary-cta:hover {
+  background: rgba(9, 117, 215, 0.05);
+  border-color: rgba(9, 117, 215, 0.55);
+  transform: translateY(-1px);
+}
+
+
+
+.wfc-build-summary-cta-arrow {
+  font-size: 13px;
+  line-height: 1;
+  transition: transform 160ms ease;
+}
+
+
+.wfc-build-summary-cta:hover .wfc-build-summary-cta-arrow {
+  transform: translateX(3px);
+}
+
+
+
+/* ── Reasoning flow — animated status row + recommendation message ─── */
+
+/* "Thought" block — wraps the live checklist with a small header that
+   collapses into "▸ Thought for 9s · 5 steps" once reasoning lands.
+   While live, the header reads "Working" with a spinner. */
+.wfc-thought {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+
+
+/* When the thought is collapsed (post-reasoning), pull the next message
+   closer — the single-line summary doesn't need the full thread gap. */
+.wfc-msg-agent:has(.wfc-thought-head.is-collapsible) {
+  margin-bottom: -10px;
+}
+
+
+
+.wfc-thought-head {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  align-self: flex-start;
+  padding: 4px 0;
+  background: transparent;
+  border: none;
+  color: #6B697B;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  letter-spacing: -0.002em;
+}
+
+
+
+.wfc-thought-head.is-collapsible {
+  cursor: pointer;
+  transition: color 160ms ease;
+}
+
+
+.wfc-thought-head.is-collapsible:hover { color: #1F1F32; }
+
+
+
+.wfc-thought-head-spinner {
+  color: #0975D7;
+  flex-shrink: 0;
+}
+
+
+
+.wfc-thought-head-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+
+
+.wfc-thought-head-sep {
+  color: #C4C3BD;
+  margin: 0 1px;
+}
+
+
+
+.wfc-thought-chev {
+  display: inline-block;
+  font-size: 10px;
+  color: #8C899F;
+  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+  width: 8px;
+  text-align: center;
+}
+
+
+.wfc-thought-head.is-open .wfc-thought-chev {
+  transform: rotate(90deg);
+}
+
+
+
+/* Body: collapsible via max-height + opacity. Generous max so taller
+   checklists don't clip (5 rows ≈ 150px; cap at 320px for safety).
+   Negative inline margins counter the checklist's 4px ring padding so
+   the open state aligns flush with the header. */
+.wfc-thought-body {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  margin-left: -4px;
+  margin-right: -4px;
+  padding-left: 4px;
+  padding-right: 4px;
+  transition:
+    max-height 380ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 240ms ease;
+}
+
+
+.wfc-thought-body.is-open {
+  max-height: 320px;
+  opacity: 1;
+}
+
+
+
+/* Sequential checklist — green-dot/check rows for "what the agent is doing".
+   Each row appears with a fade-up; pending shows a small spinner, done flips
+   to a green check. Reads like Claude/Cursor's tool-call list. */
+.wfc-checklist {
+  margin: 0;
+  /* 4px left padding so the green check's 3px box-shadow ring doesn't
+     clip against the message bubble's left edge. */
+  padding: 0 0 0 4px;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+
+
+/* Each row is a 2-col grid: marker + text stack. align-items:start so the
+   marker hugs the label baseline even when the sub-line wraps the text
+   block to two lines. */
+.wfc-checklist-item {
+  display: grid;
+  grid-template-columns: 16px 1fr;
+  gap: 10px;
+  align-items: start;
+  font-size: 13px;
+  line-height: 1.45;
+  letter-spacing: -0.002em;
+  animation: wfc-fade-up 380ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+
+
+/* Done = settled, muted. The agent did the thing, no longer "current." */
+.wfc-checklist-item.is-done .wfc-checklist-label {
+  color: #6B697B;
+}
+
+
+
+/* Active (pending) = full-weight, slightly heavier. Reads as "this is what
+   I'm doing right now." Perplexity / Manus pattern. */
+.wfc-checklist-item.is-pending .wfc-checklist-label {
+  color: #0B0B1A;
+  font-weight: 500;
+}
+
+
+
+.wfc-checklist-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: background-color 220ms ease, color 220ms ease, box-shadow 220ms ease;
+}
+
+
+
+.wfc-checklist-item.is-pending .wfc-checklist-mark {
+  background: rgba(9, 117, 215, 0.10);
+  color: #0975D7;
+  box-shadow: 0 0 0 3px rgba(9, 117, 215, 0.08);
+}
+
+
+
+.wfc-checklist-item.is-done .wfc-checklist-mark {
+  background: #16A34A;
+  color: #fff;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.12);
+  animation: wfc-checklist-pop 420ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+
+
+@keyframes wfc-checklist-pop {
+  0%   { transform: scale(0.6); }
+  60%  { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
+
+
+/* Text stack — label on top, optional mono sub-line below for the active step.
+   The sub-line is a concrete artifact (file/page/query) so the agent feels
+   like it's reaching into specific sources rather than narrating abstractly. */
+.wfc-checklist-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+
+
+.wfc-checklist-label {
+  display: block;
+}
+
+
+
+.wfc-checklist-sub {
+  display: inline-block;
+  align-self: flex-start;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.35;
+  color: #6B697B;
+  background: rgba(9, 117, 215, 0.06);
+  border: 1px solid rgba(9, 117, 215, 0.10);
+  border-radius: 5px;
+  padding: 2px 6px;
+  letter-spacing: 0;
+  animation: wfc-fade-up 280ms cubic-bezier(0.16, 1, 0.3, 1) 80ms both;
+}
+
+
+
+/* Agent prose message — used by the recommendation bubble.
+   Matches the existing chat-bubble cadence but without italic/muted. */
+.wfc-msg-text {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #1F1F32;
+  letter-spacing: -0.003em;
+}
+
+
+
+.wfc-msg-text strong {
+  font-weight: 600;
+  color: #0B0B1A;
+}
+
+
+
+/* Reasoning bubble — wraps prose + bullet list + CTA inside the agent message.
+   Column layout because the outer .wfc-msg is display:flex (row), which was
+   pinching the CTA into a vertical text-wrap. */
+.wfc-reasoning {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-start;
+  width: 100%;
+}
+
+
+
+/* Reasoning list — no dots. Continuous 1px left rule runs the height of all
+   items; each item indents past the rule and uses a bold lead-in (Pop-up:,
+   Flow:, etc.) for the visual marker. Reads as connected reasoning rather
+   than a designed checklist. Claude / ChatGPT pattern. */
+.wfc-reasoning-list {
+  position: relative;
+  margin: 4px 0 0;
+  padding: 2px 0 2px 16px;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+
+
+.wfc-reasoning-list::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 4px;
+  bottom: 4px;
+  width: 1px;
+  background: linear-gradient(
+    180deg,
+    rgba(9, 117, 215, 0.28) 0%,
+    rgba(9, 117, 215, 0.14) 100%
+  );
+  border-radius: 1px;
+}
+
+
+
+.wfc-reasoning-list li {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #1F1F32;
+  letter-spacing: -0.003em;
+  animation: wfc-fade-up 460ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+
+.wfc-reasoning-list li:nth-child(1) { animation-delay: 80ms; }
+
+
+.wfc-reasoning-list li:nth-child(2) { animation-delay: 220ms; }
+
+
+.wfc-reasoning-list li:nth-child(3) { animation-delay: 360ms; }
+
+
+.wfc-reasoning-list li:nth-child(4) { animation-delay: 500ms; }
+
+
+
+/* Closer line — sits between bullets and the Show plan button. Conversational
+   sign-off that hands agency back to the author. Muted, fades up after bullets. */
+.wfc-reasoning-closer {
+  margin: 6px 0 4px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: #6B697B;
+  letter-spacing: -0.002em;
+  animation: wfc-fade-up 460ms cubic-bezier(0.16, 1, 0.3, 1) 620ms both;
+}
+
+
+
+.wfc-reasoning-list li.is-muted {
+  color: #6B697B;
+}
+
+
+.wfc-reasoning-list li strong {
+  font-weight: 600;
+  color: #0B0B1A;
+}
+
+
+.wfc-reasoning-list li.is-muted strong { color: #4A4960; }
+
+
+
+/* "Show plan →" CTA — primary handoff button. Reads as the most important
+   thing on screen in the reasoning beat; the whole conversation has been
+   building toward this click. Sparkles on the left ties back to the AI
+   surface; arrow on the right signals "this opens something." */
+.wfc-show-plan-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  align-self: flex-start;
+  margin-top: 8px;
+  padding: 11px 18px 11px 15px;
+  background: linear-gradient(180deg, #2A2A40 0%, #15152A 100%);
+  color: #fff;
+  border: none;
+  border-radius: 11px;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 500;
+  letter-spacing: -0.003em;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.10) inset,
+    0 1px 2px rgba(20, 18, 50, 0.20),
+    0 6px 18px -2px rgba(20, 18, 50, 0.28);
+  transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 180ms ease,
+              filter 180ms ease;
+}
+
+
+
+.wfc-show-plan-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.10);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.14) inset,
+    0 1px 2px rgba(20, 18, 50, 0.22),
+    0 12px 26px -4px rgba(20, 18, 50, 0.36);
+}
+
+
+
+.wfc-show-plan-btn:active {
+  transform: translateY(0);
+}
+
+
+
+.wfc-show-plan-btn-spark {
+  color: #FBBF24;
+  filter: drop-shadow(0 0 6px rgba(251, 191, 36, 0.45));
+  animation: wfc-show-plan-spark 2400ms ease-in-out infinite;
+}
+
+
+
+@keyframes wfc-show-plan-spark {
+  0%, 100% { opacity: 1;    transform: scale(1); }
+  50%      { opacity: 0.75; transform: scale(0.92); }
+}
+
+
+
+.wfc-show-plan-btn-arrow {
+  font-size: 14px;
+  line-height: 1;
+  transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+
+.wfc-show-plan-btn:hover .wfc-show-plan-btn-arrow {
+  transform: translateX(3px);
+}
+
+
+
+/* Plan canvas reveal — slides in from the right as the chat rail shrinks left.
+   The grid-template-columns transition on .wfc-chat-stage (640ms) drives the
+   layout reflow; the canvas itself fades + slides over the same window with
+   a slight delay so the chat lands first, canvas arrives a beat after. */
+.wfc-plan-fade-in {
+  animation: wfc-plan-slide-in 720ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: 120ms;
+}
+
+
+
+@keyframes wfc-plan-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+
+
+/* ── Plan canvas skeleton — shown while the agent is still "working" ──
+   Mirrors the real PlanCanvas layout (header, ribbon, preview) with
+   shimmer placeholders so the canvas reads as filling in, not appearing
+   from nothing once reasoning lands. */
+.wfc-plan-skel {
+  pointer-events: none;
+  user-select: none;
+}
+
+
+
+.wfc-plan-skel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 4px 14px;
+}
+
+
+
+.wfc-plan-skel-title {
+  width: 180px;
+  height: 22px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #ECECEC 0%, #F4F4F2 50%, #ECECEC 100%);
+  background-size: 200% 100%;
+  animation: wfc-skel-shimmer 1600ms ease-in-out infinite;
+}
+
+
+
+.wfc-plan-skel-meta {
+  width: 220px;
+  height: 14px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #ECECEC 0%, #F4F4F2 50%, #ECECEC 100%);
+  background-size: 200% 100%;
+  animation: wfc-skel-shimmer 1600ms ease-in-out infinite;
+  animation-delay: 120ms;
+}
+
+
+
+.wfc-plan-skel-ribbon {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  padding: 0 4px;
+}
+
+
+
+.wfc-plan-skel-card {
+  height: 86px;
+  padding: 14px;
+  background: #FBFBF9;
+  border: 1px dashed #E0DFD8;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  animation: wfc-skel-card-in 600ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+
+
+.wfc-plan-skel-card-tag {
+  width: 48px;
+  height: 12px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #ECECEC 0%, #F4F4F2 50%, #ECECEC 100%);
+  background-size: 200% 100%;
+  animation: wfc-skel-shimmer 1600ms ease-in-out infinite;
+}
+
+
+
+.wfc-plan-skel-card-title {
+  width: 70%;
+  height: 14px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #ECECEC 0%, #F4F4F2 50%, #ECECEC 100%);
+  background-size: 200% 100%;
+  animation: wfc-skel-shimmer 1600ms ease-in-out infinite;
+  animation-delay: 200ms;
+}
+
+
+
+.wfc-plan-skel-preview {
+  margin: 16px 4px 0;
+  padding: 16px;
+  background: #FBFBF9;
+  border: 1px dashed #E0DFD8;
+  border-radius: 12px;
+  min-height: 280px;
+}
+
+
+
+.wfc-plan-skel-preview-head {
+  width: 200px;
+  height: 16px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #ECECEC 0%, #F4F4F2 50%, #ECECEC 100%);
+  background-size: 200% 100%;
+  animation: wfc-skel-shimmer 1600ms ease-in-out infinite;
+  margin-bottom: 18px;
+}
+
+
+
+.wfc-plan-skel-preview-body {
+  height: 180px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #F4F4F2 0%, #FAFAF8 50%, #F4F4F2 100%);
+  background-size: 200% 100%;
+  animation: wfc-skel-shimmer 1800ms ease-in-out infinite;
+  animation-delay: 300ms;
+}
+
+
+
+@keyframes wfc-skel-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+
+
+@keyframes wfc-skel-card-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+
+
+/* ── Plan canvas "draft" treatment — before Build runs ─────────────── */
+
+/* "Draft" chip beside the Proposed Plan title */
+/* Subtler card treatment while plan is still a draft (pre-Build).
+   Cards already have a soft cream background; we add a very faint dashed
+   inner outline so they read as proposal, not finished artifact. */
+.wfc-plan:not(.is-built) .wfc-journey-card:not(.is-build-built):not(.is-build-building) {
+  background:
+    repeating-linear-gradient(
+      135deg,
+      #FBFBF9,
+      #FBFBF9 14px,
+      #F7F6F0 14px,
+      #F7F6F0 15px
+    );
+}
+
+
+
+.wfc-plan:not(.is-built) .wfc-journey-card:not(.is-build-built):not(.is-build-building):hover {
+  background:
+    repeating-linear-gradient(
+      135deg,
+      #ffffff,
+      #ffffff 14px,
+      #F7F6F0 14px,
+      #F7F6F0 15px
+    );
+}
+
+
+
+/* ── Build completion modal + confetti ───────────────────────────────── */
+
+.wfc-completion-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(20, 18, 50, 0.42);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  animation: wfc-completion-backdrop-in 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+
+
+@keyframes wfc-completion-backdrop-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+
+
+.wfc-completion-modal {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  background: #fff;
+  border-radius: 18px;
+  padding: 36px 36px 28px;
+  text-align: center;
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.40) inset,
+    0 30px 80px rgba(20, 18, 50, 0.35),
+    0 8px 22px rgba(20, 18, 50, 0.18);
+  animation: wfc-completion-modal-in 420ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+
+
+@keyframes wfc-completion-modal-in {
+  from { opacity: 0; transform: translateY(12px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+
+
+/* Confetti anchor — invisible 0×0 element at the top center of the modal.
+   Confetti particles burst outward from this origin. */
+.wfc-completion-confetti-anchor {
+  position: absolute;
+  top: 30px;
+  left: 50%;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+
+
+
+.wfc-confetti-burst {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+
+
+.wfc-confetti-particle {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 8px;
+  height: 8px;
+  background: var(--c);
+  opacity: 0;
+  transform: translate(-50%, -50%) rotate(var(--r0)) scale(var(--s));
+  animation: wfc-confetti-burst var(--dur) cubic-bezier(0.17, 0.84, 0.44, 1) var(--delay) forwards;
+  will-change: transform, opacity;
+}
+
+
+
+.wfc-confetti-particle.is-rect {
+  border-radius: 1px;
+  width: 9px;
+  height: 4px;
+}
+
+
+
+.wfc-confetti-particle.is-circle {
+  border-radius: 50%;
+  width: 7px;
+  height: 7px;
+}
+
+
+
+/* Two-stage motion: first 40% bursts outward; remaining 60% adds gravity
+   pull (fy) so the particles fall. Rotation continues throughout. */
+@keyframes wfc-confetti-burst {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) rotate(var(--r0)) scale(var(--s));
+  }
+  40% {
+    opacity: 1;
+    transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty)))
+               rotate(var(--r1)) scale(var(--s));
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty) + var(--fy)))
+               rotate(calc(var(--r1) * 1.4)) scale(calc(var(--s) * 0.85));
+  }
+}
+
+
+
+/* Animated check ring — circle stroke draws on, then the check mark draws. */
+.wfc-completion-check {
+  display: inline-flex;
+  margin: 0 auto 18px;
+  position: relative;
+  z-index: 1;
+}
+
+
+
+.wfc-completion-check svg {
+  display: block;
+}
+
+
+
+.wfc-completion-check-ring {
+  stroke-dasharray: 170;
+  stroke-dashoffset: 170;
+  animation: wfc-check-ring-draw 580ms cubic-bezier(0.22, 1, 0.36, 1) 80ms forwards;
+}
+
+
+
+@keyframes wfc-check-ring-draw {
+  to { stroke-dashoffset: 0; }
+}
+
+
+
+.wfc-completion-check-mark {
+  stroke-dasharray: 40;
+  stroke-dashoffset: 40;
+  animation: wfc-check-mark-draw 340ms cubic-bezier(0.22, 1, 0.36, 1) 580ms forwards;
+}
+
+
+
+@keyframes wfc-check-mark-draw {
+  to { stroke-dashoffset: 0; }
+}
+
+
+
+.wfc-completion-title {
+  margin: 0 0 8px;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.018em;
+  color: #1F1F32;
+  animation: wfc-fade-up 460ms cubic-bezier(0.16, 1, 0.3, 1) 380ms both;
+}
+
+
+
+.wfc-completion-meta {
+  margin: 0 0 26px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #6B697B;
+  animation: wfc-fade-up 460ms cubic-bezier(0.16, 1, 0.3, 1) 480ms both;
+}
+
+
+
+.wfc-completion-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  animation: wfc-fade-up 460ms cubic-bezier(0.16, 1, 0.3, 1) 580ms both;
+}
+
+
+
+.wfc-completion-secondary {
+  padding: 10px 18px;
+  background: transparent;
+  color: #525066;
+  border: 1px solid #ECECEC;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+
+
+.wfc-completion-secondary:hover {
+  background: #F6F6F9;
+  border-color: #DCDCE6;
+  color: #1F1F32;
+}
+
+
+
+.wfc-completion-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 18px 10px 20px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0) 38%),
+    linear-gradient(135deg, #4FA3F5 0%, #1E6FE0 55%, #0F4FBF 100%);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: -0.003em;
+  cursor: pointer;
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.20) inset,
+    0 4px 14px rgba(30, 111, 224, 0.30);
+  transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease;
+}
+
+
+.wfc-completion-primary:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.06);
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.24) inset,
+    0 8px 22px rgba(30, 111, 224, 0.42);
+}
+
+
+.wfc-completion-primary:focus-visible {
+  outline: 2px solid rgba(9, 117, 215, 0.55);
+  outline-offset: 2px;
+}
+
+
+
+/* ── Share dialog + Version history dialog ─────────────────────────────────
+   Modal pattern shared between the Share button and the overflow Version
+   history item. Manus / v0 vernacular: backdrop dim, centered dialog,
+   close affordance top-right, content stacks vertically. */
+.wfc-share-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(20, 18, 50, 0.32);
+  backdrop-filter: blur(2px);
+  animation: wfc-fade-up 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+
+
+.wfc-share-dialog,
+.wfc-history-dialog {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  padding: 22px 22px 18px;
+  background: #FFFFFF;
+  border: 1px solid #ECECEC;
+  border-radius: 16px;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.85) inset,
+    0 30px 80px -20px rgba(20, 18, 50, 0.45);
+  animation: wfc-share-rise 260ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+
+
+.wfc-history-dialog { max-width: 480px; }
+
+
+
+@keyframes wfc-share-rise {
+  from { opacity: 0; transform: translateY(8px) scale(0.985); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+
+
+.wfc-share-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+
+
+.wfc-share-title {
+  margin: 0;
+  font-size: 15.5px;
+  font-weight: 500;
+  letter-spacing: -0.012em;
+  color: #0B0B1A;
+}
+
+
+
+.wfc-share-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: none;
+  border-radius: 7px;
+  color: #6B697B;
+  cursor: pointer;
+  transition: background-color 140ms ease, color 140ms ease;
+}
+
+
+.wfc-share-close:hover {
+  background: #F8F7F4;
+  color: #1F1F32;
+}
+
+
+
+.wfc-share-sub {
+  margin: 2px 0 16px;
+  font-size: 12.5px;
+  color: #8C899F;
+  letter-spacing: -0.002em;
+}
+
+
+
+.wfc-share-field-label {
+  display: block;
+  margin: 0 0 6px;
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: #8C899F;
+}
+
+
+
+.wfc-share-select {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  background: #FBFBF9;
+  border: 1px solid #ECECEC;
+  border-radius: 9px;
+  font-size: 13px;
+  color: #1F1F32;
+  cursor: pointer;
+  transition: border-color 160ms ease, background-color 160ms ease;
+  margin-bottom: 14px;
+}
+
+
+.wfc-share-select:hover {
+  border-color: #C4C3BD;
+  background: #fff;
+}
+
+
+.wfc-share-select svg { color: #6B697B; flex-shrink: 0; }
+
+
+.wfc-share-select-chev {
+  margin-left: auto;
+  color: #8C899F;
+  font-size: 11px;
+}
+
+
+
+.wfc-share-email {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 5px 5px 12px;
+  background: #FFFFFF;
+  border: 1px solid #E8E7E2;
+  border-radius: 9px;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+  margin-bottom: 16px;
+}
+
+
+.wfc-share-email:focus-within {
+  border-color: rgba(9, 117, 215, 0.45);
+  box-shadow: 0 0 0 3px rgba(9, 117, 215, 0.08);
+}
+
+
+.wfc-share-email svg { color: #8C899F; flex-shrink: 0; }
+
+
+.wfc-share-email-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 13px;
+  color: #1F1F32;
+  padding: 6px 0;
+}
+
+
+.wfc-share-email-input::placeholder { color: #B4B2A9; }
+
+
+.wfc-share-email-send {
+  flex-shrink: 0;
+  padding: 6px 12px;
+  background: #1F1F32;
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 140ms ease;
+}
+
+
+.wfc-share-email-send:hover { background: #0B0B1A; }
+
+
+
+.wfc-share-footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  background: #FBFBF9;
+  border: 1px solid #ECECEC;
+  border-radius: 10px;
+}
+
+
+
+.wfc-share-link {
+  flex: 1;
+  min-width: 0;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 12px;
+  color: #6B697B;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+
+.wfc-share-copy {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  background: #FFFFFF;
+  color: #1F1F32;
+  border: 1px solid #E8E7E2;
+  border-radius: 7px;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease;
+}
+
+
+.wfc-share-copy:hover {
+  background: #fff;
+  border-color: #C4C3BD;
+}
+
+
+.wfc-share-copy.is-copied {
+  background: rgba(22, 163, 74, 0.08);
+  border-color: rgba(22, 163, 74, 0.32);
+  color: #15803D;
+}
+
+
+
+/* Version history dialog content */
+.wfc-history-list {
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 380px;
+  overflow-y: auto;
+}
+
+
+
+.wfc-history-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 12px;
+  background: #FBFBF9;
+  border: 1px solid #ECECEC;
+  border-radius: 9px;
+  transition: border-color 140ms ease, background-color 140ms ease;
+}
+
+
+
+.wfc-history-row:hover {
+  border-color: #C4C3BD;
+  background: #FFFFFF;
+}
+
+
+
+.wfc-history-row.is-current {
+  background: rgba(9, 117, 215, 0.04);
+  border-color: rgba(9, 117, 215, 0.32);
+}
+
+
+
+.wfc-history-row-main {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+
+
+.wfc-history-row-version {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  font-size: 13px;
+  color: #0B0B1A;
+}
+
+
+
+.wfc-history-row-meta {
+  font-size: 12.5px;
+  color: #6B697B;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+
+.wfc-history-row-current {
+  flex-shrink: 0;
+  padding: 3px 8px;
+  background: rgba(9, 117, 215, 0.10);
+  color: #0975D7;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+
+
+.wfc-history-row-restore {
+  flex-shrink: 0;
+  padding: 6px 12px;
+  background: #FFFFFF;
+  color: #1F1F32;
+  border: 1px solid #E8E7E2;
+  border-radius: 7px;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 140ms ease, border-color 140ms ease;
+}
+
+
+.wfc-history-row-restore:hover {
+  background: #1F1F32;
+  color: #fff;
+  border-color: #1F1F32;
+}
+
+
+
+
+/* ── Ecosystem page ─────────────────────────────────────────────────────
+   Two horizontal flows joined by a Library hub. Quiet typography, hairline
+   borders, single-color marks. Each tile lands with a small fade-up so the
+   sequence reads left-to-right on load. */
+.wfc-eco-page {
+  min-height: 100vh;
+  padding: 56px 32px 96px;
+  display: flex;
+  justify-content: center;
+}
+
+
+
+.wfc-eco-shell {
+  width: 100%;
+  max-width: 1180px;
+  display: flex;
+  flex-direction: column;
+  gap: 48px;
+}
+
+
+
+.wfc-eco-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+}
+
+
+
+.wfc-eco-eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #8C899F;
+}
+
+
+
+.wfc-eco-title {
+  margin: 0;
+  font-size: 30px;
+  font-weight: 500;
+  letter-spacing: -0.025em;
+  color: #0B0B1A;
+  line-height: 1.18;
+  max-width: 760px;
+}
+
+
+
+.wfc-eco-sub {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: #6B697B;
+  letter-spacing: -0.003em;
+  max-width: 620px;
+}
+
+
+
+/* Two vertical flow columns flanking a central sphere. Layout reads
+   left-to-right: SME capture column → Library sphere → Author column.
+   position:relative so the curved arrow SVGs can position absolutely
+   relative to the whole flow grid. */
+.wfc-eco-flow {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 36px;
+  padding: 16px 0 24px;
+}
+
+
+
+/* Curve overlay — single SVG sized to the full flow grid, with bezier paths
+   computed from the actual rects of the Publish card, sphere, and Reference
+   card. Sits on top of the grid cells (pointer-events:none so it never
+   intercepts hover) and re-paints on resize via ResizeObserver. */
+.wfc-eco-curve-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  overflow: visible;
+  z-index: 1;
+}
+
+
+
+.wfc-eco-lane {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+  width: 100%;
+}
+
+
+
+.wfc-eco-lane-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #6B697B;
+  margin-bottom: 6px;
+}
+
+
+
+.wfc-eco-lane-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #C74900;
+  box-shadow: 0 0 0 3px rgba(199, 73, 0, 0.14);
+}
+
+
+
+.wfc-eco-lane-dot.is-draft {
+  background: #4FA3F5;
+  box-shadow: 0 0 0 3px rgba(79, 163, 245, 0.18);
+}
+
+
+
+.wfc-eco-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  width: 100%;
+}
+
+
+
+.wfc-eco-step-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 320px;
+}
+
+
+
+.wfc-eco-step-row.is-final {
+  padding: 0;
+}
+
+
+
+/* Tile — proper flowchart card. Generous padding, real shadow, larger
+   typography. Reads as a deliberate node in a diagram rather than a small
+   list-row chip. */
+.wfc-eco-tile {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 22px 22px 20px;
+  background: #FFFFFF;
+  border: 1px solid #ECECEC;
+  border-radius: 14px;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.85) inset,
+    0 2px 4px rgba(20, 18, 50, 0.03),
+    0 8px 24px -8px rgba(20, 18, 50, 0.08);
+  opacity: 0;
+  animation: wfc-eco-tile-in 540ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  transition: border-color 220ms ease, transform 220ms ease, box-shadow 220ms ease;
+}
+
+
+
+.wfc-eco-tile:hover {
+  border-color: #C4C3BD;
+  transform: translateY(-2px);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.85) inset,
+    0 2px 4px rgba(20, 18, 50, 0.04),
+    0 14px 32px -8px rgba(20, 18, 50, 0.14);
+}
+
+
+
+
+@keyframes wfc-eco-tile-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+
+
+.wfc-eco-tile-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+
+
+.wfc-eco-tile-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  flex-shrink: 0;
+}
+
+
+
+.wfc-eco-tile.is-video .wfc-eco-tile-mark {
+  background: rgba(199, 73, 0, 0.10);
+  color: #C74900;
+}
+
+
+
+.wfc-eco-tile.is-draft .wfc-eco-tile-mark {
+  background: rgba(30, 111, 224, 0.10);
+  color: #1E6FE0;
+}
+
+
+
+.wfc-eco-tile-step {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: #B4B2A9;
+}
+
+
+
+.wfc-eco-tile-label {
+  font-size: 16px;
+  font-weight: 600;
+  color: #0B0B1A;
+  letter-spacing: -0.012em;
+  line-height: 1.2;
+}
+
+
+
+.wfc-eco-tile-sub {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #6B697B;
+  letter-spacing: -0.002em;
+}
+
+
+
+/* Vertical connector between stacked flowchart cards. Dashed line, with an
+   optional arrowhead used on the segments that feed into the sphere. */
+.wfc-eco-vconnect {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #C4C3BD;
+  padding: 10px 0;
+}
+
+
+.wfc-eco-vconnect.has-arrow {
+  color: #8C899F;
+}
+
+
+
+/* Hub — the Library tile both flows share. Larger, more visually weighted
+   than ordinary tiles so the eye lands on it as the pivot. */
+.wfc-eco-hub-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  width: 220px;
+  height: 220px;
+}
+
+
+
+.wfc-eco-hub {
+  position: relative;
+  z-index: 2;
+  width: 176px;
+  height: 176px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #FFFFFF 0%, #FBFBF9 100%);
+  border: 1px solid rgba(20, 18, 50, 0.10);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.85) inset,
+    0 2px 6px rgba(20, 18, 50, 0.05),
+    0 28px 56px -14px rgba(20, 18, 50, 0.22);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 8px;
+  padding: 0 18px;
+  animation: wfc-eco-hub-in 800ms cubic-bezier(0.16, 1, 0.3, 1) 100ms both;
+}
+
+
+
+@keyframes wfc-eco-hub-in {
+  from { opacity: 0; transform: scale(0.92); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+
+
+.wfc-eco-hub-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 11px;
+  background: linear-gradient(135deg, #4FA3F5 0%, #1E6FE0 100%);
+  color: #FFFFFF;
+  box-shadow: 0 6px 16px -4px rgba(30, 111, 224, 0.50);
+}
+
+
+
+.wfc-eco-hub-label {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.012em;
+  color: #0B0B1A;
+}
+
+
+
+.wfc-eco-hub-sub {
+  font-size: 11px;
+  line-height: 1.4;
+  color: #8C899F;
+  letter-spacing: 0;
+}
+
+
+
+.wfc-eco-hub-rings {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+
+
+.wfc-eco-hub-ring {
+  position: absolute;
+  inset: 6px;
+  border-radius: 50%;
+  border: 1px dashed rgba(79, 163, 245, 0.22);
+  animation: wfc-eco-hub-ring-spin 32s linear infinite;
+}
+
+
+
+.wfc-eco-hub-ring.is-outer {
+  inset: -8px;
+  border-color: rgba(199, 73, 0, 0.18);
+  animation-duration: 48s;
+  animation-direction: reverse;
+}
+
+
+
+@keyframes wfc-eco-hub-ring-spin {
+  to { transform: rotate(360deg); }
+}
+
+
+
+/* Footer — three numbered call-outs explaining the design. */
+.wfc-eco-foot {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+  padding-top: 24px;
+  border-top: 1px solid #ECECEC;
+}
+
+
+
+.wfc-eco-foot-item {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+
+
+.wfc-eco-foot-num {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #1F1F32;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+
+
+.wfc-eco-foot-h {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1F1F32;
+  letter-spacing: -0.005em;
+  margin-bottom: 2px;
+}
+
+
+
+.wfc-eco-foot p {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: #6B697B;
+  letter-spacing: -0.002em;
+}
+/* ─── Create flow — plan list + done + drawer (First Draft blue/cream) ───── */
+.cf-plan-card { background: #fff; border: 1px solid #E8E7E2; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 0 rgba(20,18,50,0.015), 0 4px 14px rgba(20,18,50,0.04); }
+.cf-plan-head { display: flex; align-items: center; justify-content: space-between; padding: 11px 13px 9px; }
+.cf-plan-head-title { font-size: 12.5px; font-weight: 700; color: #1F1F32; letter-spacing: -0.005em; }
+.cf-plan-selectall { background: none; border: none; cursor: pointer; font-size: 11.5px; font-weight: 600; color: var(--wfc-accent); padding: 0; }
+.cf-plan-item { display: flex; align-items: flex-start; gap: 10px; padding: 11px 13px; border-top: 1px solid #F0EFEA; transition: background 130ms ease; }
+.cf-plan-item:hover { background: #FBFBF9; }
+.cf-plan-checkbox { width: 18px; height: 18px; flex-shrink: 0; margin-top: 1px; border-radius: 5px; border: 1.6px solid #C4C3BD; background: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; transition: background 130ms ease, border-color 130ms ease; }
+.cf-plan-checkbox.is-on { background: var(--wfc-accent); border-color: var(--wfc-accent); }
+.cf-plan-mark { width: 18px; height: 18px; flex-shrink: 0; margin-top: 1px; display: flex; align-items: center; justify-content: center; }
+.cf-plan-check-done { width: 18px; height: 18px; border-radius: 50%; background: var(--wfc-build-done); display: flex; align-items: center; justify-content: center; }
+.cf-plan-check-empty { width: 14px; height: 14px; border-radius: 4px; border: 1.6px solid #E0DFDA; }
+.cf-plan-body { flex: 1; min-width: 0; }
+.cf-plan-row1 { display: flex; align-items: center; gap: 6px; }
+.cf-plan-title { font-size: 13px; font-weight: 600; color: #1F1F32; letter-spacing: -0.005em; }
+.cf-plan-ready { font-size: 10.5px; font-weight: 600; color: var(--wfc-build-done); margin-left: auto; }
+.cf-plan-generating { font-size: 10.5px; font-weight: 600; color: var(--wfc-accent); margin-left: auto; }
+.cf-plan-meta { font-size: 11.5px; color: #8C899F; margin-top: 2px; }
+.cf-plan-section { display: inline-flex; align-items: center; gap: 4px; margin-top: 7px; padding: 3px 8px; background: #F6F5F1; border-radius: 6px; font-size: 11px; color: #6B697B; font-weight: 500; }
+.cf-plan-section svg { color: #B4B2A9; }
+.cf-plan-chev { flex-shrink: 0; margin-top: 2px; color: #C4C3BD; }
+
+.cf-done { background: #F0FAF3; border: 1px solid #BFE7CC; border-radius: 12px; padding: 13px; }
+.cf-done-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.cf-done-check { width: 20px; height: 20px; border-radius: 50%; background: var(--wfc-build-done); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.cf-done-title { font-size: 14px; font-weight: 600; color: #1F1F32; letter-spacing: -0.003em; }
+.cf-done-sub { margin: 0 0 11px 28px; font-size: 13px; color: #8C899F; line-height: 1.55; }
+.cf-done-cta { margin-left: 28px; display: inline-flex; align-items: center; gap: 6px; background: #fff; border: 1px solid #ECEBE6; border-radius: 9px; padding: 8px 14px; font-size: 12.5px; font-weight: 600; color: #1F1F32; cursor: pointer; transition: border-color 130ms ease, background 130ms ease; }
+.cf-done-cta:hover { border-color: #C4C3BD; background: #FAFAF8; }
+
+/* drawer + highlight reuse cf-drawer-up / cf-backdrop-in / cf-highlight from earlier block */
+
+/* ─── Create flow — analyzing card + plan action buttons ─────────────────── */
+.cf-analyze-card { background: #fff; border: 1px solid #E8E7E2; border-radius: 12px; padding: 13px; box-shadow: 0 1px 0 rgba(20,18,50,0.015), 0 4px 14px rgba(20,18,50,0.04); }
+.cf-analyze-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.cf-analyze-title { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 600; color: #1F1F32; }
+.cf-analyze-eta { font-size: 11px; color: #8C899F; font-family: ui-monospace, monospace; }
+.cf-analyze-track { height: 5px; border-radius: 999px; background: #ECEBE6; overflow: hidden; margin-bottom: 12px; }
+.cf-analyze-fill { height: 100%; background: var(--wfc-accent); border-radius: 999px; transition: width 500ms cubic-bezier(0.32,0,0.15,1); }
+.cf-analyze-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 9px; }
+.cf-analyze-item { display: flex; align-items: flex-start; gap: 8px; }
+.cf-analyze-mark { width: 16px; height: 16px; flex-shrink: 0; margin-top: 1px; display: flex; align-items: center; justify-content: center; }
+.cf-analyze-check { width: 16px; height: 16px; border-radius: 50%; background: var(--wfc-build-done); display: flex; align-items: center; justify-content: center; }
+.cf-analyze-text { display: flex; flex-direction: column; line-height: 1.45; }
+.cf-analyze-label { font-size: 12.5px; font-weight: 500; color: #1F1F32; }
+.cf-analyze-sub { font-size: 11px; color: #8C899F; font-family: ui-monospace, monospace; margin-top: 1px; }
+
+.cf-plan-actions { display: flex; gap: 8px; }
+.cf-plan-build { flex: 1; background: var(--wfc-accent); color: #fff; border: none; border-radius: 10px; padding: 10px 16px; font-size: 13px; font-weight: 600; cursor: pointer; letter-spacing: -0.005em; transition: background 140ms ease; }
+.cf-plan-build:hover:not(:disabled) { background: var(--wfc-accent-strong); }
+.cf-plan-build:disabled { background: #C4C3BD; cursor: default; }
+.cf-plan-preview { background: #fff; color: #1F1F32; border: 1px solid #E8E7E2; border-radius: 10px; padding: 10px 16px; font-size: 13px; font-weight: 600; cursor: pointer; letter-spacing: -0.005em; transition: border-color 140ms ease, background 140ms ease; }
+.cf-plan-preview:hover { border-color: #C4C3BD; background: #FBFBF9; }
+
+/* ─── Thinking block slim progress bar ──────────────────────────────────── */
+/* Fixed pixel width so the track NEVER resizes with the (content-sized) chat
+   bubble. The fill grows left→right inside this fixed track. */
+.cf-think-track { position: relative; width: 260px; max-width: 100%; height: 4px; border-radius: 999px; background: rgba(31,31,50,0.08); overflow: hidden; margin: 2px 0 13px; }
+/* Determinate fill — only ever grows (driven by completed steps), smooth
+   ease-out so it ratchets up and never snaps back. */
+.cf-think-fill { height: 100%; background: #1F1F32; border-radius: 999px; transition: width 600ms cubic-bezier(0.22,1,0.36,1); }
+
+/* ─── Plan card — sleeker, tighter (modern AI output) ───────────────────── */
+.cf-plan-card { background: #fff; border: 1px solid #ECEBE6; border-radius: 14px; overflow: hidden; box-shadow: 0 1px 2px rgba(20,18,50,0.03), 0 6px 20px -10px rgba(20,18,50,0.10); }
+.cf-plan-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px 10px; }
+.cf-plan-head-title { font-size: 12px; font-weight: 600; color: #6B697B; letter-spacing: 0.01em; text-transform: uppercase; }
+.cf-plan-selectall { background: none; border: none; cursor: pointer; font-size: 12px; font-weight: 600; color: var(--wfc-accent); padding: 0; }
+.cf-plan-selectall:hover { color: var(--wfc-accent-strong); }
+.cf-plan-item { display: flex; align-items: center; gap: 11px; padding: 11px 14px; border-top: 1px solid #F4F3EF; transition: background 130ms ease; }
+.cf-plan-item:hover { background: #FBFBF9; }
+.cf-plan-checkbox { width: 19px; height: 19px; flex-shrink: 0; border-radius: 6px; border: 1.6px solid #D4D2CB; background: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; transition: background 130ms ease, border-color 130ms ease, transform 120ms ease; }
+.cf-plan-checkbox:hover { border-color: var(--wfc-accent); }
+.cf-plan-checkbox.is-on { background: var(--wfc-accent); border-color: var(--wfc-accent); }
+.cf-plan-checkbox:active { transform: scale(0.92); }
+.cf-plan-mark { width: 19px; height: 19px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+.cf-plan-check-done { width: 19px; height: 19px; border-radius: 50%; background: var(--wfc-build-done); display: flex; align-items: center; justify-content: center; }
+.cf-plan-check-empty { width: 14px; height: 14px; border-radius: 5px; border: 1.6px solid #E6E4DE; }
+.cf-plan-icon { flex-shrink: 0; width: 32px; height: 32px; border-radius: 9px; background: #F4F3EF; display: flex; align-items: center; justify-content: center; color: #6B697B; transition: background 130ms ease, color 130ms ease; }
+.cf-plan-item:hover .cf-plan-icon { background: #ECEBE6; color: #1F1F32; }
+.cf-plan-body { flex: 1; min-width: 0; }
+.cf-plan-row1 { display: flex; align-items: center; gap: 6px; }
+.cf-plan-title { font-size: 13.5px; font-weight: 600; color: #1F1F32; letter-spacing: -0.01em; }
+.cf-plan-ready { font-size: 11px; font-weight: 600; color: var(--wfc-build-done); margin-left: auto; display: inline-flex; align-items: center; gap: 4px; }
+.cf-plan-generating { font-size: 11px; font-weight: 600; color: #6B697B; margin-left: auto; }
+.cf-plan-meta { display: flex; align-items: center; gap: 6px; margin-top: 3px; flex-wrap: wrap; }
+.cf-plan-type { font-size: 11.5px; font-weight: 500; color: #8C899F; }
+.cf-plan-steps { font-size: 11.5px; color: #8C899F; }
+.cf-plan-source { font-size: 11.5px; color: #B4B2A9; }
+.cf-plan-dot { font-size: 11.5px; color: #D4D2CB; }
+.cf-plan-chev { flex-shrink: 0; color: #C4C3BD; transition: transform 130ms ease, color 130ms ease; }
+.cf-plan-item:hover .cf-plan-chev { color: #8C899F; transform: translateX(2px); }
+
+.cf-plan-actions { display: flex; gap: 8px; margin-top: -6px; }
+.cf-plan-build { flex: 1; background: #1F1F32; color: #fff; border: none; border-radius: 11px; padding: 11px 16px; font-size: 13px; font-weight: 600; cursor: pointer; letter-spacing: -0.005em; box-shadow: 0 2px 8px rgba(20,18,50,0.18); transition: background 140ms ease, box-shadow 140ms ease; }
+.cf-plan-build:hover:not(:disabled) { background: #0B0B1A; box-shadow: 0 4px 12px rgba(20,18,50,0.26); }
+.cf-plan-build:disabled { background: #C4C3BD; box-shadow: none; cursor: default; }
+.cf-plan-preview { background: #fff; color: #1F1F32; border: 1px solid #E6E4DE; border-radius: 11px; padding: 11px 18px; font-size: 13px; font-weight: 600; cursor: pointer; letter-spacing: -0.005em; transition: border-color 140ms ease, background 140ms ease; }
+.cf-plan-preview:hover { border-color: #C4C3BD; background: #FBFBF9; }
+
+/* hmr-nudge */
+
+/* ─── Mobbin-informed polish: thinking shimmer, staggered rows, micro-interactions ─ */
+@keyframes cfTextShimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+/* Shimmering "Analyzing document" label while the agent is live (Perplexity pattern) */
+.cf-think-live-label {
+  background: linear-gradient(90deg, #8C899F 0%, #8C899F 35%, #1F1F32 50%, #8C899F 65%, #8C899F 100%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: cfTextShimmer 2.2s linear infinite;
+}
+
+/* Staggered entrance for plan rows (Mobbin list-reveal) */
+.cf-plan-item { animation: cfFadeUp 420ms cubic-bezier(0.16,1,0.3,1) both; }
+.cf-plan-item:nth-child(1) { animation-delay: 40ms; }
+.cf-plan-item:nth-child(2) { animation-delay: 110ms; }
+.cf-plan-item:nth-child(3) { animation-delay: 180ms; }
+.cf-plan-item:nth-child(4) { animation-delay: 250ms; }
+.cf-plan-item:nth-child(5) { animation-delay: 320ms; }
+
+/* ─── Minimal plan — bare outline checklist (ChatGPT-minimal) ────────────── */
+/* No card, no meta, no chevron. Just checkbox + icon + flow name, monochrome. */
+.cf-plan-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.cf-plan-row { display: flex; align-items: center; gap: 11px; padding: 9px 4px; border-radius: 8px; transition: background 120ms ease; animation: cfFadeUp 360ms cubic-bezier(0.16,1,0.3,1) both; }
+.cf-plan-row:hover { background: #FAFAF8; }
+.cf-plan-row:nth-child(1) { animation-delay: 30ms; }
+.cf-plan-row:nth-child(2) { animation-delay: 90ms; }
+.cf-plan-row:nth-child(3) { animation-delay: 150ms; }
+.cf-plan-row:nth-child(4) { animation-delay: 210ms; }
+.cf-plan-row:nth-child(5) { animation-delay: 270ms; }
+/* Square checkbox — monochrome, fills black when on */
+.cf-plan-box { width: 18px; height: 18px; flex-shrink: 0; border-radius: 5px; border: 1.5px solid #D4D2CB; background: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; color: #fff; transition: background 120ms ease, border-color 120ms ease, transform 110ms ease; }
+.cf-plan-box:hover { border-color: var(--wfc-text); }
+.cf-plan-box.is-on { background: var(--wfc-text); border-color: var(--wfc-text); }
+.cf-plan-box:active { transform: scale(0.9); }
+.cf-plan-mark { width: 18px; height: 18px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+.cf-plan-mark-done { color: var(--wfc-build-done); }
+.cf-plan-mark-busy { color: var(--wfc-text); }
+/* Content-type glyph — quiet grey, no chip */
+.cf-plan-glyph { flex-shrink: 0; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; color: #9C99A8; }
+.cf-plan-glyph svg { width: 15px; height: 15px; }
+.cf-plan-name { flex: 1; min-width: 0; font-size: 13.5px; font-weight: 500; color: var(--wfc-text); letter-spacing: -0.006em; line-height: 1.4; }
+.cf-plan-row.is-checked .cf-plan-name { font-weight: 600; }
+.cf-plan-status { font-size: 11.5px; color: var(--wfc-muted); margin-left: auto; flex-shrink: 0; }
+
+/* Send button micro-interaction */
+.wfc-send-btn { transition: background-color 150ms ease, transform 120ms ease, opacity 150ms ease; }
+.wfc-send-btn:not(:disabled):active { transform: scale(0.9); }
+.wfc-send-btn:not(:disabled):hover { background: var(--wfc-accent-strong); }
+
+/* nudge2 */
+
+/* ─── Black primary buttons (match Build/preview language) ───────────────── */
+.wfc-send-btn { background: #1F1F32 !important; }
+.wfc-send-btn:not(:disabled):hover { background: #0B0B1A !important; }
+.wfc-send-btn:disabled { background: #D4D2CB !important; }
+.wfc-stop-btn { background: #1F1F32 !important; }
+
+/* nudge3 */
+
+/* ─── Preview all — contained floating panel over a dim scrim ────────────── */
+/* Sits over the left free-zone; the studio panel (431px) stays clear on the
+   right, and the background app shows through the scrim around the box. */
+.cf-preview-scrim { position: fixed; inset: 0 431px 0 0; z-index: 90; background: rgba(20,18,40,0.32); display: flex; align-items: stretch; justify-content: stretch; padding: 24px; animation: cfScrimIn 180ms ease both; }
+@keyframes cfScrimIn { from { opacity: 0; } to { opacity: 1; } }
+/* Fill the free-zone with a 24px inset on every side — no wasted space. */
+.cf-preview-box { width: 100%; height: 100%; background: var(--wfc-canvas-bg); border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 24px 60px -20px rgba(15,18,40,0.45), 0 8px 24px -12px rgba(15,18,40,0.30); animation: cfBoxIn 220ms cubic-bezier(0.16,1,0.3,1) both; }
+@keyframes cfBoxIn { from { opacity: 0; transform: translateY(8px) scale(0.985); } to { opacity: 1; transform: none; } }
+.cf-preview-bar { display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-bottom: 1px solid var(--wfc-canvas-border); background: #fff; flex-shrink: 0; }
+.cf-preview-title { font-size: 14px; font-weight: 700; color: var(--wfc-text); letter-spacing: -0.01em; }
+.cf-preview-hint { font-size: 11.5px; color: #B4B2A9; margin-left: 2px; }
+.cf-preview-close { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; background: #fff; border: 1px solid #E8E7E2; border-radius: 8px; padding: 7px 12px; font-size: 12.5px; font-weight: 600; color: #525266; cursor: pointer; transition: border-color 130ms ease, background 130ms ease; }
+.cf-preview-close:hover { border-color: #C4C3BD; background: #FAFAF8; }
+/* The ported canvas is 100vh by default — constrain it to the box and let it
+   be the vertical scroller so long plans / the source pane never get clipped. */
+.wfc-plan-canvas.cf-preview-canvas { flex: 1; min-height: 0; height: auto; overflow-y: auto; overflow-x: hidden; display: block; -webkit-overflow-scrolling: touch; }
+
+/* ─── Clarifier card (tabbed questions above the composer) ───────────────── */
+.cf-clarify { background: #fff; border: 1px solid #ECEBE6; border-radius: 14px; margin-bottom: 10px; overflow: hidden; box-shadow: 0 1px 2px rgba(20,18,50,0.03), 0 8px 22px -12px rgba(20,18,50,0.12); }
+.cf-clarify-tabs { display: flex; align-items: center; gap: 2px; padding: 6px 8px; border-bottom: 1px solid #F4F3EF; }
+.cf-clarify-tab { display: inline-flex; align-items: center; gap: 6px; background: transparent; border: none; cursor: pointer; padding: 6px 11px; border-radius: 8px; font-size: 12.5px; font-weight: 600; color: var(--wfc-muted); letter-spacing: -0.005em; transition: background 130ms ease, color 130ms ease; }
+.cf-clarify-tab:hover { color: var(--wfc-text); }
+.cf-clarify-tab.is-active { background: #F4F4F5; color: var(--wfc-text); }
+/* A tiny dot marks an answered tab — no checkmark. */
+.cf-clarify-tab-dot { width: 5px; height: 5px; border-radius: 50%; background: #D4D2CB; flex-shrink: 0; transition: background 130ms ease; }
+.cf-clarify-tab.is-done .cf-clarify-tab-dot { background: var(--wfc-text); }
+.cf-clarify-count { margin-left: auto; font-size: 11px; font-weight: 600; color: #B4B2A9; padding-right: 6px; font-variant-numeric: tabular-nums; }
+.cf-clarify-body { padding: 12px 14px 4px; }
+.cf-clarify-q { margin: 0 0 10px; font-size: 13px; font-weight: 600; color: #1F1F32; letter-spacing: -0.01em; }
+.cf-clarify-opts { display: flex; flex-wrap: wrap; gap: 7px; }
+.cf-clarify-opt { display: inline-flex; align-items: center; gap: 6px; background: #fff; border: 1px solid #E8E7E2; cursor: pointer; padding: 7px 13px; border-radius: 999px; font-size: 12.5px; font-weight: 500; color: #3A3A4A; letter-spacing: -0.005em; transition: all 130ms ease; }
+.cf-clarify-opt:hover { border-color: #C4C3BD; background: #FBFBF9; }
+.cf-clarify-opt.is-sel { background: #1F1F32; border-color: #1F1F32; color: #fff; }
+.cf-clarify-foot { display: flex; justify-content: flex-end; padding: 10px 14px 12px; }
+.cf-clarify-submit { display: inline-flex; align-items: center; gap: 6px; background: #1F1F32; color: #fff; border: none; border-radius: 9px; padding: 8px 16px; font-size: 12.5px; font-weight: 600; cursor: pointer; letter-spacing: -0.005em; transition: background 140ms ease; }
+.cf-clarify-submit:hover:not(:disabled) { background: #0B0B1A; }
+.cf-clarify-submit:disabled { background: #D4D2CB; cursor: default; }
+
+/* nudge4 */
+
+/* ─── Clarifier numbered rows (reference: Claude-style answer list) ──────── */
+.cf-clarify-qrow { padding: 13px 14px 9px; }
+.cf-clarify-q { font-size: 13px; font-weight: 600; color: var(--wfc-text); letter-spacing: -0.01em; }
+.cf-clarify-rows { display: flex; flex-direction: column; padding: 0 6px; }
+/* Simple selectable row — a small radio dot, the label, nothing else. */
+.cf-clarify-row { display: flex; align-items: center; gap: 11px; width: 100%; text-align: left; background: transparent; border: none; cursor: pointer; padding: 9px 10px; border-radius: 9px; font-family: inherit; transition: background 120ms ease; }
+.cf-clarify-row:hover { background: #FAFAF8; }
+.cf-clarify-row.is-sel { background: #F4F4F5; }
+.cf-clarify-row-radio { flex-shrink: 0; width: 15px; height: 15px; border-radius: 50%; border: 1.6px solid #D4D2CB; background: #fff; position: relative; transition: border-color 120ms ease; }
+.cf-clarify-row:hover .cf-clarify-row-radio { border-color: #B4B2A9; }
+.cf-clarify-row.is-sel .cf-clarify-row-radio { border-color: var(--wfc-text); }
+.cf-clarify-row.is-sel .cf-clarify-row-radio::after { content: ''; position: absolute; inset: 3px; border-radius: 50%; background: var(--wfc-text); }
+.cf-clarify-row-label { flex: 1; font-size: 13px; font-weight: 500; color: var(--wfc-text); letter-spacing: -0.005em; }
+.cf-clarify-row.is-sel .cf-clarify-row-label { font-weight: 600; }
+.cf-clarify-foot { display: flex; align-items: center; justify-content: space-between; padding: 11px 14px 12px; border-top: 1px solid #F4F3EF; margin-top: 6px; }
+.cf-clarify-progress { font-size: 11.5px; color: var(--wfc-muted); font-variant-numeric: tabular-nums; }
+
+/* nudge5 */
+
+/* ─── Source drawer highlight (multi-line yellow wash) ──────────────────── */
+.cf-source-mark {
+  background: linear-gradient(#FFEAAF, #FFEAAF);
+  box-shadow: 0 0 0 2px #FFEAAF;
+  color: #1F1F32;
+  border-radius: 2px;
+  font-weight: 500;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+/* nudge6 */
+
+/* nudge7 */
+
+/* ─── Critique fixes: P1/P2 polish ──────────────────────────────────────── */
+/* Selected plan row — visible background tint (no side-stripe) */
+.cf-plan-item.is-selected { background: #FFFFFF; }
+.cf-plan-item.is-selected:hover { background: #FFFFFF; }
+
+/* Thought-body collapse: align motion timing so opacity + height move together */
+.wfc-thought-body { transition: max-height 300ms cubic-bezier(0.22, 1, 0.36, 1), opacity 300ms cubic-bezier(0.22, 1, 0.36, 1) !important; }
+
+/* Standardize primary CTA radius to 10px across surfaces */
+.cf-plan-build, .cf-plan-preview, .cf-clarify-submit { border-radius: 10px; }
+
+/* Disabled clarifier submit — clearer not-allowed affordance */
+.cf-clarify-submit:disabled { cursor: not-allowed; }
+
+/* Build-complete toast (slides up inside the panel) */
+@keyframes cfToastIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.cf-toast {
+  position: absolute; left: 18px; right: 18px; bottom: 92px;
+  z-index: 38; display: flex; align-items: center; gap: 8px;
+  background: #1F1F32; color: #fff; border-radius: 10px;
+  padding: 10px 14px; font-size: 12.5px; font-weight: 600; letter-spacing: -0.005em; line-height: 1.4;
+  box-shadow: 0 8px 28px rgba(15,23,42,0.28);
+  animation: cfToastIn 320ms cubic-bezier(0.22,1,0.36,1) both;
+}
+.cf-toast-check { width: 16px; height: 16px; border-radius: 50%; background: var(--wfc-build-done); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+
+/* ─── Create flow: persistent header ────────────────────────────────────── */
+.cf-header { display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; padding: 10px 12px 10px 16px; background: var(--wfc-canvas-bg); border-bottom: 1px solid rgba(31,31,50,0.06); }
+.cf-header-title { font-size: 14px; font-weight: 700; color: #1F1F32; letter-spacing: -0.01em; }
+.cf-header-actions { display: flex; gap: 2px; }
+.cf-header-btn { width: 30px; height: 30px; border-radius: 8px; border: none; background: transparent; color: #6B697B; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 130ms ease, color 130ms ease; }
+.cf-header-btn:hover { background: #ECEBE6; color: #1F1F32; }
+
+/* ─── Create flow: History slide-over ───────────────────────────────────── */
+@keyframes cfHistoryIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+.cf-history {
+  position: absolute; top: 0; right: 0; bottom: 0; width: 320px; max-width: 90%;
+  z-index: 45; background: #fff; display: flex; flex-direction: column;
+  box-shadow: -8px 0 32px rgba(15,23,42,0.16);
+  animation: cfHistoryIn 320ms cubic-bezier(0.22,1,0.36,1) both; will-change: transform;
+}
+.cf-history-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 14px 10px 16px; }
+.cf-history-title { font-size: 14px; font-weight: 700; color: #1F1F32; letter-spacing: -0.01em; }
+.cf-history-close { width: 28px; height: 28px; border-radius: 7px; border: none; background: #F4F3EF; color: #525266; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.cf-history-close:hover { background: #ECEBE6; color: #1F1F32; }
+.cf-history-search { display: flex; align-items: center; gap: 7px; margin: 0 14px 8px; padding: 7px 11px; background: #F6F5F1; border: 1px solid #ECEBE6; border-radius: 9px; color: #8C899F; }
+.cf-history-search input { flex: 1; border: none; outline: none; background: transparent; font-family: inherit; font-size: 12.5px; color: #1F1F32; }
+.cf-history-search input::placeholder { color: #8C899F; }
+.cf-history-list { flex: 1; overflow-y: auto; padding: 4px 8px 8px; }
+.cf-history-group { margin-bottom: 10px; }
+.cf-history-group-label { font-size: 10.5px; font-weight: 600; color: #B4B2A9; letter-spacing: 0.04em; text-transform: uppercase; padding: 6px 8px 4px; }
+.cf-history-item { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; background: transparent; border: none; cursor: pointer; padding: 8px; border-radius: 9px; transition: background 120ms ease; }
+.cf-history-item:hover { background: #F6F5F1; }
+.cf-history-item-icon { width: 28px; height: 28px; flex-shrink: 0; border-radius: 7px; background: #F4F3EF; display: flex; align-items: center; justify-content: center; color: #8C899F; }
+.cf-history-item-text { display: flex; flex-direction: column; min-width: 0; }
+.cf-history-item-title { font-size: 12.5px; font-weight: 500; color: #1F1F32; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 230px; }
+.cf-history-item-meta { font-size: 11px; color: #B4B2A9; margin-top: 1px; }
+.cf-history-empty { padding: 24px 16px; text-align: center; font-size: 12.5px; color: #8C899F; }
+.cf-history-new { display: inline-flex; align-items: center; justify-content: center; gap: 7px; margin: 8px 14px 16px; padding: 10px; background: #1F1F32; color: #fff; border: none; border-radius: 10px; font-size: 12.5px; font-weight: 600; cursor: pointer; transition: background 140ms ease; }
+.cf-history-new:hover { background: #0B0B1A; }
+
+/* ─── Create flow: richer attachment chip + attach menu ──────────────────── */
+.cf-attach-chip { display: flex; align-items: center; gap: 9px; margin-bottom: 8px; padding: 7px 9px 7px 7px; background: #F6F5F1; border: 1px solid #ECEBE6; border-radius: 10px; width: 100%; }
+.cf-attach-icon { width: 30px; height: 30px; flex-shrink: 0; border-radius: 7px; background: #D4452F; display: flex; align-items: center; justify-content: center; }
+.cf-attach-text { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.cf-attach-name { font-size: 12.5px; font-weight: 600; color: #1F1F32; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px; }
+.cf-attach-sub { font-size: 11px; color: #8C899F; margin-top: 1px; }
+.cf-attach-close { width: 22px; height: 22px; flex-shrink: 0; border-radius: 6px; border: none; background: transparent; color: #8C899F; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 120ms ease, color 120ms ease; }
+.cf-attach-close:hover { background: #ECEBE6; color: #1F1F32; }
+
+/* Scoped refine pill — a clean full-width chip; close sits flush right with air */
+.cf-scope-pill { display: flex; align-items: center; gap: 9px; margin-bottom: 8px; padding: 7px 7px 7px 10px; background: #F7F7F8; border: 1px solid #E6E4DE; border-radius: 11px; width: 100%; }
+.cf-scope-icon { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; flex-shrink: 0; border-radius: 7px; background: #fff; border: 1px solid #ECEBE6; color: #6B697B; }
+.cf-scope-icon svg { width: 14px; height: 14px; }
+.cf-scope-text { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.25; }
+.cf-scope-kicker { font-size: 10.5px; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase; color: #A8A6B2; }
+.cf-scope-label { font-size: 12.5px; font-weight: 600; color: var(--wfc-text); letter-spacing: -0.005em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cf-scope-close { width: 24px; height: 24px; flex-shrink: 0; margin-left: 4px; border-radius: 7px; border: none; background: transparent; color: #8C899F; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 120ms ease, color 120ms ease; }
+.cf-scope-close:hover { background: #ECEBE6; color: var(--wfc-text); }
+
+.cf-attach-menu { position: absolute; bottom: 38px; left: 0; z-index: 31; min-width: 184px; background: #fff; border: 1px solid #ECEBE6; border-radius: 11px; padding: 5px; box-shadow: 0 10px 30px rgba(15,23,42,0.14); }
+.cf-attach-menu-item { display: flex; align-items: center; gap: 9px; width: 100%; text-align: left; background: transparent; border: none; cursor: pointer; padding: 8px 9px; border-radius: 8px; font-family: inherit; font-size: 12.5px; font-weight: 500; color: #1F1F32; transition: background 120ms ease; }
+.cf-attach-menu-item:hover { background: #F6F5F1; }
+.cf-attach-menu-item svg { color: #8C899F; flex-shrink: 0; }
+
+/* ─── Living plan: version chip + plan header actions ───────────────────── */
+.cf-plan-head { gap: 8px; }
+.cf-plan-head-version { font-size: 10.5px; font-weight: 700; color: var(--wfc-accent); background: var(--wfc-accent-tint); padding: 2px 6px; border-radius: 5px; }
+.cf-plan-head-actions { margin-left: auto; display: flex; align-items: center; gap: 2px; }
+.cf-plan-head-icon { width: 26px; height: 26px; border-radius: 7px; border: none; background: transparent; color: #8C899F; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 120ms ease, color 120ms ease; }
+.cf-plan-head-icon:hover { background: #F4F3EF; color: #1F1F32; }
+.cf-plan-head-actions .cf-plan-selectall { margin-left: 4px; }
+
+.cf-plan-version-chip { display: inline-flex; align-items: center; gap: 7px; align-self: flex-start; background: #fff; border: 1px solid #ECEBE6; border-radius: 9px; padding: 7px 11px; font-size: 12px; font-weight: 600; color: #6B697B; cursor: pointer; transition: border-color 130ms ease, color 130ms ease; }
+.cf-plan-version-chip:hover { border-color: #C4C3BD; color: #1F1F32; }
+.cf-plan-version-chip svg { color: var(--wfc-build-done); }
+.cf-plan-version-meta { font-weight: 500; color: #B4B2A9; }
+
+/* ════════════════════════════════════════════════════════════════════════
+   MINIMAL REDESIGN — calm, text-first chat (Claude / First Draft language)
+   ════════════════════════════════════════════════════════════════════════ */
+
+/* Thread rhythm: more breathing room, no competing chrome */
+.cf-thread { gap: 0; }
+.cf-thread > div { gap: 20px !important; }
+
+/* Agent turns — plain dark text on white. No bubble, no avatar. */
+.cf-agent { color: #1F1F32; }
+.cf-agent .wfc-msg-text { margin: 0; font-size: 14px; line-height: 1.62; color: #1F1F32; letter-spacing: -0.003em; }
+.cf-agent .wfc-msg-text strong { font-weight: 600; }
+
+/* User turns — compact, light, right-aligned */
+.cf-user-row { display: flex; justify-content: flex-end; }
+.cf-user { max-width: 84%; display: inline-flex; flex-direction: column; gap: 6px; align-items: flex-end; background: #F4F4F5; border-radius: 16px; padding: 9px 14px; }
+.cf-user-text { font-size: 13.5px; line-height: 1.5; color: #1F1F32; letter-spacing: -0.003em; }
+.cf-user-file { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 500; color: #6B697B; background: #fff; border: 1px solid #ECEBE6; border-radius: 8px; padding: 4px 9px 4px 5px; max-width: 100%; }
+/* Red file tile — matches the composer attachment chip exactly. */
+.cf-user-file-icon { width: 20px; height: 20px; flex-shrink: 0; border-radius: 5px; background: #D4452F; display: flex; align-items: center; justify-content: center; }
+
+/* Thinking — one quiet line, expandable to plain steps */
+.cf-think { display: flex; flex-direction: column; gap: 8px; }
+.cf-think-head { display: inline-flex; align-items: center; gap: 6px; align-self: flex-start; background: transparent; border: none; padding: 0; font-family: inherit; font-size: 13px; font-weight: 500; color: #8C899F; letter-spacing: -0.003em; }
+.cf-think-toggle { cursor: pointer; transition: color 140ms ease; }
+.cf-think-toggle:hover { color: #1F1F32; }
+.cf-think-chev { font-size: 9px; color: #B4B2A9; transition: transform 200ms cubic-bezier(0.22,1,0.36,1); display: inline-block; width: 8px; }
+.cf-think-toggle.is-open .cf-think-chev { transform: rotate(90deg); }
+.cf-think-dot { color: #C4C3BD; }
+@keyframes cfShimmerText { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+.cf-think-shimmer {
+  background: linear-gradient(90deg, #B4B2A9 0%, #B4B2A9 38%, #1F1F32 50%, #B4B2A9 62%, #B4B2A9 100%);
+  background-size: 200% 100%; -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; animation: cfShimmerText 2.2s linear infinite;
+  font-size: 13px; font-weight: 500;
+}
+.cf-think-steps { list-style: none; margin: 2px 0 0; padding: 0 0 0 2px; display: flex; flex-direction: column; gap: 7px; }
+.cf-think-step { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: #8C899F; letter-spacing: -0.003em; }
+.cf-think-step-mark { display: inline-flex; align-items: center; justify-content: center; width: 13px; height: 13px; flex-shrink: 0; }
+.cf-think-step.is-done .cf-think-step-mark { color: var(--wfc-build-done); }
+.cf-think-step.is-active .cf-think-step-mark { color: #B4B2A9; }
+.cf-think-step-label { color: inherit; }
+.cf-think-step.is-active .cf-think-step-label { color: #1F1F32; }
+.cf-think-step-sub { color: #B4B2A9; font-size: 11.5px; margin-left: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Live steps stream in one-by-one */
+.cf-think-live { animation: cfFadeUp 300ms cubic-bezier(0.16,1,0.3,1) both; }
+
+/* Plan card — lighten: hairline border, no heavy shadow, calmer rows + icons */
+.cf-plan-card { border: 1px solid #ECEBE6 !important; box-shadow: none !important; border-radius: 14px; background: #fff; }
+.cf-plan-head { padding: 12px 14px 8px; }
+.cf-plan-item { border-top: 1px solid #F4F3EF; padding: 12px 14px; }
+.cf-plan-item:hover { background: #FAFAF8; }
+.cf-plan-icon { background: transparent !important; color: #8C899F; }
+.cf-plan-item:hover .cf-plan-icon { background: transparent !important; color: #1F1F32; }
+.cf-plan-build { box-shadow: none !important; }
+
+/* Done — quiet, borderless on white (no green slab) */
+.cf-done { background: transparent; border: none; padding: 0; }
+.cf-done-sub { margin: 6px 0 12px 28px; }
+
+/* ─── Empty / landing — composer-led hierarchy ──────────────────────────── */
+/* Tight, crisp landing: one centered cluster (headline + one-line sub), anchored
+   just above the composer so the two read as a single unit, not scattered zones. */
+.cf-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px 24px 14px; text-align: center; }
+
+/* Landing reveal — elements materialize out of a soft blur, staggered.
+   Modern "focus-in" entrance: blur + slight rise + fade, resolving to crisp. */
+@keyframes cfBlurIn {
+  0%   { opacity: 0; filter: blur(9px); transform: translateY(8px); }
+  60%  { opacity: 1; }
+  100% { opacity: 1; filter: blur(0); transform: translateY(0); }
+}
+.cf-empty-reveal { opacity: 0; animation: cfBlurIn 720ms cubic-bezier(0.22, 1, 0.36, 1) forwards; will-change: filter, transform, opacity; }
+/* The mark gets a touch more travel + a hint of scale so it feels like it
+   settles into place ahead of the text. */
+@keyframes cfBlurInMark {
+  0%   { opacity: 0; filter: blur(11px) drop-shadow(0 6px 14px rgba(31,41,55,0.10)); transform: translateY(10px) scale(0.96); }
+  60%  { opacity: 0.96; }
+  100% { opacity: 0.96; filter: blur(0) drop-shadow(0 6px 14px rgba(31,41,55,0.10)); transform: translateY(0) scale(1); }
+}
+.cf-empty-mark.cf-empty-reveal { animation-name: cfBlurInMark; animation-duration: 780ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  .cf-empty-reveal { animation: none; opacity: 1; filter: none; transform: none; }
+  .cf-empty-mark.cf-empty-reveal { opacity: 0.96; }
+}
+
+/* Quiet document-stack mark — small enough to anchor, not compete with the composer. */
+.cf-empty-mark { margin-bottom: 16px; opacity: 0.96; filter: drop-shadow(0 6px 14px rgba(31,41,55,0.10)); }
+.cf-empty-title { margin: 0; font-size: 23px; font-weight: 600; color: var(--wfc-text); letter-spacing: -0.027em; line-height: 1.18; text-wrap: balance; }
+.cf-empty-sub { margin: 11px 0 0; font-size: 13.5px; color: var(--wfc-muted); line-height: 1.6; max-width: 300px; text-wrap: balance; }
+/* Inline upload link — no detached button; reads inside the sentence */
+.cf-empty-link { display: inline; background: none; border: none; padding: 0; margin: 0; font: inherit; color: var(--wfc-text); font-weight: 600; cursor: pointer; border-radius: 4px; text-decoration: underline; text-decoration-color: #C4C3BD; text-underline-offset: 3px; transition: text-decoration-color 130ms ease; }
+.cf-empty-link:hover { color: var(--wfc-text); text-decoration-color: var(--wfc-text); }
+.cf-empty-link:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(31,31,50,0.10); }
+.cf-empty-link:disabled { cursor: default; }
+.cf-empty-link.is-attached { color: var(--wfc-build-done); }
+.cf-empty-link.is-attached:hover { color: var(--wfc-build-done); text-decoration: none; }
+.cf-empty-link svg { display: inline-block; vertical-align: -1px; margin-right: 1px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .cf-empty .wfc-fade-up { animation: none; opacity: 1; }
+}
+
+/* On landing, give the composer a touch more presence (the hero) */
+.cf-root .wfc-chat-refine .wfc-composer-mini { box-shadow: 0 1px 2px rgba(20,18,50,0.04), 0 6px 20px -10px rgba(20,18,50,0.12); }
