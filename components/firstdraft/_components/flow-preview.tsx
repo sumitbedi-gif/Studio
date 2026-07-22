@@ -25,7 +25,9 @@ type Anchor = {
 // Each frame's anchor mapping. Coordinates are in %, anchored to the .wfc-sb-frame.
 // 16 unique positions across the Salesforce Setup mock.
 const ANCHORS: Anchor[] = [
-  { top: "12%", left: "94%", tipTop: "30%", tipLeft: "70%", placement: "below" },   // 1. Setup gear
+  // tipLeft caps at 52% for right-side anchors: the tooltip is a fixed 264px,
+  // so anything beyond ~61% overflows the frame and gets cropped.
+  { top: "12%", left: "94%", tipTop: "30%", tipLeft: "52%", placement: "below" },   // 1. Setup gear
   { top: "30%", left: "12%", tipTop: "44%", tipLeft: "22%", placement: "below" },   // 2. Setup search
   { top: "62%", left: "13%", tipTop: "60%", tipLeft: "28%", placement: "right" },   // 3. Approval Bot menu
   { top: "60%", left: "78%", tipTop: "72%", tipLeft: "52%", placement: "above" },   // 4. Enable toggle

@@ -7,13 +7,13 @@ import {
   LayoutTemplate, Route, Lightbulb, SquarePen, History, Search, RotateCw, Copy,
   Pause, Play, Hand, Sparkles,
 } from 'lucide-react'
-import { PlanCanvas } from './firstdraft/_components/plan-canvas'
-import { JOURNEY } from './firstdraft/_state/mock-data'
+import { ExpandedPreview } from './firstdraft/_components/expanded-preview'
+import { FLOW_STEPS } from './firstdraft/_state/mock-data'
+import type { JourneyCard } from './firstdraft/_state/types'
 import { onChatRefine, type RefineRequest } from './firstdraft/_state/edit-bus'
 
 // First Draft palette (verbatim): cream canvas, white rail, blue accent.
 const ACCENT = '#0975D7'
-const MONO = "ui-monospace, 'SF Mono', Menlo, monospace"
 
 // Mock history (demo) — past sessions grouped by recency, Grok-style.
 const HISTORY: { group: string; items: { id: string; title: string; meta: string }[] }[] = [
@@ -53,11 +53,12 @@ interface Suggestion {
   page: number
   checked: boolean
 }
+// Document-to-flows: every suggestion is a Flow, each drafted from a SOP section.
 const SUGGESTIONS: Suggestion[] = [
-  { id: 'popup-1',   type: 'POP-UP',    title: 'Meet Approval Bot',            steps: 'Announce',  section: '§2.1 Raising a Requisition', page: 2, checked: true },
-  { id: 'flow-1',    type: 'FLOW',      title: 'Configure Approval Bot',       steps: '10 steps',  section: '§3.0 Approval Matrix',       page: 3, checked: true },
-  { id: 'tip-1',     type: 'SMART TIP', title: 'Approvals route through Bot',  steps: 'Inline',    section: '§4.2 PO Generation',         page: 4, checked: true },
-  { id: 'article-1', type: 'ARTICLE',   title: 'How Approval Bot works',       steps: '4 sections', section: '§5.1 Three-Way Match',      page: 5, checked: false },
+  { id: 'flow-1', type: 'FLOW', title: 'Raise a Purchase Requisition', steps: '5 steps',  section: '§2.1 Raising a Requisition', page: 2, checked: true },
+  { id: 'flow-2', type: 'FLOW', title: 'Configure Approval Bot',       steps: '12 steps', section: '§3.0 Approval Matrix',       page: 3, checked: true },
+  { id: 'flow-3', type: 'FLOW', title: 'Generate a Purchase Order',    steps: '4 steps',  section: '§4.2 PO Generation',         page: 4, checked: true },
+  { id: 'flow-4', type: 'FLOW', title: 'Complete a Three-Way Match',   steps: '9 steps',  section: '§5.1 Three-Way Match',       page: 5, checked: false },
 ]
 
 // Canvas card-type (lowercase, from edit-bus) → our Suggestion type tokens.
@@ -65,9 +66,29 @@ const REFINE_TYPE: Record<RefineRequest['cardType'], Suggestion['type']> = {
   popup: 'POP-UP', flow: 'FLOW', smarttip: 'SMART TIP', article: 'ARTICLE',
 }
 
+// Starter prompts on the landing — one tap fills the composer.
+// Quiet icon + text rows (Perplexity / Raycast), not pills: less visual
+// weight, less vertical space, same affordance.
+const STARTERS: { label: string; Icon: typeof FileText }[] = [
+  { label: 'Analyze this document', Icon: FileText },
+  { label: 'Create a flow',         Icon: Route },
+  { label: 'Propose a plan',        Icon: Sparkles },
+]
+
 // Clean type labels for the plan card meta row.
 const TYPE_LABEL: Record<Suggestion['type'], string> = {
   'POP-UP': 'Pop-up', 'FLOW': 'Flow', 'SMART TIP': 'Smart tip', 'ARTICLE': 'Article',
+}
+
+// Build a flow-type JourneyCard for the per-flow popup, titled with the clicked
+// suggestion. Step count is sliced to match the row's "N steps" label, so each
+// flow reads as a distinct length (renumbered 1..N).
+function flowCardFor(s: Suggestion): Extract<JourneyCard, { type: 'flow' }> {
+  const n = parseInt(s.steps, 10) || FLOW_STEPS.length
+  // Cycle the canonical steps to reach N (some flows are longer than the source
+  // set), renumbering 1..N so each flow reads as a distinct length.
+  const steps = Array.from({ length: n }, (_, i) => ({ ...FLOW_STEPS[i % FLOW_STEPS.length], num: i + 1 }))
+  return { id: s.id, type: 'flow', title: s.title, confidence: 'high', steps, audience: 'Profile = System Administrator' }
 }
 
 // Content-type icons (same set as the preview canvas).
@@ -87,12 +108,6 @@ const ANALYZE_STEPS = [
   { id: 'a4', label: 'Matching to content types',             sub: 'pop-up → flow → smart tip → article' },
 ]
 
-const HIGHLIGHTS: Record<string, { lead: string; mark: string; tail: string }> = {
-  'popup-1':   { lead: 'Any employee can initiate a purchase. Before a supplier can be engaged, the need must be captured as a formal requisition in the Procurement portal.', mark: 'All purchases above $500 must begin with a purchase requisition raised in the Procurement portal.', tail: 'The requestor selects the cost center, adds line items, and attaches a supplier quote before submitting for manager approval.' },
-  'flow-1':    { lead: 'Every requisition is routed for approval based on its total amount and the cost center it is charged against.', mark: 'Requisitions are approved in tiers: up to $5,000 by the Cost Center Manager, up to $25,000 by the Finance Approver, and above $25,000 by the VP of Finance.', tail: 'Each approver can approve, reject with a reason, or request changes.' },
-  'tip-1':     { lead: 'Once a requisition clears the approval matrix, Procurement converts it into a purchase order.', mark: 'An approved requisition is converted into a purchase order, assigned a PO number, and dispatched to the supplier from the Procurement portal.', tail: 'The supplier, line items, and amounts carry over from the requisition.' },
-  'article-1': { lead: 'Before any supplier invoice is paid, Accounts Payable verifies that what was ordered, received, and billed all agree.', mark: 'Payment is released only after a successful three-way match between the purchase order, the goods receipt, and the supplier invoice.', tail: 'If the three documents do not match within tolerance, the invoice is placed on hold and routed to Procurement.' },
-}
 
 export function CreateFlow() {
   const [phase, setPhase] = useState<Phase>('empty')
@@ -125,8 +140,9 @@ export function CreateFlow() {
   const buildTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [suggestions, setSuggestions] = useState<Suggestion[]>(SUGGESTIONS)
   const [buildStatus, setBuildStatus] = useState<Record<string, 'queued' | 'building' | 'ready'>>({})
-  const [previewOpen, setPreviewOpen] = useState(false)
-  const [pdfDrawer, setPdfDrawer] = useState<Suggestion | null>(null)
+  // Document-to-flows: clicking a flow row opens that flow in a contained popup
+  // (no "Preview all", no bottom drawer). previewFlow holds the open flow.
+  const [previewFlow, setPreviewFlow] = useState<Suggestion | null>(null)
   // Scoped refine: clicking a card's Edit (Pencil) in the preview canvas drops a
   // reference pill into the composer so the next message is scoped to that card.
   const [refineScope, setRefineScope] = useState<RefineRequest | null>(null)
@@ -139,10 +155,10 @@ export function CreateFlow() {
   useEffect(() => { setMounted(true) }, [])
   useEffect(() => () => timers.current.forEach(clearTimeout), [])
 
-  // Card "Edit" (Pencil) in the preview canvas → scope the composer to that card.
+  // Flow "Edit" (Pencil) in the popup → scope the composer to that flow.
+  // Keep the popup open so the user can keep previewing while they type.
   useEffect(() => onChatRefine((req) => {
     setRefineScope(req)
-    setPreviewOpen(false)
     setTimeout(() => composerRef.current?.focus(), 60)
   }), [])
 
@@ -179,18 +195,17 @@ export function CreateFlow() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, clarifyCardOpen, clarifyTab, clarifyAnswers])
 
-  // Close overlays on Escape (drawer → preview → history priority order).
+  // Close overlays on Escape (flow popup → history priority order).
   useEffect(() => {
-    if (!previewOpen && !pdfDrawer && !historyOpen) return
+    if (!previewFlow && !historyOpen) return
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return
-      if (pdfDrawer) setPdfDrawer(null)
-      else if (historyOpen) setHistoryOpen(false)
-      else if (previewOpen) setPreviewOpen(false)
+      if (historyOpen) setHistoryOpen(false)
+      else if (previewFlow) setPreviewFlow(null)
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [previewOpen, pdfDrawer, historyOpen])
+  }, [previewFlow, historyOpen])
 
   useEffect(() => {
     const ta = composerRef.current
@@ -203,7 +218,7 @@ export function CreateFlow() {
     timers.current.forEach(clearTimeout); timers.current = []
     setPhase('empty'); setPrompt(''); setCommand(''); setAttached(false)
     setAnalyzeShown(new Set()); setAnalyzeDone(new Set()); setProgress(0); setThinking(false); setThoughtCollapsed(false)
-    setSuggestions(SUGGESTIONS); setBuildStatus({}); setPreviewOpen(false); setPdfDrawer(null)
+    setSuggestions(SUGGESTIONS); setBuildStatus({}); setPreviewFlow(null)
     setClarifyTab('persona'); setClarifyAnswers({}); setClarifyReply(''); setClarifyCardOpen(false); setToast(null)
     setHistoryOpen(false); setAttachMenuOpen(false); setPlanVersion(1); setRefineTurns([]); setPlanRefining(false)
     setBuildPhase('idle'); setBuildIndex(0); buildIndexRef.current = 0
@@ -379,6 +394,9 @@ export function CreateFlow() {
   const working = phase === 'working' || phase === 'building'
   // Composer is inert while the agent is thinking, asking, or working.
   const composerLocked = working || phase === 'thinking' || phase === 'clarifying'
+  // Mic sits in the composer until there's something to send, then it becomes
+  // the send arrow (mobile composer convention).
+  const canSend = !composerLocked && (prompt.trim().length > 0 || attached)
 
   return (
     <div className="cf-root" style={{ position: 'relative', display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--wfc-canvas-bg)', overflow: 'hidden', fontFamily: 'var(--font-inter), Inter, -apple-system, BlinkMacSystemFont, sans-serif', WebkitFontSmoothing: 'antialiased' }}>
@@ -398,7 +416,7 @@ export function CreateFlow() {
       {/* Thread */}
       <div ref={threadRef} className="cf-thread" style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: (phase === 'empty' || phase === 'attached') ? '0' : '20px 18px 12px', display: 'flex', flexDirection: 'column' }}>
         {(phase === 'empty' || phase === 'attached') ? (
-          <EmptyState onUpload={attachDoc} attached={attached} />
+          <EmptyState attached={attached} />
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 18, width: '100%', maxWidth: 640, margin: '0 auto' }}>
             {/* user: doc + command */}
@@ -477,16 +495,13 @@ export function CreateFlow() {
                       buildStatus={buildStatus}
                       onToggle={toggle}
                       onSelectAll={selectAll}
-                      onItemClick={(s) => setPdfDrawer(s)}
+                      onItemClick={(s) => setPreviewFlow(s)}
                       onRegenerate={() => refinePlan('Regenerate the plan')}
                     />
                     {phase === 'plan' && (
                       <div className="cf-plan-actions wfc-fade-up">
-                        <button onClick={startBuilding} disabled={checked.length === 0} className="cf-plan-build">
+                        <button onClick={startBuilding} disabled={checked.length === 0} className="cf-plan-build" style={{ flex: 1 }}>
                           Build {checked.length} {checked.length === 1 ? 'flow' : 'flows'}
-                        </button>
-                        <button onClick={() => setPreviewOpen(true)} className="cf-plan-preview">
-                          Preview all
                         </button>
                       </div>
                     )}
@@ -501,13 +516,28 @@ export function CreateFlow() {
               </AgentBubble>
             )}
 
-            {phase === 'done' && <DoneBubble count={checked.length} onPreview={() => setPreviewOpen(true)} />}
+            {phase === 'done' && <DoneBubble count={checked.length} onPreview={() => setPreviewFlow(checked[0] ?? suggestions[0])} />}
           </div>
         )}
       </div>
 
       {/* Composer dock */}
       <div className="wfc-chat-refine" style={{ flexShrink: 0, width: '100%', maxWidth: 640, margin: '0 auto', padding: '12px 18px 18px' }}>
+        {/* Starter prompts — stacked, left-aligned, hugging the composer
+            (Genie pattern). Each drifts in on its own beat. */}
+        {(phase === 'empty' || phase === 'attached') && (
+          <div className="cf-starters">
+            {STARTERS.map(({ label, Icon }, i) => (
+              <button key={label} type="button" className="cf-starter"
+                style={{ animationDelay: `${380 + i * 100}ms` }}
+                onClick={() => { setPrompt(label); composerRef.current?.focus() }}>
+                <Icon size={14} strokeWidth={1.8} />
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* Clarifier — tiny tabbed question card above the input bar (Claude pattern) */}
         {phase === 'clarifying' && clarifyCardOpen && (
           <ClarifierCard
@@ -546,40 +576,30 @@ export function CreateFlow() {
               </button>
             </div>
           )}
+          {/* Attachment — squircle file tile + name/type, floating X to remove
+              (ChatGPT / Copilot iOS pattern). */}
           {attached && (
-            <div className="cf-attach-chip cf-fade-up">
-              <span className="cf-attach-icon"><FileText size={15} strokeWidth={1.9} color="#fff" /></span>
-              <span className="cf-attach-text">
-                <span className="cf-attach-name">{DOC.name}</span>
-                <span className="cf-attach-sub">PDF · {DOC.pages} pages · {DOC.size}</span>
-              </span>
-              <button type="button" className="cf-attach-close" aria-label="Remove attachment"
-                onClick={() => { setAttached(false); if (phase === 'attached') setPhase('empty') }}>
-                <X size={12} strokeWidth={2.2} />
-              </button>
+            <div className="cf-attach cf-fade-up">
+              <div className="cf-attach-card">
+                <span className="cf-attach-tile"><FileText size={16} strokeWidth={2} color="#fff" /></span>
+                <span className="cf-attach-text">
+                  <span className="cf-attach-name">{DOC.name}</span>
+                  <span className="cf-attach-sub">PDF</span>
+                </span>
+                <button type="button" className="cf-attach-x" aria-label="Remove attachment"
+                  onClick={() => { setAttached(false); if (phase === 'attached') setPhase('empty') }}>
+                  <X size={11} strokeWidth={2.6} />
+                </button>
+              </div>
             </div>
           )}
-          <textarea
-            ref={composerRef}
-            className="wfc-composer-textarea"
-            placeholder={
-              phase === 'empty' || phase === 'attached' ? 'Describe what you want to build…' :
-              phase === 'clarifying' ? 'Pick your answers above…' :
-              phase === 'plan' ? 'Refine the plan, e.g. "merge flows 3 & 4"' :
-              phase === 'done' ? 'Ask a follow-up…' :
-              'Working…'
-            }
-            rows={1}
-            value={prompt}
-            disabled={composerLocked}
-            onChange={(e) => setPrompt(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit() } }}
-          />
-          <div className="wfc-composer-row">
-            <div className="wfc-composer-actions" style={{ position: 'relative' }}>
+          {/* One row, Genie layout: + on the left, input centered, mic/send on
+              the right. Everything vertically centered in the pill. */}
+          <div className="cf-composer-line">
+            <div className="cf-composer-tools" style={{ position: 'relative' }}>
               <button type="button" className="wfc-mini-btn" aria-label="Add attachment" aria-haspopup="menu" aria-expanded={attachMenuOpen}
                 disabled={composerLocked} onClick={() => setAttachMenuOpen((v) => !v)}>
-                <Plus size={14} strokeWidth={1.8} />
+                <Plus size={16} strokeWidth={1.9} />
               </button>
               {attachMenuOpen && (
                 <>
@@ -594,50 +614,64 @@ export function CreateFlow() {
                   </div>
                 </>
               )}
-              <button type="button" className="wfc-mini-btn" aria-label="Voice, coming soon" disabled>
-                <Mic size={14} strokeWidth={1.8} />
-              </button>
             </div>
-            {working ? (
-              <button type="button" className="wfc-send-btn wfc-stop-btn" aria-label="Stop" onClick={reset}>
-                <Square size={11} strokeWidth={0} fill="currentColor" />
-              </button>
-            ) : (
-              <button type="button" className="wfc-send-btn" aria-label="Send"
-                disabled={composerLocked || !(prompt.trim().length > 0 || attached)} onClick={submit}>
-                <ArrowUp size={14} strokeWidth={2} />
-              </button>
-            )}
+            <textarea
+              ref={composerRef}
+              className="wfc-composer-textarea"
+              placeholder={
+                phase === 'empty' || phase === 'attached' ? 'Describe what you want to build…' :
+                phase === 'clarifying' ? 'Pick your answers above…' :
+                phase === 'plan' ? 'Refine the plan, e.g. "merge flows 3 & 4"' :
+                phase === 'done' ? 'Ask a follow-up…' :
+                'Working…'
+              }
+              rows={1}
+              value={prompt}
+              disabled={composerLocked}
+              onChange={(e) => setPrompt(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit() } }}
+            />
+            <div className="cf-composer-tools">
+              {working ? (
+                <button type="button" className="wfc-send-btn wfc-stop-btn" aria-label="Stop" onClick={reset}>
+                  <Square size={11} strokeWidth={0} fill="currentColor" />
+                </button>
+              ) : canSend ? (
+                <button type="button" className="wfc-send-btn" aria-label="Send" onClick={submit}>
+                  <ArrowUp size={14} strokeWidth={2} />
+                </button>
+              ) : (
+                <button type="button" className="wfc-mini-btn" aria-label="Voice, coming soon" disabled>
+                  <Mic size={16} strokeWidth={1.9} />
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
       <input ref={fileRef} type="file" accept=".pdf,.docx,.pptx" hidden onChange={attachDoc} />
 
-      {/* Preview all — a contained floating panel over a dim scrim, so the
-          background app stays visible. Click the scrim or Close to dismiss. */}
-      {mounted && previewOpen && createPortal(
+      {/* Per-flow popup — clicking a flow row opens just that flow (no plan
+          ribbon), with the same edit / refresh / view-source toolbar. The flow
+          body is scrollable; the background app stays visible behind the scrim. */}
+      {mounted && previewFlow && createPortal(
         <div className="cf-preview-scrim" role="presentation"
-          onMouseDown={(e) => { if (e.target === e.currentTarget) setPreviewOpen(false) }}>
-          <div className="cf-preview-box wfc-create-root" role="dialog" aria-modal="true" aria-label="Plan preview"
+          onMouseDown={(e) => { if (e.target === e.currentTarget) setPreviewFlow(null) }}>
+          <div className="cf-preview-box cf-flow-popup wfc-create-root" role="dialog" aria-modal="true" aria-label={`Preview: ${previewFlow.title}`}
             style={{ fontFamily: 'var(--font-inter), Inter, -apple-system, BlinkMacSystemFont, sans-serif', WebkitFontSmoothing: 'antialiased' }}>
-            <div className="cf-preview-bar">
-              <span className="cf-preview-title">Preview</span>
-              <span className="cf-preview-hint">Esc to close</span>
-              <button className="cf-preview-close" onClick={() => setPreviewOpen(false)} title="Close preview">
-                <X size={15} strokeWidth={2} /> Close
-              </button>
-            </div>
-            <div className="wfc-plan-canvas cf-preview-canvas">
-              <PlanCanvas />
+            <button className="cf-flow-popup-close" onClick={() => setPreviewFlow(null)} aria-label="Close preview" title="Close (Esc)">
+              <X size={16} strokeWidth={2} />
+            </button>
+            {/* key by flow id so switching rows re-mounts and replays the blur
+                swap — the preview reads as genuinely changing, not just retitling. */}
+            <div key={previewFlow.id} className="cf-flow-popup-body cf-flow-swap">
+              <ExpandedPreview card={flowCardFor(previewFlow)} />
             </div>
           </div>
         </div>,
         document.body,
       )}
-
-      {/* Bottom drawer PDF source — INSIDE the panel (absolute within cf-root) */}
-      {pdfDrawer && <PdfDrawer suggestion={pdfDrawer} onClose={() => setPdfDrawer(null)} />}
 
       {/* Build-complete toast */}
       {toast && (
@@ -745,21 +779,23 @@ function ThinkingBlock({ shown, done, progress, working, collapsed, onToggle }: 
 }
 
 // ─── Empty state — quiet mark, strong headline, ghost upload (composer leads) ──
-function EmptyState({ onUpload, attached }: { onUpload: () => void; attached: boolean }) {
+function EmptyState({ attached }: { attached: boolean }) {
   return (
     <div className="cf-empty">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/paper-education.svg" alt="" width={54} height={54} className="cf-empty-mark cf-empty-reveal" />
+      {/* Document icon with a couple of quiet sparkles. Nothing else. */}
+      <div className="cf-hero cf-empty-reveal" aria-hidden="true">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/document-icon.svg" alt="" width={160} height={160} className="cf-hero-doc" />
+        <svg className="cf-hero-spark cf-hero-spark-1" viewBox="0 0 24 24"><path d="M12 0 L14.4 9.6 L24 12 L14.4 14.4 L12 24 L9.6 14.4 L0 12 L9.6 9.6 Z" /></svg>
+        <svg className="cf-hero-spark cf-hero-spark-2" viewBox="0 0 24 24"><path d="M12 0 L14.4 9.6 L24 12 L14.4 14.4 L12 24 L9.6 14.4 L0 12 L9.6 9.6 Z" /></svg>
+      </div>
       <h1 className="cf-empty-title cf-empty-reveal" style={{ animationDelay: '110ms' }}>
-        Hi Sumit. What should we build?
+        What should we build?
       </h1>
       <p className="cf-empty-sub cf-empty-reveal" style={{ animationDelay: '210ms' }}>
-        Describe it below, or{' '}
-        <button type="button" onClick={attached ? undefined : onUpload} disabled={attached}
-          className={`cf-empty-link ${attached ? 'is-attached' : ''}`}>
-          {attached ? (<><Check size={12} strokeWidth={2.6} /> document attached</>) : 'upload a document'}
-        </button>{' '}
-        to turn into Flows, Articles, or Smart Tips.
+        {attached
+          ? <span className="cf-empty-ready"><Check size={12} strokeWidth={2.6} /> Document ready</span>
+          : 'Upload a document and ask for a plan'}
       </p>
     </div>
   )
@@ -908,8 +944,8 @@ function DoneBubble({ count, onPreview }: { count: number; onPreview: () => void
           <span className="cf-done-check"><Check size={11} strokeWidth={3} color="#fff" /></span>
           <span className="cf-done-title">{count} {count === 1 ? 'flow' : 'flows'} added to Mukul_SF_OOB</span>
         </div>
-        <p className="cf-done-sub">All set. Your flows are live in the project. Preview them or keep refining in chat.</p>
-        <button className="cf-done-cta" onClick={onPreview}>Preview all flows <ChevronRight size={13} strokeWidth={2} /></button>
+        <p className="cf-done-sub">All set. Your flows are live in the project. Open one to preview, or keep refining in chat.</p>
+        <button className="cf-done-cta" onClick={onPreview}>View flows <ChevronRight size={13} strokeWidth={2} /></button>
       </div>
     </div>
   )
@@ -1003,75 +1039,6 @@ function HistoryPanel({ onClose, onPick }: { onClose: () => void; onPick: () => 
           <SquarePen size={14} strokeWidth={1.9} /> New chat
         </button>
       </aside>
-    </>
-  )
-}
-
-// ─── Bottom drawer: PDF source (inside the panel) ─────────────────────────────
-function PdfDrawer({ suggestion, onClose }: { suggestion: Suggestion; onClose: () => void }) {
-  const h = HIGHLIGHTS[suggestion.id] ?? HIGHLIGHTS['popup-1']
-  const heading = suggestion.section.replace(/^§[\d.]+\s*/, '')
-  const num = suggestion.section.match(/^§([\d.]+)/)?.[1] ?? ''
-  return (
-    <>
-      <div className="cf-backdrop-in" onClick={onClose}
-        style={{ position: 'absolute', inset: 0, background: 'rgba(15,23,42,0.18)', zIndex: 40, cursor: 'pointer' }} />
-      <div className="cf-drawer-up"
-        style={{ position: 'absolute', left: 0, right: 0, bottom: 0, zIndex: 41, background: '#fff', borderRadius: '20px 20px 0 0', boxShadow: '0 -10px 40px rgba(15,23,42,0.18)', height: '56%', display: 'flex', flexDirection: 'column' }}>
-        <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 8 }}>
-          <div style={{ width: 34, height: 4, borderRadius: 999, background: '#E3E3EA' }} />
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 14px 12px' }}>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: '#1F1F32', letterSpacing: '-0.01em' }}>Source</div>
-          </div>
-          <a href={`${DOC.url}#page=${suggestion.page}`} target="_blank" rel="noreferrer"
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 600, color: ACCENT, textDecoration: 'none', padding: '6px 8px', whiteSpace: 'nowrap', borderRadius: 7 }}>
-            Open PDF <span aria-hidden>↗</span>
-          </a>
-          <button onClick={onClose} title="Close" style={{ width: 28, height: 28, borderRadius: 7, border: 'none', background: '#F4F3EF', color: '#525266', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <X size={14} strokeWidth={2} />
-          </button>
-        </div>
-
-        {/* Legend */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '0 16px 10px' }}>
-          <span style={{ width: 13, height: 13, borderRadius: 3, background: '#FFEAAF', border: '1px solid #F2D88A', flexShrink: 0 }} />
-          <span style={{ fontSize: 11.5, color: '#8C899F' }}>Highlighted text is what this flow was drafted from.</span>
-        </div>
-
-        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '4px 16px 22px', background: '#F4F4F7' }}>
-          <div style={{ background: '#fff', borderRadius: 10, border: '1px solid var(--wfc-canvas-border)', padding: '26px 26px', boxShadow: '0 6px 20px rgba(15,23,42,0.07)' }}>
-            <div style={{ fontSize: 10.5, color: '#B4B2A9', marginBottom: 16, textAlign: 'right', fontFamily: MONO }}>Procure-to-Pay SOP · {suggestion.page} / {DOC.pages}</div>
-            <h4 style={{ margin: '0 0 13px', fontSize: 15, fontWeight: 700, color: '#1F1F32', letterSpacing: '-0.01em' }}>
-              <span style={{ color: ACCENT, marginRight: 8 }}>{num}</span>{heading}
-            </h4>
-
-            {/* First paragraph + key sentence — fully highlighted as the source */}
-            <p style={{ margin: '0 0 13px', fontSize: 12.5, lineHeight: 1.8, color: '#2A2A38' }}>
-              <mark className="cf-source-mark">{h.lead} {h.mark}</mark>
-            </p>
-            {/* Second highlighted paragraph */}
-            <p style={{ margin: '0 0 13px', fontSize: 12.5, lineHeight: 1.8, color: '#2A2A38' }}>
-              <mark className="cf-source-mark">{h.tail} The requestor completes each required field before the record can advance to the next stage.</mark>
-            </p>
-
-            {/* Surrounding un-highlighted context so the highlight stands out */}
-            <p style={{ margin: '0 0 13px', fontSize: 12.5, lineHeight: 1.8, color: '#6B697B' }}>
-              To complete this step, the responsible role opens the Procurement portal and works through the fields in order. Each entry is validated as it is captured, and the record cannot advance until every required field is present.
-            </p>
-            <ol style={{ margin: '0 0 4px', paddingLeft: 18, fontSize: 12.5, lineHeight: 1.9, color: '#6B697B' }}>
-              <li>Open the relevant record in the Procurement portal.</li>
-              <li>Confirm the cost center and supplier details.</li>
-              <li>Review the auto-calculated totals against the quote.</li>
-              <li>Submit for the next stage in the workflow.</li>
-            </ol>
-            <p style={{ margin: '14px 0 0', fontSize: 12.5, lineHeight: 1.8, color: '#6B697B' }}>
-              Requisitions without a valid cost center are returned automatically. The approval trail is retained for audit and can be exported from Reports → Approvals at any time.
-            </p>
-          </div>
-        </div>
-      </div>
     </>
   )
 }
