@@ -9722,3 +9722,1029 @@
 .cf-fv-footright { display: flex; align-items: center; gap: 10px; }
 .cf-fv-previewbtn { background: #fff; border: 1.5px solid #C74900; cursor: pointer; padding: 8px 20px; border-radius: 8px; font-family: inherit; font-size: 14px; font-weight: 600; color: #C74900; }
 .cf-fv-savebtn { background: #A13000; border: none; cursor: pointer; padding: 9px 20px; border-radius: 8px; font-family: inherit; font-size: 14px; font-weight: 600; color: #fff; }
+
+/* ════════════════════════════════════════════════════════════════════════
+   CHAT BREATHING ROOM — spacing + hierarchy pass
+   Reference: ChatGPT / Claude iOS, Pi, Copilot web (Mobbin).
+   Principles applied here:
+     1. Rhythm is grouped, not uniform — a turn's own parts sit close (10px),
+        separate turns sit far apart (30px). Uniform 20px gaps were what made
+        the thread read as one undifferentiated wall.
+     2. One card per thread. Agent prose, thinking, and status are plain text
+        on the canvas; only the plan gets a border. Nested cards were the
+        other half of the clutter.
+     3. Line-height 1.7 and a 15px body — prose should breathe like prose.
+   ════════════════════════════════════════════════════════════════════════ */
+
+/* ── 1. Turn rhythm ──────────────────────────────────────────────────────
+   Replaces the flat 20px gap with grouped spacing. Consecutive agent
+   elements (prose → thinking → plan) belong to one "turn" and hug; a new
+   speaker starts a new paragraph of the conversation. */
+.cf-thread > div { gap: 10px !important; }
+
+/* A user message opens a new turn — big air above it. */
+.cf-thread > div > .cf-user-row { margin-top: 20px; }
+.cf-thread > div > .cf-user-row:first-child { margin-top: 0; }
+
+/* The agent's reply to that user message: clear separation, then its own
+   internal parts stay tight via the base 10px gap. */
+.cf-thread > div > .cf-user-row + .cf-agent { margin-top: 10px; }
+
+/* Structural blocks (plan card, built tile, done) get room to sit apart
+   from the prose that introduces them. */
+.cf-thread > div > .cf-plan-card,
+.cf-thread > div > .cf-built-tile,
+.cf-thread > div > .cf-plan-actions { margin-top: 6px; }
+
+/* Generous tail so the last message never collides with the composer. */
+.cf-thread > div { padding-bottom: 16px; }
+
+/* ── 2. Prose: bigger, looser, more readable ─────────────────────────── */
+.cf-agent .wfc-msg-text {
+  font-size: 15px;
+  line-height: 1.7;
+  color: #26263A;
+  letter-spacing: -0.006em;
+  max-width: 60ch;              /* measure — long lines are hard to scan */
+}
+.cf-agent .wfc-msg-text strong { font-weight: 600; color: #1F1F32; }
+
+/* User bubble — slightly softer and roomier, matching the new prose scale. */
+.cf-user { padding: 10px 15px; border-radius: 18px; background: #F3F3F4; }
+.cf-user-text { font-size: 14.5px; line-height: 1.6; }
+
+/* ── 3. Thinking: one quiet line, not a block ───────────────────────── */
+/* Muted enough to recede while the eye goes to the prose and the plan. */
+.cf-think { gap: 6px; margin: 0; }
+.cf-think-head { font-size: 13.5px; color: #9A98A6; }
+.cf-think-steps {
+  gap: 9px;
+  margin-top: 4px;
+  padding-left: 9px;
+  border-left: 1.5px solid #EDECE7;   /* quiet rail — groups the steps */
+}
+.cf-think-step { font-size: 13px; line-height: 1.5; color: #8C899F; }
+
+/* ── 4. Plan card — the one piece of chrome in the thread ───────────── */
+.cf-plan-card {
+  border: 1px solid #E9E8E3 !important;
+  border-radius: 16px;
+  box-shadow: 0 1px 2px rgba(20,18,50,0.025), 0 8px 24px -16px rgba(20,18,50,0.18) !important;
+}
+.cf-plan-head { padding: 14px 16px 12px; }
+.cf-plan-head-title {
+  font-size: 11px; font-weight: 600; letter-spacing: 0.05em;
+  text-transform: uppercase; color: #A5A3B0;
+}
+
+/* Rows: taller, calmer, title-led. The type label left with the row —
+   every row is a Flow, so printing "Flow" on all ten was pure noise. */
+.cf-plan-entry { border-top: 1px solid #F3F2EE; }
+.cf-plan-entry:first-child { border-top: none; }
+.cf-plan-item {
+  border-top: none !important;
+  padding: 13px 14px 13px 16px;
+  gap: 12px;
+  align-items: center;
+}
+.cf-plan-item:hover { background: #FBFBF9; }
+.cf-plan-title { font-size: 14px; font-weight: 500; line-height: 1.45; letter-spacing: -0.008em; }
+.cf-plan-meta { margin-top: 3px; font-size: 12px; color: #9A98A6; }
+.cf-plan-steps { font-size: 12px; color: #9A98A6; }
+
+/* ── 5. Expand chevron + inline step outline ───────────────────────── */
+.cf-plan-expand {
+  width: 28px; height: 28px; flex-shrink: 0;
+  border: none; background: transparent; border-radius: 8px;
+  color: #BFBDC8; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 130ms ease, color 130ms ease, transform 220ms cubic-bezier(0.22,1,0.36,1);
+}
+.cf-plan-expand:hover { background: #F1F0EC; color: #55536A; }
+.cf-plan-expand.is-open { transform: rotate(180deg); color: #55536A; }
+
+/* The steps themselves — numbered, quiet, indented to align under the
+   title. Rail on the left ties them to the row they belong to. */
+@keyframes cfStepsIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.cf-plan-steps-list {
+  list-style: none;
+  margin: 0;
+  padding: 2px 16px 14px 47px;   /* 47px lines up with the row title */
+  display: flex; flex-direction: column; gap: 9px;
+  animation: cfStepsIn 260ms cubic-bezier(0.22,1,0.36,1) both;
+}
+.cf-plan-step {
+  display: flex; align-items: baseline; gap: 10px;
+  font-size: 13px; line-height: 1.5; color: #6B697B; letter-spacing: -0.003em;
+}
+.cf-plan-step-num {
+  flex-shrink: 0; min-width: 15px;
+  font-size: 11.5px; font-weight: 600; color: #BFBDC8;
+  font-variant-numeric: tabular-nums;
+}
+.cf-plan-step-label { color: #55536A; }
+
+/* Expanded row reads as one unit with its steps. */
+.cf-plan-entry.is-open { background: #FCFCFA; }
+.cf-plan-entry.is-open .cf-plan-item:hover { background: #FCFCFA; }
+
+/* ── 6. Build CTA — room above, calmer weight ──────────────────────── */
+.cf-plan-actions { margin-top: 2px !important; }
+.cf-plan-build { padding: 12px 16px; font-size: 13.5px; border-radius: 12px; }
+
+/* ── 7. Built tiles + done — lighter, less boxed ───────────────────── */
+.cf-built-tile { padding: 12px 14px; border-radius: 13px; }
+.cf-built-title { font-size: 13.5px; }
+.cf-done-sub { font-size: 14px; line-height: 1.65; }
+
+/* Thinking toggle — real chevron icon (was a "▸" text glyph that rendered as
+   a stray bullet at small sizes and fought the "·" separator beside it). */
+.cf-think-chev {
+  width: 13px; height: 13px; flex-shrink: 0;
+  color: #C2C0CB;
+  transition: transform 200ms cubic-bezier(0.22,1,0.36,1), color 140ms ease;
+}
+.cf-think-toggle.is-open .cf-think-chev { transform: rotate(90deg); }
+.cf-think-toggle:hover .cf-think-chev { color: #6B697B; }
+/* Separator sits between "Analyzed" and the step count — give it real air. */
+.cf-think-dot { color: #D2D0DA; margin: 0 1px; }
+
+/* ════════════════════════════════════════════════════════════════════════
+   BUILD SECTIONS — divider + heading per flow
+   Taken from ChatGPT's numbered sections: the rule and the heading always
+   arrive as a PAIR. A rule alone separates nothing you can name; a heading
+   alone doesn't break the visual run. Together they turn a long build log
+   into chapters you can skim by heading and scroll by rule.
+   ════════════════════════════════════════════════════════════════════════ */
+.cf-section {
+  display: flex; flex-direction: column; gap: 13px;
+  margin: 12px 0 2px;
+}
+/* First section sits right under the "starting to build…" line — no big gap. */
+.cf-section:first-of-type { margin-top: 6px; }
+
+.cf-section-rule { height: 1px; background: #E9E8E3; width: 100%; }
+
+.cf-section-head {
+  display: flex; align-items: baseline; gap: 7px;
+  margin: 0; flex-wrap: wrap;
+  font-size: 14.5px; font-weight: 600; letter-spacing: -0.011em;
+  line-height: 1.4; color: #1F1F32;
+}
+/* The counter is the navigation cue — tinted so it reads as a position
+   marker, not part of the flow's name. */
+.cf-section-count {
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 0.045em; text-transform: uppercase;
+  color: var(--wfc-accent);
+  font-variant-numeric: tabular-nums;
+}
+.cf-section-sep { color: #D2D0DA; font-weight: 400; }
+.cf-section-title { color: #1F1F32; }
+
+/* A finished section's counter recedes — the eye should land on whatever is
+   still in motion, not on chapters already closed. */
+.cf-section.is-done .cf-section-count { color: #B4B2A9; }
+
+/* Everything under a heading belongs to it: pull the following message closer
+   to its heading than to the previous section's tail. */
+.cf-thread > div > .cf-section + .cf-agent { margin-top: -2px; }
+
+/* ─── Mid-build question: name its subject ──────────────────────────────── */
+/* The card interrupts a running build, so it has to say which flow it is
+   asking about or the questions read as context-free. */
+.cf-midq-subject {
+  display: flex; align-items: center; gap: 6px;
+  padding: 9px 14px 0;
+  font-size: 11.5px; font-weight: 600; letter-spacing: -0.003em;
+  color: #8C899F;
+}
+.cf-midq-subject svg { color: #B4B2A9; flex-shrink: 0; }
+.cf-midq-subject span {
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+/* Question sits tighter under the subject line than it would on its own. */
+.cf-clarify .cf-midq-subject + .cf-clarify-qrow { padding-top: 7px; }
+
+/* The completion summary closes the build — give it the same divider the
+   sections use so it reads as the final chapter, not a stray card hanging off
+   flow 3's tile. */
+.cf-thread > div > .cf-agent:has(.cf-done) {
+  border-top: 1px solid #E9E8E3;
+  margin-top: 20px;
+  padding-top: 18px;
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   BUILD SECTION + ARTIFACT REFINEMENTS
+   ════════════════════════════════════════════════════════════════════════ */
+
+/* ── Divider: real air on both sides ──────────────────────────────────────
+   ChatGPT's rules sit in a lot of whitespace — that's what makes them read
+   as calm structure rather than as ruled paper. Was 12px/13px; now the rule
+   has ~26px above and ~18px below before the heading. */
+.cf-section { gap: 18px; margin: 26px 0 4px; }
+.cf-section:first-of-type { margin-top: 14px; }
+
+/* ── Built flow tile: a quiet artifact, not a blue call-to-action ─────────
+   It was competing with the plan card and the CTA for attention. A finished
+   flow is a RESULT — it should sit back and be findable, not shout. The
+   signpost icon matches the Flow view's own orb so the same object looks
+   the same in both places. */
+.cf-built-tile {
+  background: #FBFBF9;
+  border: 1px solid #EDECE7;
+  padding: 11px 13px;
+}
+.cf-built-tile:hover {
+  background: #fff;
+  border-color: #DAD8D1;
+  box-shadow: 0 1px 3px rgba(20,18,50,0.05) !important;
+}
+/* Grayed icon — colour returns on hover, so the tile rewards attention
+   rather than demanding it. */
+.cf-built-icon {
+  width: 30px; height: 30px; border-radius: 9px;
+  background: #F1F0EC; color: #8C899F;
+  transition: background 150ms ease, color 150ms ease;
+}
+.cf-built-tile:hover .cf-built-icon { background: #EFF8FF; color: #0875D7; }
+.cf-built-title { color: #3A3950; font-weight: 600; }
+/* "Ready" stays green but muted — confirmation, not celebration. */
+.cf-built-meta { color: #8C899F; font-weight: 500; }
+.cf-built-meta svg { color: var(--wfc-build-done); flex-shrink: 0; }
+/* Review CTA only resolves on hover. */
+.cf-built-cta { color: #A8A6B2; font-weight: 500; }
+.cf-built-tile:hover .cf-built-cta { color: var(--wfc-accent); }
+
+/* ── Question card: a whisper of a scrim ─────────────────────────────────
+   The card interrupts a running build, so it needs to sit slightly forward —
+   but a real modal scrim would break the thread. This is a ~4% wash that
+   reads as depth without dimming anything legible. */
+.cf-midq-veil {
+  position: absolute; inset: 0; z-index: 20;
+  background: rgba(28, 28, 44, 0.16);
+  backdrop-filter: blur(1.5px);
+  -webkit-backdrop-filter: blur(1.5px);
+  animation: cfVeilIn 420ms cubic-bezier(0.22,1,0.36,1) both;
+  pointer-events: none;
+}
+@keyframes cfVeilIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* The card itself rises above the veil. */
+.wfc-chat-refine:has(.cf-clarify) { position: relative; z-index: 21; }
+
+@media (prefers-reduced-motion: reduce) {
+  .cf-midq-veil { animation: none; }
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   FIRST-RUN INTRO — "Create flows from your documents"
+   An announcement sheet scoped to the 383px panel, not the browser window.
+   Apple's feature-intro grammar: a full-bleed image that IS the subject, a
+   short text block that could not be shorter, and exactly two actions with
+   unmistakable rank.
+   ════════════════════════════════════════════════════════════════════════ */
+
+/* The sheet arrives unbidden, so it should ease in rather than pop. The scrim
+   leads slightly and runs longer than the card, which makes the blur read as
+   settling in behind the sheet instead of snapping on with it. */
+@keyframes cfIntroScrimIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes cfIntroIn {
+  from { opacity: 0; transform: translateY(12px) scale(0.985); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Scrim covers only the panel — absolute, not fixed. The blur is what makes
+   the sheet feel like it is floating above the surface rather than pasted on. */
+.cf-intro-scrim {
+  position: absolute; inset: 0; z-index: 120;
+  display: flex; align-items: center; justify-content: center;
+  /* Extra bottom padding lifts the sheet to optical centre — dead-centre in a
+     tall narrow column reads as sitting low. */
+  padding: 20px 20px 84px;
+  background: rgba(22, 20, 45, 0.34);
+  backdrop-filter: blur(7px) saturate(115%);
+  -webkit-backdrop-filter: blur(7px) saturate(115%);
+  animation: cfIntroScrimIn 480ms ease both;
+}
+
+.cf-intro {
+  position: relative;
+  width: 100%; max-width: 327px;
+  background: #fff;
+  border-radius: 26px;         /* iOS sheet radius — generous, not a card */
+  overflow: hidden;            /* clips the hero to the rounded top */
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.6) inset,
+    0 2px 6px rgba(15,18,40,0.10),
+    0 28px 64px -18px rgba(15,18,40,0.46);
+  animation: cfIntroIn 520ms cubic-bezier(0.22,1,0.36,1) 60ms both;
+  font-family: 'Inter', -apple-system, sans-serif;
+}
+
+/* ── Full-bleed hero ─────────────────────────────────────────────────────
+   Warm tinted field so the document mark reads as lit rather than floating
+   on white. Bleeds edge to edge; the card's overflow clips the corners. */
+.cf-intro-hero {
+  position: relative;
+  height: 196px;
+  /* Deep blue field. The document mark is 141 white fills with near-black
+     outlines, so it was built for exactly this: the paper reads as lit and
+     the linework recedes instead of fighting a pale ground. */
+  background:
+    radial-gradient(120% 96% at 50% 8%, #2E62C4 0%, rgba(46,98,196,0) 62%),
+    linear-gradient(163deg, #1E4FA8 0%, #17357E 52%, #141C4F 100%);
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+}
+/* Soft bloom behind the mark. On a dark field this is a halo rather than a
+   wash — just enough lift to separate the white paper from the deep blue. */
+.cf-intro-hero-glow {
+  position: absolute; width: 300px; height: 300px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(150,196,255,0.30) 0%, rgba(120,170,255,0.10) 42%, rgba(255,255,255,0) 70%);
+  pointer-events: none;
+}
+/* No hairline under the hero — the dark-to-white edge is its own division. */
+
+/* Sparkles read as light sources on the dark field: white for the brightest,
+   light blues behind it. Each carries a glow so they twinkle rather than sit
+   flat — on a dark ground a solid fill with no bloom looks like a sticker. */
+.cf-intro-spark { position: absolute; fill: #fff; pointer-events: none; }
+.cf-intro-spark-1 {
+  width: 16px; height: 16px; top: 32px; right: 58px;
+  filter: drop-shadow(0 0 7px rgba(190,222,255,0.95));
+  animation: cfSparkTwinkle 2.7s ease-in-out infinite;
+}
+.cf-intro-spark-2 {
+  width: 11px; height: 11px; bottom: 42px; left: 54px; fill: #B9DBFF;
+  filter: drop-shadow(0 0 6px rgba(150,200,255,0.8));
+  animation: cfSparkTwinkle 3.5s ease-in-out infinite 0.9s;
+}
+.cf-intro-spark-3 {
+  width: 9px; height: 9px; top: 58px; left: 82px; fill: #8FC0F5;
+  filter: drop-shadow(0 0 5px rgba(130,185,250,0.7));
+  animation: cfSparkTwinkle 3.1s ease-in-out infinite 1.6s;
+}
+
+/* ── Text block ─────────────────────────────────────────────────────────── */
+.cf-intro-body { padding: 20px 24px 22px; text-align: center; }
+
+.cf-intro-kicker {
+  display: block; margin-bottom: 7px;
+  font-size: 10.5px; font-weight: 700;
+  letter-spacing: 0.075em; text-transform: uppercase;
+  color: var(--wfc-accent);
+}
+.cf-intro-title {
+  margin: 0 0 9px;
+  font-size: 20px; font-weight: 700; line-height: 1.28;
+  letter-spacing: -0.022em; color: #1F1F32;
+}
+.cf-intro-sub {
+  margin: 0 auto 20px; max-width: 250px;
+  font-size: 13.5px; line-height: 1.6;
+  letter-spacing: -0.004em; color: #6B697B;
+}
+
+/* ── Actions — stacked, primary first. Full-width buttons are the iOS
+   convention for a sheet this narrow; side-by-side would squeeze both. ─── */
+.cf-intro-actions { display: flex; flex-direction: column; gap: 8px; }
+.cf-intro-primary, .cf-intro-secondary {
+  width: 100%; border-radius: 12px; padding: 12px 16px;
+  font-family: inherit; font-size: 14px; font-weight: 600;
+  letter-spacing: -0.008em; cursor: pointer;
+  transition: background 150ms ease, border-color 150ms ease, color 150ms ease, transform 120ms ease;
+}
+.cf-intro-primary {
+  background: var(--wfc-accent); border: none; color: #fff;
+  box-shadow: 0 1px 2px rgba(9,117,215,0.22), 0 6px 16px -8px rgba(9,117,215,0.48);
+}
+.cf-intro-primary:hover { background: var(--wfc-accent-strong); }
+.cf-intro-primary:active { transform: scale(0.985); }
+.cf-intro-secondary {
+  background: #fff; border: 1px solid #E8E7E2; color: #52505E;
+}
+.cf-intro-secondary:hover { border-color: #C4C3BD; background: #FAFAF8; color: #1F1F32; }
+.cf-intro-secondary:active { transform: scale(0.985); }
+
+/* ── Dismiss — floats on the hero, frosted so it works over the artwork ── */
+.cf-intro-x {
+  position: absolute; top: 12px; right: 12px; z-index: 2;
+  width: 28px; height: 28px; border-radius: 50%;
+  border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  /* Dark frost — a white pill would vanish into the lit part of the hero. */
+  background: rgba(9,20,54,0.34); color: rgba(255,255,255,0.86);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 1px 3px rgba(6,16,48,0.28);
+  transition: background 140ms ease, color 140ms ease;
+}
+.cf-intro-x:hover { background: rgba(9,20,54,0.55); color: #fff; }
+
+@media (prefers-reduced-motion: reduce) {
+  .cf-intro-scrim, .cf-intro { animation: none; }
+  .cf-intro-spark { animation: none; }
+}
+
+/* "Learn more" reveals the three beats in place — numbered, left-aligned
+   (the only left-aligned block in an otherwise centred sheet, because lists
+   are read, not scanned). */
+@keyframes cfIntroStepsIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.cf-intro-steps {
+  list-style: none; counter-reset: introstep;
+  margin: 0 0 18px; padding: 15px 15px 14px;
+  text-align: left;
+  background: #FAFAF8; border: 1px solid #F0EFEA; border-radius: 14px;
+  display: flex; flex-direction: column; gap: 12px;
+  animation: cfIntroStepsIn 300ms cubic-bezier(0.16,1,0.3,1) both;
+}
+.cf-intro-step {
+  counter-increment: introstep;
+  display: grid; grid-template-columns: 20px 1fr; column-gap: 9px; row-gap: 1px;
+}
+.cf-intro-step::before {
+  content: counter(introstep);
+  grid-row: 1 / span 2;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: #fff; border: 1px solid #E8E7E2;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10.5px; font-weight: 700; color: #8C899F;
+  font-variant-numeric: tabular-nums;
+}
+.cf-intro-step-label { font-size: 12.5px; font-weight: 600; color: #1F1F32; letter-spacing: -0.006em; }
+.cf-intro-step-detail { font-size: 12px; line-height: 1.5; color: #8C899F; letter-spacing: -0.003em; }
+
+@media (prefers-reduced-motion: reduce) {
+  .cf-intro-steps { animation: none; }
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   CHAT SCROLLBAR — thin, quiet, and it must not steal layout width
+   On macOS with a mouse attached (or "Always show scroll bars"), Chrome
+   renders CLASSIC scrollbars: ~15px of real, permanent layout width carved
+   out of a 383px panel, shifting every message left. Overlay scrollbars on
+   trackpad-only machines hide this, which is why it looks fine on some
+   setups and cramped on others.
+
+   Fix: an overlay-style thumb that floats above the content instead of
+   reserving a column, so the measure stays put whether or not it is visible.
+   ════════════════════════════════════════════════════════════════════════ */
+.cf-thread {
+  scrollbar-gutter: auto;             /* never reserve a permanent column */
+  scrollbar-width: thin;              /* Firefox */
+  scrollbar-color: rgba(31,31,50,0.16) transparent;
+  overscroll-behavior: contain;       /* don't chain scroll to the host app */
+}
+
+/* WebKit: a 10px track with a 5px thumb inset by transparent border, so the
+   thumb sits clear of the panel edge instead of hugging it. */
+.cf-thread::-webkit-scrollbar { width: 10px; }
+.cf-thread::-webkit-scrollbar-track { background: transparent; }
+.cf-thread::-webkit-scrollbar-thumb {
+  background-color: rgba(31,31,50,0.14);
+  border-radius: 999px;
+  border: 3px solid transparent;      /* transparent border = inset thumb */
+  background-clip: content-box;
+  transition: background-color 160ms ease;
+}
+/* Resolves on interaction — quiet at rest, findable when reached for. */
+.cf-thread:hover::-webkit-scrollbar-thumb { background-color: rgba(31,31,50,0.24); }
+.cf-thread::-webkit-scrollbar-thumb:hover { background-color: rgba(31,31,50,0.38); }
+.cf-thread::-webkit-scrollbar-thumb:active { background-color: rgba(31,31,50,0.46); }
+/* Kill the arrow buttons classic scrollbars add at each end. */
+.cf-thread::-webkit-scrollbar-button { display: none; height: 0; width: 0; }
+.cf-thread::-webkit-scrollbar-corner { background: transparent; }
+
+/* Same treatment for the other scrolling surfaces in the panel. */
+.cf-history-list, .cf-fv-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(31,31,50,0.16) transparent;
+}
+.cf-history-list::-webkit-scrollbar, .cf-fv-scroll::-webkit-scrollbar { width: 10px; }
+.cf-history-list::-webkit-scrollbar-track, .cf-fv-scroll::-webkit-scrollbar-track { background: transparent; }
+.cf-history-list::-webkit-scrollbar-thumb, .cf-fv-scroll::-webkit-scrollbar-thumb {
+  background-color: rgba(31,31,50,0.14);
+  border-radius: 999px; border: 3px solid transparent; background-clip: content-box;
+}
+.cf-history-list::-webkit-scrollbar-thumb:hover, .cf-fv-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(31,31,50,0.32);
+}
+.cf-history-list::-webkit-scrollbar-button, .cf-fv-scroll::-webkit-scrollbar-button { display: none; }
+
+/* ════════════════════════════════════════════════════════════════════════
+   INTRO HERO — the transformation, staged
+   References (Mobbin): Spotify AI Playlist, Cash App Moneybot, Loom AI,
+   Linktree. What they share is NOT an icon on a gradient — it is a cropped,
+   tilted fragment of the actual result, lit from within and bleeding off the
+   frame so it reads as a glimpse of something larger.
+   Here: a document leans in from the left, a beam crosses it, flow-step cards
+   deal out to the right. Both ends crop.
+   ════════════════════════════════════════════════════════════════════════ */
+
+/* Faint blueprint grid — texture so the field isn't a flat wash. */
+.cf-intro-grid {
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
+  background-size: 26px 26px;
+  /* Fades out at the edges so the grid never terminates in a hard line. */
+  -webkit-mask-image: radial-gradient(120% 92% at 46% 42%, #000 26%, transparent 78%);
+  mask-image: radial-gradient(120% 92% at 46% 42%, #000 26%, transparent 78%);
+  pointer-events: none;
+}
+
+/* ── Source document — tilted, cropped at the left edge ─────────────────── */
+.cf-intro-source {
+  position: absolute; left: -16px; top: 50%;
+  width: 126px; padding: 15px 13px;
+  display: flex; flex-direction: column; gap: 8px;
+  background: linear-gradient(160deg, #FFFFFF 0%, #EEF3FB 100%);
+  border-radius: 10px;
+  /* Centred on the hero's vertical axis: translateY(-50%) does the centring,
+     the rotate rides along. Order matters — translate first, then rotate. */
+  transform: translateY(calc(-50% - 3px)) rotate(-8deg);
+  box-shadow: 0 18px 34px rgba(4, 12, 40, 0.44), 0 2px 5px rgba(4,12,40,0.28);
+  animation: cfIntroFloat 7s ease-in-out infinite;
+}
+/* Small PDF tag on the corner — names the input without a caption. */
+.cf-intro-source-tag {
+  position: absolute; right: -7px; bottom: -7px;
+  padding: 2.5px 6px; border-radius: 5px;
+  background: #D4452F; color: #fff;
+  font-size: 7.5px; font-weight: 700; letter-spacing: 0.06em;
+  box-shadow: 0 3px 8px rgba(160, 40, 24, 0.42);
+}
+.cf-intro-source-bar { height: 6px; width: 46%; border-radius: 3px; background: #2E62C4; margin-bottom: 2px; }
+.cf-intro-source-line { height: 4px; border-radius: 2px; background: #C9D6EA; }
+.cf-intro-source-line.short { width: 62%; }
+
+/* ── The beam — the agent reading across the page ───────────────────────── */
+.cf-intro-beam {
+  position: absolute; left: 60px; top: 14px;
+  width: 92px; height: 176px;
+  background: linear-gradient(102deg, rgba(140,195,255,0) 0%, rgba(168,212,255,0.32) 48%, rgba(140,195,255,0) 100%);
+  filter: blur(9px);
+  transform: rotate(-8deg);
+  animation: cfIntroBeam 4.6s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes cfIntroBeam {
+  0%, 100% { opacity: 0.35; transform: rotate(-8deg) translateX(-8px); }
+  50%      { opacity: 0.85; transform: rotate(-8deg) translateX(10px); }
+}
+
+/* ── Output — flow-step cards dealing out, cropped at the right edge ────── */
+.cf-intro-steps-stack {
+  position: absolute; right: -18px; top: 50%;
+  display: flex; flex-direction: column; gap: 9px;
+  transform: translateY(-50%) rotate(-8deg);
+}
+.cf-intro-chip {
+  display: flex; align-items: center; gap: 8px;
+  width: 132px; padding: 9px 10px;
+  background: rgba(255,255,255,0.97);
+  border-radius: 8px;
+  box-shadow: 0 12px 26px rgba(4, 12, 40, 0.38), 0 1px 3px rgba(4,12,40,0.22);
+  animation: cfIntroDeal 620ms cubic-bezier(0.16,1,0.3,1) both;
+}
+.cf-intro-chip-1 { animation-delay: 260ms; }
+.cf-intro-chip-2 { animation-delay: 420ms; }
+/* All three cards are identical — the stagger alone carries the sequence. */
+.cf-intro-chip-3 { animation-delay: 580ms; }
+
+@keyframes cfIntroDeal {
+  from { opacity: 0; transform: translateX(22px) translateY(-4px) scale(0.94); }
+  to   { opacity: 1; transform: translateX(0) translateY(0) scale(1); }
+}
+
+.cf-intro-chip-num {
+  width: 17px; height: 17px; flex-shrink: 0; border-radius: 5px;
+  background: var(--wfc-accent); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9.5px; font-weight: 700; font-variant-numeric: tabular-nums;
+}
+.cf-intro-chip-bar { flex: 1; height: 5px; border-radius: 3px; background: #C9D6EA; }
+
+
+/* Gentle drift so the scene breathes. */
+@keyframes cfIntroFloat {
+  0%, 100% { transform: translateY(calc(-50% - 3px)) rotate(-8deg); }
+  50%      { transform: translateY(calc(-50% - 8px)) rotate(-8deg); }
+}
+
+/* Sparkles reposition around the new composition. */
+.cf-intro-spark-1 { top: 24px !important; right: 30px !important; }
+.cf-intro-spark-2 { bottom: 54px !important; left: 116px !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  .cf-intro-beam, .cf-intro-chip { animation: none !important; }
+  .cf-intro-source { animation: none !important; transform: translateY(calc(-50% - 3px)) rotate(-8deg) !important; }
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   BUILD-GUARD SHEET — same grammar as the intro, different subject
+   Was a white box with an orange-sparkle icon, which no longer matched
+   anything. Now it reuses .cf-intro's shell (radius, shadow, body, actions)
+   and swaps the hero for a build-in-progress scene: two steps done, one
+   mid-write with a live caret. The state is legible before the copy is read.
+   ════════════════════════════════════════════════════════════════════════ */
+
+/* Backdrop matches the intro scrim's weight. */
+.cf-guard-backdrop {
+  background: rgba(20, 18, 50, 0.40) !important;
+  backdrop-filter: blur(7px) saturate(115%) !important;
+  -webkit-backdrop-filter: blur(7px) saturate(115%) !important;
+}
+/* The guard is a fixed, page-level dialog, so it sizes itself rather than
+   inheriting the panel-scoped intro width. */
+.cf-guard-sheet { width: 340px; max-width: 100%; text-align: left; }
+
+.cf-guard-hero-v2 {
+  height: 168px;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* ── Steps landing, one still being written ────────────────────────────── */
+.cf-guard-stack {
+  position: relative;
+  display: flex; flex-direction: column; gap: 10px;
+  transform: rotate(-8deg);
+}
+.cf-guard-row {
+  display: flex; align-items: center; gap: 9px;
+  width: 178px; padding: 9px 11px;
+  background: rgba(255,255,255,0.97);
+  border-radius: 8px;
+  box-shadow: 0 12px 26px rgba(4,12,40,0.38), 0 1px 3px rgba(4,12,40,0.22);
+  animation: cfIntroDeal 620ms cubic-bezier(0.16,1,0.3,1) both;
+}
+.cf-guard-row:nth-child(1) { animation-delay: 200ms; }
+.cf-guard-row:nth-child(2) { animation-delay: 340ms; }
+.cf-guard-row:nth-child(3) { animation-delay: 480ms; }
+
+.cf-guard-row-num {
+  width: 17px; height: 17px; flex-shrink: 0; border-radius: 5px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--wfc-build-done); color: #fff;
+}
+/* The in-flight row's marker is a spinner ring rather than a check. */
+.cf-guard-row-spin {
+  background: transparent;
+  border: 2px solid #D8E4F5; border-top-color: var(--wfc-accent);
+  border-radius: 50%;
+  animation: cfGuardSpin 800ms linear infinite;
+}
+@keyframes cfGuardSpin { to { transform: rotate(360deg); } }
+
+.cf-guard-row-bar { flex: 1; height: 5px; border-radius: 3px; background: #C9D6EA; }
+/* The live row's bar grows, as if the line is being typed. */
+.cf-guard-row-bar.is-writing {
+  background: #DCE7F5;
+  animation: cfGuardWrite 2.4s ease-in-out infinite;
+  transform-origin: left center;
+}
+@keyframes cfGuardWrite {
+  0%   { transform: scaleX(0.18); }
+  70%  { transform: scaleX(1); }
+  100% { transform: scaleX(1); }
+}
+/* Blinking caret at the end of the line being written. */
+.cf-guard-caret {
+  width: 2px; height: 11px; flex-shrink: 0; border-radius: 1px;
+  background: var(--wfc-accent);
+  animation: cfGuardCaret 1s steps(1, end) infinite;
+}
+@keyframes cfGuardCaret { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }
+
+/* ── Live status chip ───────────────────────────────────────────────────── */
+.cf-guard-status {
+  position: absolute; left: 14px; top: 14px;
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 11px 5px 8px; border-radius: 999px;
+  background: rgba(8, 18, 48, 0.72);
+  border: 1px solid rgba(255,255,255,0.16);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+}
+.cf-guard-status-dot {
+  width: 6px; height: 6px; border-radius: 50%; background: #4ADE80;
+  box-shadow: 0 0 7px rgba(74,222,128,0.85);
+  animation: cfGuardPulse 2.1s ease-in-out infinite;
+}
+.cf-guard-status-text { font-size: 10.5px; font-weight: 600; color: rgba(255,255,255,0.94); }
+@keyframes cfGuardPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.45; } }
+
+/* Body copy is centred like the intro's; the sheet override above is only
+   so the hero's absolute children anchor correctly. */
+.cf-guard-sheet .cf-intro-body { text-align: center; }
+.cf-guard-sheet .cf-intro-sub strong { color: #3A3950; font-weight: 600; }
+
+/* Stopping is destructive — the secondary reveals that on hover only. */
+.cf-guard-stop-v2:hover {
+  border-color: #E8B4B8 !important;
+  background: #FEF7F7 !important;
+  color: #B3131D !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cf-guard-row, .cf-guard-row-spin, .cf-guard-row-bar.is-writing,
+  .cf-guard-caret, .cf-guard-status-dot { animation: none !important; }
+  .cf-guard-row-bar.is-writing { transform: scaleX(1); }
+}
+
+/* ── Interrupt marker — a stop, shown in place ───────────────────────────── */
+/* Same divider grammar as the flow sections, in amber so a scan of the log
+   shows exactly where the agent was halted. The work above it stays. */
+.cf-interrupt { display: flex; flex-direction: column; gap: 14px; margin: 22px 0 4px; }
+.cf-interrupt-rule { height: 1px; background: #F0DFC0; width: 100%; }
+.cf-interrupt-row { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+.cf-interrupt-label {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
+  color: #B4740A;
+}
+.cf-interrupt-meta { font-size: 12px; color: #9A98A6; }
+.cf-interrupt-resume {
+  margin-left: auto;
+  display: inline-flex; align-items: center; gap: 3px;
+  background: #fff; border: 1px solid #E8D9B8; border-radius: 9px;
+  padding: 6px 10px 6px 12px; font-family: inherit;
+  font-size: 12px; font-weight: 600; color: #B4740A; cursor: pointer;
+  transition: background 130ms ease, border-color 130ms ease;
+}
+.cf-interrupt-resume:hover { background: #FFFBF2; border-color: #D9BE84; }
+
+/* ════════════════════════════════════════════════════════════════════════
+   GUARD SHEET — position + warning treatment
+   1. Position: the guard was a page-level fixed dialog, so it centred on the
+      1440px viewport while the intro centred inside the 383px panel. They
+      landed in visibly different places. Now the guard uses the same
+      panel-relative box.
+   2. Colour: this modal interrupts the user, so it is a caution, not an
+      announcement. Warm neutral hero + amber primary rather than the intro's
+      deep blue + blue primary.
+   ════════════════════════════════════════════════════════════════════════ */
+
+/* Match the intro scrim exactly: absolute to the panel, same optical lift. */
+.cf-guard-backdrop {
+  position: absolute !important; inset: 0 !important;
+  z-index: 120 !important;
+  padding: 20px 20px 84px !important;
+  background: rgba(22, 20, 45, 0.34) !important;
+}
+.cf-guard-sheet { width: 100%; max-width: 327px; }
+
+/* Hero: a very light warm field — enough to signal caution, calm enough that
+   the white step cards still read as the subject. */
+.cf-guard-hero-v2 {
+  height: 168px;
+  background:
+    radial-gradient(120% 96% at 50% 10%, #FFF8EC 0%, rgba(255,248,236,0) 62%),
+    linear-gradient(163deg, #FDF6E9 0%, #F8EEDC 54%, #F2E6D2 100%) !important;
+}
+/* Grid + bloom flip to dark-on-light for the pale field. */
+.cf-guard-hero-v2 .cf-intro-grid {
+  background-image:
+    linear-gradient(rgba(120,90,30,0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(120,90,30,0.05) 1px, transparent 1px);
+}
+.cf-guard-hero-v2 .cf-intro-hero-glow {
+  background: radial-gradient(circle, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0) 68%);
+}
+/* Cards need a border on a pale ground — shadow alone stops separating them. */
+.cf-guard-hero-v2 .cf-guard-row {
+  background: #fff;
+  border: 1px solid rgba(150,115,40,0.10);
+  box-shadow: 0 8px 20px rgba(120, 88, 30, 0.14), 0 1px 2px rgba(120,88,30,0.10);
+}
+.cf-guard-hero-v2 .cf-guard-row-bar { background: #E4DAC6; }
+.cf-guard-hero-v2 .cf-guard-row-bar.is-writing { background: #EFE3CC; }
+.cf-guard-hero-v2 .cf-guard-row-spin { border-color: #EADFC8; border-top-color: #D89A16; }
+.cf-guard-hero-v2 .cf-guard-caret { background: #D89A16; }
+/* Status chip goes light on the pale field. */
+.cf-guard-hero-v2 .cf-guard-status {
+  background: rgba(255,255,255,0.86);
+  border-color: rgba(150,115,40,0.16);
+  box-shadow: 0 2px 6px rgba(120,88,30,0.10);
+}
+.cf-guard-hero-v2 .cf-guard-status-text { color: #8A6410; }
+.cf-guard-hero-v2 .cf-guard-status-dot { background: #D89A16; box-shadow: 0 0 7px rgba(216,154,22,0.7); }
+
+/* Kicker + primary in amber — caution, not announcement. */
+.cf-guard-sheet .cf-intro-kicker { color: #B4740A; }
+.cf-guard-sheet .cf-intro-primary {
+  background: #E0A213; color: #3D2A00;
+  box-shadow: 0 1px 2px rgba(180,116,10,0.24), 0 6px 16px -8px rgba(180,116,10,0.5);
+}
+.cf-guard-sheet .cf-intro-primary:hover { background: #C98D08; }
+/* Dismiss button flips dark-on-light for the pale hero. */
+.cf-guard-sheet .cf-intro-x {
+  background: rgba(255,255,255,0.74); color: #8A6410;
+  box-shadow: 0 1px 3px rgba(120,88,30,0.16);
+}
+.cf-guard-sheet .cf-intro-x:hover { background: #fff; color: #5E4408; }
+
+/* ════════════════════════════════════════════════════════════════════════
+   BUILD DECK — thinking line + card, repeating
+   The build now emits exactly two blocks per flow instead of five. The
+   thinking line is collapsed by default and shimmers the current action,
+   swapping in place; the card below it resolves from Building to Ready.
+   ════════════════════════════════════════════════════════════════════════ */
+
+/* Thinking line + its card belong together — tight gap, then air before the
+   next pair. This is what makes the rhythm read as pairs, not a stream. */
+
+/* Each swap is a fresh element (keyed on the text), so it fades in rather
+   than snapping between actions. */
+@keyframes cfThinkSwap {
+  from { opacity: 0; transform: translateY(3px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.cf-think-swap { animation: cfThinkSwap 260ms cubic-bezier(0.22,1,0.36,1) both; }
+/* The live line keeps its shimmer while it's the current action. */
+.cf-think-toggle .cf-think-shimmer { text-align: left; }
+/* Spinner sits where the chevron does, same slot, no layout shift. */
+.cf-think-toggle > .cf-spin.cf-think-chev { color: var(--wfc-accent); }
+
+/* Acknowledgement of a mid-build answer, riding with the thinking line. */
+.cf-think-lead {
+  margin: 2px 0 0; padding-left: 21px;
+  font-size: 13px; line-height: 1.55; color: #6B697B; letter-spacing: -0.003em;
+}
+
+/* Steps not yet reached — hollow, so an expanded list reads as a plan with a
+   position in it rather than a finished checklist. */
+.cf-think-step-pending {
+  width: 7px; height: 7px; border-radius: 50%;
+  border: 1.5px solid #D8D6DF;
+}
+.cf-think-step.is-idle .cf-think-step-label { color: #B4B2A9; }
+
+/* ── The card, mid-build ────────────────────────────────────────────────── */
+.cf-built-tile.is-building {
+  cursor: default;
+  background: #fff;
+  border-color: #D8E4F5;
+  box-shadow: 0 1px 2px rgba(9,117,215,0.06), 0 8px 20px -12px rgba(9,117,215,0.28);
+}
+.cf-built-tile.is-building .cf-built-icon { background: var(--wfc-accent-tint); color: var(--wfc-accent); }
+.cf-built-tile.is-building .cf-built-title { color: #1F1F32; }
+.cf-built-tile.is-building .cf-built-meta { color: #8C899F; }
+.cf-built-tile:disabled { opacity: 1; }
+
+/* Indeterminate bar in the slot the "Review ›" affordance will occupy, so
+   the card's width doesn't shift when it resolves. */
+.cf-built-progress {
+  width: 54px; height: 3px; flex-shrink: 0;
+  border-radius: 999px; background: #EAF2FB; overflow: hidden;
+}
+.cf-built-progress-fill {
+  display: block; width: 40%; height: 100%; border-radius: 999px;
+  background: var(--wfc-accent);
+  animation: cfBuiltProgress 1.4s cubic-bezier(0.55,0,0.45,1) infinite;
+}
+@keyframes cfBuiltProgress {
+  0%   { transform: translateX(-110%); }
+  100% { transform: translateX(300%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cf-think-swap, .cf-built-progress-fill { animation: none; }
+  .cf-built-progress-fill { width: 100%; }
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   THREAD RHYTHM — one scale, no exceptions
+   Audit before this block found SIX different gaps in a single thread
+   (10 / 12 / 16 / 20 / 22 / 30px), accumulated as one-off overrides. Reading
+   felt uneven because it WAS uneven.
+
+   The whole system is now two numbers:
+     28px  between turns      (a new speaker, or a new unit of work)
+      8px  within a turn      (parts of one thing: think + card, msg + msg)
+
+   Everything below either sets 28 or sets 8. If a new rule is needed later,
+   it must reuse one of these — a third value is a bug.
+   ════════════════════════════════════════════════════════════════════════ */
+
+/* Base: everything is a turn boundary unless explicitly paired below. */
+.cf-thread > div { gap: 28px !important; padding-bottom: 20px; }
+
+/* Reset every historical one-off. Later rules re-pair only what belongs. */
+.cf-thread > div > .cf-user-row,
+.cf-thread > div > .cf-user-row:first-child,
+.cf-thread > div > .cf-user-row + .cf-agent,
+.cf-thread > div > .cf-plan-card,
+.cf-thread > div > .cf-plan-actions,
+.cf-thread > div > .cf-built-tile,
+.cf-thread > div > .cf-think,
+.cf-thread > div > .cf-agent { margin-top: 0 !important; }
+
+/* ── Pairs: 8px. These are parts of ONE thing, not separate turns. ─────── */
+
+/* A flow's thinking line and its card are a single unit. */
+.cf-thread > div > .cf-think + .cf-built-tile { margin-top: -20px !important; }
+
+/* Consecutive agent messages are one continuous turn. */
+.cf-thread > div > .cf-agent + .cf-agent { margin-top: -20px !important; }
+
+/* The plan card and its Build button belong together. */
+.cf-thread > div > .cf-plan-card + .cf-plan-actions { margin-top: -20px !important; }
+
+/* An agent line introducing the plan sits with it. */
+.cf-thread > div > .cf-agent + .cf-plan-card { margin-top: -14px !important; }
+
+/* The completion summary closes the build — keep its divider, drop the
+   extra margin now that the base gap already provides the separation. */
+.cf-thread > div > .cf-agent:has(.cf-done) {
+  margin-top: 0 !important;
+  padding-top: 20px;
+}
+
+/* ── Bubbles: consistent shape on both sides ────────────────────────────── */
+/* Same radius, same padding, same type size for user and agent. Only the
+   fill and alignment differ, which is the only difference that carries
+   meaning. */
+.cf-user {
+  max-width: 86%;
+  padding: 11px 15px;
+  border-radius: 18px;
+  background: #F2F2F3;
+}
+.cf-user-text { font-size: 14.5px; line-height: 1.62; color: #26263A; }
+.cf-agent .wfc-msg-text { font-size: 14.5px; line-height: 1.62; }
+
+/* ── Artifact cards vs chat bubbles ─────────────────────────────────────── */
+/* The problem: the card was #FBFBF9 and the user bubble #F3F3F4 — nearly the
+   same value, so an artifact read as just another message. They are different
+   KINDS of object and should not be distinguished by two points of grey.
+   Separated on three axes instead, none of them decorative:
+     fill      white vs tinted
+     width     full column vs inset ~86%
+     elevation real shadow vs flat
+   No accent spine — that reads as decoration rather than structure. */
+.cf-built-tile {
+  width: 100%;
+  background: #FFFFFF;
+  border: 1px solid #E9E8E3;
+  border-radius: 14px;
+  padding: 13px 14px;
+  box-shadow: 0 1px 2px rgba(20,18,50,0.04), 0 10px 24px -16px rgba(20,18,50,0.22);
+  transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+}
+.cf-built-tile.is-ready:hover {
+  border-color: #D6D4CD;
+  box-shadow: 0 1px 2px rgba(20,18,50,0.05), 0 14px 30px -18px rgba(20,18,50,0.30);
+  transform: translateY(-1px);
+}
+.cf-built-tile.is-ready:active { transform: translateY(0); }
+
+/* Building: the same card, quieter — it has nothing to offer yet. */
+.cf-built-tile.is-building {
+  background: #FCFCFB;
+  border-color: #ECEBE6;
+  box-shadow: 0 1px 2px rgba(20,18,50,0.03);
+  transform: none;
+}
+
+/* Title carries the weight; the card is an object, not a sentence. */
+.cf-built-title { font-size: 14px; font-weight: 600; color: #1F1F32; letter-spacing: -0.008em; }
+.cf-built-meta { font-size: 12px; margin-top: 2px; }
+.cf-built-icon { width: 32px; height: 32px; border-radius: 9px; }
+
+/* ════════════════════════════════════════════════════════════════════════
+   CONTRAST — WCAG AA on the muted text
+   Measured against #FFF: the thinking line and the plan meta row were at
+   2.83:1 and the idle step label at 2.13:1, all well under the 4.5:1 floor
+   for body-size text. #75738A lands at 4.59:1 while staying visually quiet,
+   so nothing gets louder — it just becomes legible.
+   ════════════════════════════════════════════════════════════════════════ */
+.cf-think-head,
+.cf-think-step,
+.cf-plan-meta,
+.cf-plan-steps,
+.cf-interrupt-meta { color: #75738A; }
+
+.cf-built-meta { color: #75738A; }
+
+/* Idle steps still recede from active/done ones, but stay above the floor. */
+.cf-think-step.is-idle .cf-think-step-label { color: #8A8899; }
+
+/* Step bodies are now real per-flow descriptions rather than inherited mock
+   text, so let them wrap to two lines instead of truncating mid-sentence. */
+.cf-fv-stepsub {
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.45;
+  margin-top: 2px;
+}

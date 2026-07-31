@@ -43,6 +43,7 @@ import {
   AlertCircle,
   Crosshair,
   Square,
+  Check,
 } from 'lucide-react'
 
 const rewriteExamples = [
@@ -853,6 +854,123 @@ interface StudioPanelProps {
   startRecording: () => void
   recordingPayload: RecordingPayload | null
   consumeRecordingPayload: () => void
+  /** True once the panel has slid in. The panel is always mounted (it animates
+   *  via transform), so anything that should happen "on open" must key off
+   *  this, not off mount. */
+  panelVisible: boolean
+}
+
+/**
+ * First-run announcement for document-to-flows.
+ *
+ * Sits inside the 383px panel, so it is a sheet within the product rather than
+ * a browser dialog — the same reason iOS announces features in a card that
+ * respects the app frame. Full-bleed illustration on top (the First Draft
+ * document mark on its own tinted field), then a tight text block, then two
+ * actions: one primary, one quiet.
+ */
+function IntroModal({ onTry, onDismiss }: { onTry: () => void; onDismiss: () => void }) {
+  // "Learn more" expands the three beats in place. Dismissing on click would
+  // be indistinguishable from the X — a second button that does nothing new
+  // is worse than no second button.
+  const [expanded, setExpanded] = useState(false)
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onDismiss() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onDismiss])
+
+  return (
+    <div className="cf-intro-scrim" onClick={onDismiss} role="presentation">
+      <div
+        className="cf-intro"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="cf-intro-title"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button type="button" className="cf-intro-x" aria-label="Dismiss" onClick={onDismiss}>
+          <X size={15} strokeWidth={2.2} />
+        </button>
+
+        {/* Full-bleed hero — shows the TRANSFORMATION, not an icon of it.
+            A document leans in from the left; flow-step cards deal out to the
+            right, the last one still materialising. Both crop off the frame,
+            which is what makes it read as a glimpse of something larger
+            (Spotify / Loom / Linktree all do this) rather than a centred
+            illustration sitting politely in a box. */}
+        <div className="cf-intro-hero" aria-hidden="true">
+          <div className="cf-intro-grid" />
+          <div className="cf-intro-hero-glow" />
+
+          {/* Source document — tilted, cropped at the left edge, with a small
+              PDF tag on its corner so the input type is legible at a glance. */}
+          <div className="cf-intro-source">
+            <div className="cf-intro-source-bar" />
+            <div className="cf-intro-source-line" />
+            <div className="cf-intro-source-line" />
+            <div className="cf-intro-source-line short" />
+            <div className="cf-intro-source-line" />
+            <div className="cf-intro-source-line" />
+            <div className="cf-intro-source-line short" />
+            <span className="cf-intro-source-tag">PDF</span>
+          </div>
+
+          {/* The beam: what the agent is doing, in one gesture. */}
+          <div className="cf-intro-beam" />
+
+          {/* Output — flow steps dealing out, the last still arriving. */}
+          <div className="cf-intro-steps-stack">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className={`cf-intro-chip cf-intro-chip-${i + 1}`}>
+                <span className="cf-intro-chip-num">{i + 1}</span>
+                <span className="cf-intro-chip-bar" />
+              </div>
+            ))}
+          </div>
+
+          <svg className="cf-intro-spark cf-intro-spark-1" viewBox="0 0 24 24"><path d="M12 0 L14.4 9.6 L24 12 L14.4 14.4 L12 24 L9.6 14.4 L0 12 L9.6 9.6 Z" /></svg>
+          <svg className="cf-intro-spark cf-intro-spark-2" viewBox="0 0 24 24"><path d="M12 0 L14.4 9.6 L24 12 L14.4 14.4 L12 24 L9.6 14.4 L0 12 L9.6 9.6 Z" /></svg>
+        </div>
+
+        <div className="cf-intro-body">
+          <span className="cf-intro-kicker">New in Studio</span>
+          <h2 id="cf-intro-title" className="cf-intro-title">Create flows from your documents</h2>
+          <p className="cf-intro-sub">
+            Upload a document. The agent reads it and creates flows automatically.
+          </p>
+
+          {/* The three beats, revealed in place rather than on another screen. */}
+          {expanded && (
+            <ol className="cf-intro-steps">
+              {[
+                ['Upload', 'Up to 6 SOPs, policies, or guides at once.'],
+                ['Review the plan', 'Every process it found, with its steps — pick what to build.'],
+                ['Build', 'Each flow is written up and saved to your project.'],
+              ].map(([label, detail]) => (
+                <li key={label} className="cf-intro-step">
+                  <span className="cf-intro-step-label">{label}</span>
+                  <span className="cf-intro-step-detail">{detail}</span>
+                </li>
+              ))}
+            </ol>
+          )}
+
+          <div className="cf-intro-actions">
+            <button type="button" className="cf-intro-primary" onClick={onTry}>
+              Try now
+            </button>
+            {!expanded && (
+              <button type="button" className="cf-intro-secondary" onClick={() => setExpanded(true)}>
+                Learn more
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 function StudioPanel({
@@ -861,6 +979,7 @@ function StudioPanel({
   selectedElement, setSelectedElement, setPreviewElement,
   popupView, setPopupView,
   recordingActive, startRecording, recordingPayload, consumeRecordingPayload,
+  panelVisible,
 }: StudioPanelProps) {
   const [previewMode, setPreviewMode] = useState(false)
   const [view, setView] = useState<'home' | 'flow' | 'authoring'>('home')
@@ -871,6 +990,33 @@ function StudioPanel({
   const [buildInfo, setBuildInfo] = useState<BuildInfo>({ active: false, title: '' })
   const [guardOpen, setGuardOpen] = useState(false)
   useEffect(() => onBuild(setBuildInfo), [])
+
+  // First-run announcement for document-to-flows. Shows once per browser, on
+  // the home landing only — it introduces a feature that lives one click away,
+  // so it must not appear over the feature itself. Mounted after a beat so the
+  // panel settles first and the modal reads as arriving, not as a page load.
+  // Fires on EVERY open of Studio — this is a demo surface, so the moment has
+  // to be repeatable rather than a genuine once-per-user announcement.
+  //
+  // Keyed off panelVisible, NOT mount: the panel is always mounted and only
+  // slides in via transform, so a mount-time timer would expire long before
+  // the user ever opens Studio and the sheet would be sitting there on
+  // arrival. The 900ms clears the 320ms slide-in so the sheet reads as a
+  // second beat rather than part of the same motion.
+  const [introOpen, setIntroOpen] = useState(false)
+  useEffect(() => {
+    if (!panelVisible) { setIntroOpen(false); return }
+    const t = setTimeout(() => setIntroOpen(true), 450)
+    return () => clearTimeout(t)
+  }, [panelVisible])
+
+  const dismissIntro = () => setIntroOpen(false)
+
+  const introTryNow = () => {
+    dismissIntro()
+    setAuthoringMounted(true)
+    setView('authoring')
+  }
 
   const handleCardClick = (label: string) => {
     if (label === 'Flow') {
@@ -1007,34 +1153,77 @@ function StudioPanel({
         ) : view === 'flow' ? (
           <FlowView onBack={() => setView('home')} onClose={onClose} />
         ) : null}
-      </div>
 
-      {/* Guard — manual flow creation is blocked while the AI builder runs. */}
-      {guardOpen && (
+        {/* First-run announcement — scoped INSIDE the panel so it reads as a
+            sheet within the product surface, not a browser-wide dialog. */}
+        {introOpen && view === 'home' && !popupView && (
+          <IntroModal onTry={introTryNow} onDismiss={dismissIntro} />
+        )}
+
+        {/* Guard — manual flow creation is blocked while the AI builder runs.
+            Lives INSIDE the panel div, same as the intro, so both sheets
+            centre on the same 383px box. Outside it, `position: absolute`
+            resolved against a different ancestor and the two landed ~24px
+            apart. */}
+        {guardOpen && (
         <div className="cf-guard-backdrop" onClick={() => setGuardOpen(false)}>
-          <div className="cf-guard-modal" role="dialog" aria-modal="true" aria-label="AI builder in motion" onClick={(e) => e.stopPropagation()}>
-            <div className="cf-guard-hero" aria-hidden="true">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/document-icon.svg" alt="" width={84} height={84} />
-              <svg className="cf-guard-spark cf-guard-spark-1" viewBox="0 0 24 24"><path d="M12 0 L14.4 9.6 L24 12 L14.4 14.4 L12 24 L9.6 14.4 L0 12 L9.6 9.6 Z" /></svg>
-              <svg className="cf-guard-spark cf-guard-spark-2" viewBox="0 0 24 24"><path d="M12 0 L14.4 9.6 L24 12 L14.4 14.4 L12 24 L9.6 14.4 L0 12 L9.6 9.6 Z" /></svg>
+          {/* Same sheet grammar as the intro: full-bleed dark hero, then a
+              tight text block, then actions. The hero shows work IN PROGRESS —
+              a step mid-write with a live cursor — so the state is legible
+              before the copy is read. */}
+          <div className="cf-intro cf-guard-sheet" role="dialog" aria-modal="true" aria-label="AI builder in motion" onClick={(e) => e.stopPropagation()}>
+            <div className="cf-intro-hero cf-guard-hero-v2" aria-hidden="true">
+              <div className="cf-intro-grid" />
+              <div className="cf-intro-hero-glow" />
+
+              {/* Steps landing one after another; the third is mid-write. */}
+              <div className="cf-guard-stack">
+                <div className="cf-guard-row is-done">
+                  <span className="cf-guard-row-num"><Check size={9} strokeWidth={3.4} /></span>
+                  <span className="cf-guard-row-bar" />
+                </div>
+                <div className="cf-guard-row is-done">
+                  <span className="cf-guard-row-num"><Check size={9} strokeWidth={3.4} /></span>
+                  <span className="cf-guard-row-bar" />
+                </div>
+                <div className="cf-guard-row is-live">
+                  <span className="cf-guard-row-num cf-guard-row-spin" />
+                  <span className="cf-guard-row-bar is-writing" />
+                  <span className="cf-guard-caret" />
+                </div>
+              </div>
+
+              <div className="cf-guard-status">
+                <span className="cf-guard-status-dot" />
+                <span className="cf-guard-status-text">Building…</span>
+              </div>
             </div>
-            <h3 className="cf-guard-title">AI builder in motion</h3>
-            <p className="cf-guard-body">
-              First Draft is building {buildInfo.title ? <strong>“{buildInfo.title}”</strong> : 'your flows'}.
-              Flow creation is paused until it finishes, so your edits never collide.
-            </p>
-            <div className="cf-guard-actions">
-              <button type="button" className="cf-guard-stop" onClick={() => { requestBuildStop(); setGuardOpen(false) }}>
-                Stop the build
-              </button>
-              <button type="button" className="cf-guard-go" onClick={() => { setGuardOpen(false); setAuthoringMounted(true); setView('authoring') }}>
-                Take me there
-              </button>
+
+            <div className="cf-intro-body">
+              <span className="cf-intro-kicker">In progress</span>
+              <h2 className="cf-intro-title">The agent is building your flows</h2>
+              <p className="cf-intro-sub">
+                {buildInfo.title
+                  ? <>Currently writing <strong>“{buildInfo.title}”</strong>. Creating a flow by hand is paused so your edits never collide.</>
+                  : <>Creating a flow by hand is paused until it finishes, so your edits never collide.</>}
+              </p>
+
+              <div className="cf-intro-actions">
+                {/* Primary is the safe action — let it finish and go watch.
+                    Stopping is destructive, so it sits below in the quiet
+                    slot and only reveals its danger colour on hover. */}
+                <button type="button" className="cf-intro-primary" onClick={() => { setGuardOpen(false); setAuthoringMounted(true); setView('authoring') }}>
+                  Continue
+                </button>
+                <button type="button" className="cf-intro-secondary cf-guard-stop-v2" onClick={() => { requestBuildStop(); setGuardOpen(false) }}>
+                  Stop the build
+                </button>
+              </div>
             </div>
           </div>
         </div>
-      )}
+        )}
+      </div>
     </div>
   )
 }
@@ -1245,6 +1434,7 @@ export default function StudioPage() {
         }}
       >
         <StudioPanel
+          panelVisible={panelVisible}
           onClose={() => { setOpen(false); setPopupView(false); setPopupTemplate(null); setPickerActive(false) }}
           popupView={popupView}
           setPopupView={setPopupView}
