@@ -9320,3 +9320,405 @@
 
 /* On landing, give the composer a touch more presence (the hero) */
 .cf-root .wfc-chat-refine .wfc-composer-mini { box-shadow: 0 1px 2px rgba(20,18,50,0.04), 0 6px 20px -10px rgba(20,18,50,0.12); }
+
+/* ════════════════════════════════════════════════════════════════════════
+   MVP — document-to-flows: bulk upload, block composer, review, takeover
+   ════════════════════════════════════════════════════════════════════════ */
+
+/* ── Composer v2 — Claude-style block: files column on top, tall textarea,
+      actions row pinned at the bottom (+ left, mic/send right). ──────────── */
+.cf-composer-v2 { border-radius: 20px; padding: 12px 12px 8px; cursor: text; }
+.cf-composer-v2:has(.cf-files) { border-radius: 18px; }
+.cf-composer-v2 .wfc-composer-textarea {
+  display: block; width: 100%; min-height: 46px; max-height: 190px;
+  overflow-y: auto; padding: 0 4px 4px; font-size: 14px; line-height: 1.55;
+}
+.cf-composer-row2 { display: flex; align-items: center; justify-content: space-between; padding-top: 4px; }
+.cf-composer-row2 .cf-composer-tools { display: flex; align-items: center; gap: 4px; }
+
+/* Staged documents — stacked column (prompt-kit file-upload pattern). */
+.cf-files { display: flex; flex-direction: column; gap: 6px; padding: 0 0 10px; cursor: default; }
+.cf-file-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 7px 9px 7px 7px; background: #FAFAF8;
+  border: 1px solid #F0EFEA; border-radius: 12px;
+}
+.cf-file-tile {
+  width: 32px; height: 32px; flex-shrink: 0; border-radius: 9px; color: #fff;
+  display: flex; align-items: center; justify-content: center;
+}
+.cf-file-tile.is-pdf { background: #D4452F; box-shadow: 0 2px 6px -2px rgba(212,69,47,0.45); }
+.cf-file-tile.is-doc { background: #2B7CD3; box-shadow: 0 2px 6px -2px rgba(43,124,211,0.45); }
+.cf-file-text { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.3; }
+.cf-file-name { font-size: 12.5px; font-weight: 600; color: var(--wfc-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: -0.005em; }
+.cf-file-sub { font-size: 11px; color: var(--wfc-muted); margin-top: 1px; }
+.cf-file-x {
+  width: 24px; height: 24px; flex-shrink: 0; border-radius: 7px; border: none;
+  background: transparent; color: #A8A6B4; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 120ms ease, color 120ms ease;
+}
+.cf-file-x:hover { background: #ECEBE6; color: var(--wfc-text); }
+
+/* File-limit notice — quiet amber strip above the composer. */
+.cf-limit {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+  padding: 9px 12px; background: #FFF6F0; border: 1px solid #F3D9C6;
+  border-radius: 11px; font-size: 12.5px; font-weight: 500; color: #8A4B23;
+  letter-spacing: -0.003em;
+}
+.cf-limit > svg { color: #C74900; flex-shrink: 0; }
+.cf-limit-x {
+  margin-left: auto; width: 22px; height: 22px; flex-shrink: 0; border-radius: 6px;
+  border: none; background: transparent; color: #B07A52; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 120ms ease, color 120ms ease;
+}
+.cf-limit-x:hover { background: #F6E4D5; color: #8A4B23; }
+
+/* Landing upload CTA — the primary action, matching the black button language. */
+.cf-upload-cta {
+  display: inline-flex; align-items: center; gap: 8px; margin-top: 22px;
+  background: #1F1F32; color: #fff; border: none; border-radius: 12px;
+  padding: 11px 20px; font-family: inherit; font-size: 13.5px; font-weight: 600;
+  letter-spacing: -0.005em; cursor: pointer;
+  box-shadow: 0 6px 18px -8px rgba(15,23,42,0.42);
+  transition: background 140ms ease, transform 120ms ease, box-shadow 140ms ease;
+}
+.cf-upload-cta:hover:not(:disabled) { background: #0B0B1A; }
+.cf-upload-cta:active:not(:disabled) { transform: scale(0.98); }
+.cf-upload-cta:disabled { background: #D4D2CB; cursor: default; box-shadow: none; }
+
+/* ── Chain of thought — vertical rail down the analysis bullets. ──────────── */
+.cf-think-steps { border-left: 1.5px solid #E8E7E2; margin-left: 5px; padding-left: 13px; }
+
+/* ── Agent takeover — the page belongs to First Draft while it builds. ────── */
+.cf-takeover { position: fixed; inset: 0 431px 0 0; z-index: 99; pointer-events: none; animation: cfScrimIn 260ms ease both; }
+.cf-takeover-ring {
+  position: absolute; inset: 8px; border-radius: 14px;
+  border: 2px solid rgba(199, 73, 0, 0.7);
+  animation: cfRingBreathe 2.6s ease-in-out infinite;
+}
+@keyframes cfRingBreathe {
+  0%, 100% { border-color: rgba(199,73,0,0.5);  box-shadow: 0 0 0 3px rgba(199,73,0,0.08), inset 0 0 34px rgba(199,73,0,0.05); }
+  50%      { border-color: rgba(199,73,0,0.85); box-shadow: 0 0 0 5px rgba(199,73,0,0.14), inset 0 0 52px rgba(199,73,0,0.09); }
+}
+.cf-takeover.is-paused .cf-takeover-ring { border-color: rgba(31,31,50,0.28); box-shadow: none; animation: none; }
+.cf-takeover-chip {
+  position: absolute; left: 50%; bottom: 24px; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 9px; white-space: nowrap;
+  background: #1F1F32; color: #fff; border-radius: 999px; padding: 9px 16px;
+  box-shadow: 0 10px 30px rgba(15,23,42,0.35);
+  animation: cfToastIn 320ms cubic-bezier(0.22,1,0.36,1) both;
+}
+.cf-takeover-spark { display: inline-flex; color: #F5A623; animation: cfSparkTwinkle 2.4s ease-in-out infinite; }
+.cf-takeover.is-paused .cf-takeover-spark { color: rgba(255,255,255,0.7); animation: none; }
+.cf-takeover-text { font-size: 12.5px; font-weight: 600; letter-spacing: -0.005em; }
+.cf-takeover-sub {
+  font-size: 12px; color: rgba(255,255,255,0.62); font-weight: 500;
+  border-left: 1px solid rgba(255,255,255,0.18); padding-left: 10px;
+  max-width: 260px; overflow: hidden; text-overflow: ellipsis;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cf-takeover-ring, .cf-takeover-spark { animation: none; }
+}
+
+/* ── Flow review — the Flows step-list view, inside the 383px panel. ──────── */
+.cf-review { display: flex; flex-direction: column; height: 100%; background: var(--wfc-canvas-bg); animation: cfScrimIn 200ms ease both; }
+.cf-review-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 9px 14px 9px 6px; background: #fff; border-bottom: 1px solid #ECEBE6; flex-shrink: 0;
+}
+.cf-review-back {
+  display: flex; align-items: center; gap: 5px; min-width: 0;
+  background: none; border: none; cursor: pointer; padding: 6px 8px; border-radius: 8px;
+  font-family: inherit; font-size: 14.5px; font-weight: 700; color: #1F1F32; letter-spacing: -0.01em;
+  transition: background 120ms ease;
+}
+.cf-review-back:hover { background: #F6F5F1; }
+.cf-review-back span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cf-review-badge {
+  display: inline-flex; align-items: center; gap: 5px; flex-shrink: 0;
+  font-size: 11.5px; font-weight: 600; color: var(--wfc-muted);
+  background: #F4F3EF; border-radius: 999px; padding: 4px 10px;
+}
+.cf-review-badge.is-ready { color: var(--wfc-build-done); background: #EDF6EE; }
+.cf-review-meta { padding: 12px 16px 2px; font-size: 11.5px; color: #8C899F; flex-shrink: 0; }
+.cf-review-list { flex: 1; overflow-y: auto; padding: 10px 14px 18px; display: flex; flex-direction: column; gap: 8px; }
+.cf-review-step {
+  display: flex; align-items: center; gap: 12px; text-align: left; width: 100%;
+  background: #fff; border: 1px solid #E8E8EE; border-radius: 10px;
+  padding: 12px 12px 12px 14px; cursor: pointer; font-family: inherit;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+.cf-review-step:hover { border-color: #C9D8EA; }
+.cf-review-step.is-active { border-color: #0875D7; box-shadow: 0 0 0 3px rgba(8,117,215,0.08); }
+.cf-review-num {
+  width: 32px; height: 32px; flex-shrink: 0; border-radius: 50%;
+  border: 1.5px solid #D0D5DD; background: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 500; color: #344054;
+  transition: all 160ms ease;
+}
+.cf-review-step.is-active .cf-review-num { border-color: #0875D7; color: #0875D7; background: #EFF8FF; }
+.cf-review-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.cf-review-title { font-size: 13.5px; font-weight: 600; color: #1F1F32; letter-spacing: -0.005em; }
+.cf-review-sub { font-size: 12px; color: #98A2B3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cf-review-chev { color: #C4C3BD; flex-shrink: 0; }
+.cf-review-hintbar {
+  padding: 10px 16px; border-top: 1px solid #ECEBE6; background: #fff;
+  font-size: 11.5px; color: #8C899F; text-align: center; flex-shrink: 0;
+}
+
+/* Step preview — the clicked step, staged on the page (left free-zone). */
+.cf-step-scrim {
+  position: fixed; inset: 0 431px 0 0; z-index: 100;
+  display: flex; align-items: center; justify-content: center; padding: 28px;
+  background: rgba(20,18,40,0.28); animation: cfScrimIn 180ms ease both;
+}
+.cf-step-card {
+  width: min(880px, 100%); background: #fff; border-radius: 14px; overflow: hidden;
+  box-shadow: 0 24px 60px -20px rgba(15,18,40,0.45), 0 8px 24px -12px rgba(15,18,40,0.30);
+  animation: cfBoxIn 220ms cubic-bezier(0.16,1,0.3,1) both;
+}
+.cf-step-card-head { display: flex; align-items: center; gap: 10px; padding: 11px 14px; border-bottom: 1px solid #EFEEE9; }
+.cf-step-kicker { flex-shrink: 0; font-size: 10.5px; font-weight: 700; color: #8C899F; letter-spacing: 0.05em; text-transform: uppercase; font-variant-numeric: tabular-nums; }
+.cf-step-title { flex: 1; min-width: 0; font-size: 13.5px; font-weight: 600; color: #1F1F32; letter-spacing: -0.005em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cf-step-close {
+  width: 28px; height: 28px; flex-shrink: 0; border-radius: 8px; border: none;
+  background: transparent; color: #8C899F; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 120ms ease, color 120ms ease;
+}
+.cf-step-close:hover { background: #F4F3EF; color: #1F1F32; }
+/* The reused storyboard frame drops its card chrome inside the step card. */
+.cf-step-card .cf-step-frame { border: none; border-radius: 0; }
+.cf-step-card .cf-step-frame:hover { box-shadow: none; }
+/* Swap between steps replays the same blur-in as the flow popup. */
+.cf-step-card .cf-step-frame { animation: cfFlowSwap 360ms cubic-bezier(0.22, 1, 0.36, 1); }
+@media (prefers-reduced-motion: reduce) {
+  .cf-step-card .cf-step-frame { animation: none; }
+}
+
+/* User message — stacked document chips. */
+.cf-user-files { display: flex; flex-direction: column; gap: 5px; align-items: flex-end; }
+.cf-user-file-icon.is-doc { background: #2B7CD3; }
+
+/* ── Home guard — a subtle moving border on the card being built. ─────────── */
+/* Thin orange border with a brighter highlight sweeping across it linearly —
+   quiet AI-at-work signal, not a light show. */
+.cf-build-glow { position: relative; }
+.cf-build-glow::before {
+  content: ''; position: absolute; inset: -1.5px; border-radius: 10px; padding: 1.5px;
+  background: linear-gradient(100deg,
+    rgba(199, 73, 0, 0.22) 0%, rgba(199, 73, 0, 0.22) 36%,
+    #E8721B 47%, #F5A623 53%,
+    rgba(199, 73, 0, 0.22) 64%, rgba(199, 73, 0, 0.22) 100%);
+  background-size: 260% 100%;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  animation: cfGlowSweep 2.6s linear infinite;
+  pointer-events: none;
+}
+@keyframes cfGlowSweep {
+  from { background-position: 200% 0; }
+  to   { background-position: -60% 0; }
+}
+@keyframes cfGlowPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(199,73,0,0.25); }
+  50%      { box-shadow: 0 0 0 5px rgba(199,73,0,0.10); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cf-build-glow::before { animation: none; }
+}
+
+.cf-guard-backdrop {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(20, 18, 50, 0.42); backdrop-filter: blur(5px);
+  display: flex; align-items: center; justify-content: center; padding: 24px;
+  animation: cfScrimIn 200ms ease both;
+}
+.cf-guard-modal {
+  width: 340px; max-width: 100%; background: #fff; border-radius: 18px;
+  padding: 28px 26px 22px; text-align: center;
+  box-shadow: 0 24px 60px -16px rgba(15,18,40,0.4);
+  animation: cfBoxIn 240ms cubic-bezier(0.16,1,0.3,1) both;
+  font-family: 'Inter', -apple-system, sans-serif;
+}
+/* The First Draft document mark, with its quiet sparkles — same language as
+   the landing hero, so the modal reads as "the agent", not a warning box. */
+.cf-guard-hero { position: relative; width: 92px; height: 92px; margin: 0 auto 14px; display: flex; align-items: center; justify-content: center; }
+.cf-guard-hero img { display: block; }
+.cf-guard-spark { position: absolute; fill: #E8721B; pointer-events: none; }
+.cf-guard-spark-1 { width: 12px; height: 12px; top: 4px; right: 4px; animation: cfSparkTwinkle 2.6s ease-in-out infinite; }
+.cf-guard-spark-2 { width: 8px; height: 8px; bottom: 10px; left: 5px; fill: #F5A623; animation: cfSparkTwinkle 3.4s ease-in-out infinite 0.9s; }
+.cf-guard-title { margin: 0 0 5px; font-size: 15.5px; font-weight: 700; color: #1F1F32; letter-spacing: -0.014em; }
+.cf-guard-body { margin: 0 auto 20px; max-width: 262px; font-size: 12.5px; line-height: 1.6; color: #8C899F; letter-spacing: -0.003em; }
+.cf-guard-body strong { color: #52505E; font-weight: 600; }
+.cf-guard-actions { display: flex; gap: 8px; }
+.cf-guard-stop, .cf-guard-go {
+  flex: 1; border-radius: 10px; padding: 10px 12px; font-family: inherit;
+  font-size: 12.5px; font-weight: 600; cursor: pointer; letter-spacing: -0.005em;
+  transition: background 140ms ease, border-color 140ms ease, color 140ms ease;
+}
+.cf-guard-stop { background: #fff; border: 1px solid #E8E7E2; color: #6B697B; }
+.cf-guard-stop:hover { border-color: #E8B4B8; background: #FEF7F7; color: #B3131D; }
+.cf-guard-go { background: #1F1F32; border: none; color: #fff; }
+.cf-guard-go:hover { background: #0B0B1A; }
+
+/* ════════════════════════════════════════════════════════════════════════
+   MVP v2 — prompt-kit chips, collapsible plan, conversational build,
+   and the Flows review view (verbatim clone of the studio Flow view)
+   ════════════════════════════════════════════════════════════════════════ */
+
+/* ── Composer file chips — two-column grid, neutral grey (prompt-kit). ────── */
+.cf-files {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
+  padding: 0 0 10px; cursor: default;
+}
+.cf-file-chip {
+  display: flex; align-items: center; gap: 7px; min-width: 0;
+  background: #F4F4F5; border: none; border-radius: 10px;
+  padding: 8px 6px 8px 11px;
+}
+.cf-file-chip > svg { color: #8C899F; flex-shrink: 0; }
+.cf-file-chip .cf-file-name {
+  flex: 1; min-width: 0; font-size: 12.5px; font-weight: 500; color: #3A3A4A;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: -0.005em;
+}
+
+/* ── User message — grey chips that wrap, right-aligned. ──────────────────── */
+.cf-user-files { display: flex; flex-wrap: wrap; gap: 5px; justify-content: flex-end; max-width: 100%; }
+.cf-user-file { padding: 5px 10px; gap: 6px; }
+.cf-user-file svg { color: #8C899F; flex-shrink: 0; }
+
+/* ── Built-flow tile — a finished flow landing in the thread. ─────────────── */
+.cf-built-tile {
+  display: flex; align-items: center; gap: 11px; width: 100%; text-align: left;
+  background: #fff; border: 1px solid #ECEBE6; border-radius: 12px;
+  padding: 11px 13px; cursor: pointer; font-family: inherit;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+.cf-built-tile:hover { border-color: #C9D8EA; box-shadow: 0 2px 10px -4px rgba(9,117,215,0.18); }
+.cf-built-icon {
+  width: 32px; height: 32px; flex-shrink: 0; border-radius: 9px;
+  background: #EFF8FF; color: #0875D7;
+  display: flex; align-items: center; justify-content: center;
+}
+.cf-built-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.cf-built-title { font-size: 13px; font-weight: 600; color: var(--wfc-text); letter-spacing: -0.005em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cf-built-meta { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; color: var(--wfc-build-done); font-weight: 500; }
+.cf-built-cta {
+  display: inline-flex; align-items: center; gap: 3px; flex-shrink: 0;
+  font-size: 12px; font-weight: 600; color: #6B697B;
+  transition: color 130ms ease;
+}
+.cf-built-tile:hover .cf-built-cta { color: var(--wfc-text); }
+
+/* ── Plan accordion — clickable header, fold chevron, progress chip. ──────── */
+.cf-plan-head { cursor: pointer; user-select: none; align-items: center; }
+.cf-plan-head.is-collapsed { padding-bottom: 12px; }
+.cf-plan-fold { color: #B4B2A9; flex-shrink: 0; transition: transform 220ms cubic-bezier(0.22,1,0.36,1); }
+.cf-plan-fold.is-folded { transform: rotate(-90deg); }
+.cf-plan-progresschip {
+  display: inline-flex; align-items: center; gap: 5px; margin-left: 4px;
+  font-size: 11px; font-weight: 600; color: #6B697B;
+  background: #F4F3EF; border-radius: 999px; padding: 3px 9px;
+  font-variant-numeric: tabular-nums;
+}
+.cf-plan-progresschip svg { color: var(--wfc-build-done); }
+
+/* ── Mid-build question — flow name in the tabs bar, never wrapping. ──────── */
+.cf-midq-flow { max-width: 170px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500; }
+.cf-clarify-qrow .cf-clarify-q { display: block; }
+
+/* Plan header — one calm line, nothing wraps. */
+.cf-plan-head-title { white-space: nowrap; }
+.cf-plan-selectall { white-space: nowrap; flex-shrink: 0; }
+.cf-plan-progresschip { white-space: nowrap; flex-shrink: 0; }
+
+/* ── Flow review — verbatim clone of the studio Flow view. ────────────────── */
+.cf-fv { display: flex; flex-direction: column; height: 100%; background: #F2F2F8; animation: cfScrimIn 200ms ease both; }
+.cf-fv-head {
+  background: #fff; border-bottom: 1px solid #ebebeb; padding: 0 10px 0 8px; height: 60px;
+  display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+}
+.cf-fv-back {
+  display: flex; align-items: center; gap: 8px; min-width: 0;
+  background: none; border: none; cursor: pointer; padding: 4px 8px; border-radius: 6px;
+  font-family: inherit; font-size: 20px; font-weight: 700; color: #1F1F32;
+}
+.cf-fv-back span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cf-fv-hbtns { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
+.cf-fv-hbtn {
+  width: 32px; height: 32px; border-radius: 7px; border: none; background: transparent;
+  color: #6B697B; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: background 120ms ease;
+}
+.cf-fv-hbtn:hover { background: #F4F3EF; }
+.cf-fv-scroll { flex: 1; overflow-y: auto; }
+.cf-fv-titlecard { background: #fff; padding: 20px 20px 16px; }
+.cf-fv-titlerow { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.cf-fv-orb {
+  width: 40px; height: 40px; flex-shrink: 0; border-radius: 50%; background: #EFF8FF; color: #0875D7;
+  display: flex; align-items: center; justify-content: center;
+}
+.cf-fv-title { font-size: 16px; font-weight: 600; color: #2B2B40; line-height: 1.4; }
+.cf-fv-details {
+  width: 100%; display: flex; align-items: center; justify-content: center;
+  background: #fff; border: 1px solid #e5e7eb; border-radius: 10px;
+  padding: 12px 14px; cursor: pointer; box-sizing: border-box;
+  font-family: inherit; font-size: 14px; font-weight: 400; color: #3D3C52;
+}
+.cf-fv-body { padding: 14px 16px 20px; display: flex; flex-direction: column; gap: 8px; }
+.cf-fv-rewrite {
+  width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;
+  background: #0875D7; border: none; border-radius: 8px; padding: 9px 14px; cursor: pointer;
+  font-family: inherit; font-size: 14px; font-weight: 500; color: #fff; margin-bottom: 4px;
+}
+.cf-fv-step {
+  background: #fff; border-radius: 10px; border: 1px solid #e8e8ee;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06); padding: 12px 12px 12px 14px;
+  display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
+  cursor: pointer; font-family: inherit;
+  transition: border-color 200ms ease, box-shadow 200ms ease;
+}
+.cf-fv-step.is-active { border-color: #93c5fd; box-shadow: 0 0 0 3px rgba(8,117,215,0.08); }
+.cf-fv-num {
+  width: 34px; height: 34px; flex-shrink: 0; border-radius: 50%;
+  background: #fff; border: 1.5px solid #d0d5dd;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 500; color: #344054;
+  transition: all 200ms ease;
+}
+.cf-fv-step.is-active .cf-fv-num { background: #EFF8FF; border-color: #0875D7; color: #0875D7; }
+.cf-fv-steptext { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.cf-fv-stepmain { font-size: 14px; color: #344054; }
+.cf-fv-stepmain strong { font-weight: 700; }
+.cf-fv-stepsub { font-size: 12px; color: #98a2b3; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cf-fv-stepmore { color: #98a2b3; flex-shrink: 0; display: inline-flex; padding: 4px 2px; }
+.cf-fv-addstep {
+  width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;
+  background: #fff; border: 1.5px dashed #C74900; border-radius: 10px;
+  padding: 13px 14px; cursor: pointer; box-sizing: border-box;
+  font-family: inherit; font-size: 14px; font-weight: 500; color: #C74900;
+}
+.cf-fv-addstep svg { color: #C74900; }
+.cf-fv-endmsg {
+  background: #fff; border-radius: 10px; border: 1px solid #e8e8ee;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06); padding: 12px 12px 12px 14px;
+  display: flex; align-items: center; gap: 12px;
+}
+.cf-fv-endmsg .cf-fv-num { color: #667085; }
+.cf-fv-endlabel { font-size: 14px; font-weight: 500; color: #344054; }
+.cf-fv-foot {
+  background: #fff; border-top: 1px solid #ebebeb; padding: 0 20px; height: 68px;
+  display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+}
+.cf-fv-discard { background: none; border: none; cursor: pointer; padding: 8px 4px; font-family: inherit; font-size: 14px; font-weight: 500; color: #B3131D; }
+.cf-fv-footright { display: flex; align-items: center; gap: 10px; }
+.cf-fv-previewbtn { background: #fff; border: 1.5px solid #C74900; cursor: pointer; padding: 8px 20px; border-radius: 8px; font-family: inherit; font-size: 14px; font-weight: 600; color: #C74900; }
+.cf-fv-savebtn { background: #A13000; border: none; cursor: pointer; padding: 9px 20px; border-radius: 8px; font-family: inherit; font-size: 14px; font-weight: 600; color: #fff; }

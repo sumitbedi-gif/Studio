@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { PopupFlow, PopupOverlayOnApp, type PopupTemplate, type ElementInfo, type RecordingPayload } from '@/components/popup-flow'
 import { CreateFlow } from '@/components/create-flow'
+import { onBuild, requestBuildStop, type BuildInfo } from '@/components/firstdraft/_state/build-bus'
 import {
   Plus,
   X,
@@ -444,13 +445,14 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 
 // ─── Card grid ────────────────────────────────────────────────────────────────
 
-function CardGrid({ cards, onCardClick }: { cards: Card[]; onCardClick?: (label: string) => void }) {
+function CardGrid({ cards, onCardClick, glowLabel }: { cards: Card[]; onCardClick?: (label: string) => void; glowLabel?: string }) {
   const [hovered, setHovered] = useState<number | null>(null)
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, padding: '4px 16px 12px' }}>
       {cards.map((card, i) => (
         <div
           key={card.label}
+          className={glowLabel === card.label ? 'cf-build-glow' : undefined}
           onClick={() => onCardClick?.(card.label)}
           onMouseEnter={() => setHovered(i)}
           onMouseLeave={() => setHovered(null)}
@@ -862,9 +864,19 @@ function StudioPanel({
 }: StudioPanelProps) {
   const [previewMode, setPreviewMode] = useState(false)
   const [view, setView] = useState<'home' | 'flow' | 'authoring'>('home')
+  // First Draft build activity (via build-bus). While a build runs, CreateFlow
+  // stays mounted (hidden) so the agent keeps working when the user goes home,
+  // and manual flow creation is guarded by a modal.
+  const [authoringMounted, setAuthoringMounted] = useState(false)
+  const [buildInfo, setBuildInfo] = useState<BuildInfo>({ active: false, title: '' })
+  const [guardOpen, setGuardOpen] = useState(false)
+  useEffect(() => onBuild(setBuildInfo), [])
 
   const handleCardClick = (label: string) => {
-    if (label === 'Flow') setView('flow')
+    if (label === 'Flow') {
+      if (buildInfo.active) { setGuardOpen(true); return }
+      setView('flow')
+    }
     if (label === 'Popup') setPopupView(true)
   }
 
@@ -893,7 +905,7 @@ function StudioPanel({
             active={view === 'authoring'}
             accent
             title="Authoring Agent"
-            onClick={() => setView(view === 'authoring' ? 'home' : 'authoring')}
+            onClick={() => { setAuthoringMounted(true); setView(view === 'authoring' ? 'home' : 'authoring') }}
           >
             <Sparkles size={17} strokeWidth={2.2} />
           </SidebarIcon>
@@ -917,6 +929,14 @@ function StudioPanel({
 
       {/* Main panel */}
       <div style={{ position: 'relative', width: 383, background: '#F2F2F8', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        {/* First Draft stays mounted once opened so an in-flight build keeps
+            running (and its takeover overlay stays visible) when the user
+            navigates home. Hidden, not unmounted. */}
+        {authoringMounted && (
+          <div style={{ display: !popupView && view === 'authoring' ? 'flex' : 'none', flexDirection: 'column', height: '100%' }}>
+            <CreateFlow />
+          </div>
+        )}
         {popupView ? (
           <PopupFlow
             onClose={exitPopupFlow}
@@ -934,8 +954,6 @@ function StudioPanel({
             recordingPayload={recordingPayload}
             consumeRecordingPayload={consumeRecordingPayload}
           />
-        ) : view === 'authoring' ? (
-          <CreateFlow />
         ) : view === 'home' ? (
           <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflowY: 'auto', overflowX: 'hidden' }}>
             {/* Header / banner */}
@@ -975,7 +993,7 @@ function StudioPanel({
             {/* Content section */}
             <div style={{ flexShrink: 0 }}>
               <SectionLabel>Content</SectionLabel>
-              <CardGrid cards={contentCards} onCardClick={handleCardClick} />
+              <CardGrid cards={contentCards} onCardClick={handleCardClick} glowLabel={buildInfo.active ? 'Flow' : undefined} />
             </div>
 
             <div style={{ height: 1, background: '#e5e7eb', margin: '0 16px' }} />
@@ -986,10 +1004,37 @@ function StudioPanel({
               <CardGrid cards={widgetCards} onCardClick={handleCardClick} />
             </div>
           </div>
-        ) : (
+        ) : view === 'flow' ? (
           <FlowView onBack={() => setView('home')} onClose={onClose} />
-        )}
+        ) : null}
       </div>
+
+      {/* Guard — manual flow creation is blocked while the AI builder runs. */}
+      {guardOpen && (
+        <div className="cf-guard-backdrop" onClick={() => setGuardOpen(false)}>
+          <div className="cf-guard-modal" role="dialog" aria-modal="true" aria-label="AI builder in motion" onClick={(e) => e.stopPropagation()}>
+            <div className="cf-guard-hero" aria-hidden="true">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/document-icon.svg" alt="" width={84} height={84} />
+              <svg className="cf-guard-spark cf-guard-spark-1" viewBox="0 0 24 24"><path d="M12 0 L14.4 9.6 L24 12 L14.4 14.4 L12 24 L9.6 14.4 L0 12 L9.6 9.6 Z" /></svg>
+              <svg className="cf-guard-spark cf-guard-spark-2" viewBox="0 0 24 24"><path d="M12 0 L14.4 9.6 L24 12 L14.4 14.4 L12 24 L9.6 14.4 L0 12 L9.6 9.6 Z" /></svg>
+            </div>
+            <h3 className="cf-guard-title">AI builder in motion</h3>
+            <p className="cf-guard-body">
+              First Draft is building {buildInfo.title ? <strong>“{buildInfo.title}”</strong> : 'your flows'}.
+              Flow creation is paused until it finishes, so your edits never collide.
+            </p>
+            <div className="cf-guard-actions">
+              <button type="button" className="cf-guard-stop" onClick={() => { requestBuildStop(); setGuardOpen(false) }}>
+                Stop the build
+              </button>
+              <button type="button" className="cf-guard-go" onClick={() => { setGuardOpen(false); setAuthoringMounted(true); setView('authoring') }}>
+                Take me there
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

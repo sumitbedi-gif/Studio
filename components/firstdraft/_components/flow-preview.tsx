@@ -24,7 +24,8 @@ type Anchor = {
 
 // Each frame's anchor mapping. Coordinates are in %, anchored to the .wfc-sb-frame.
 // 16 unique positions across the Salesforce Setup mock.
-const ANCHORS: Anchor[] = [
+// Exported: the MVP flow-review step preview (create-flow.tsx) reuses them.
+export const ANCHORS: Anchor[] = [
   // tipLeft caps at 52% for right-side anchors: the tooltip is a fixed 264px,
   // so anything beyond ~61% overflows the frame and gets cropped.
   { top: "12%", left: "94%", tipTop: "30%", tipLeft: "52%", placement: "below" },   // 1. Setup gear
