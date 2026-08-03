@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>First Draft — film</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════════════════════
+   FIRST DRAFT — "Documents in. Flows out."  (~10.3s film + end hold)
+
+   MASTER TIMELINE (seconds from Space/Enter)
+   0.00–0.30  black lead-in (clean trim point)
+   0.30–1.55  S1 HOOK    "Still building flows manually?" slams in, whips out
+   1.55–3.45  S2 DRAG    composer rises; PDF icon arcs in, drops, becomes chip
+   3.45–5.80  S3 ASK     typewriter prompt; cursor rides to Build, punch-click
+   5.80–8.65  S4 PAYOFF  shimmer beat, three cards pop, spinners flip to ticks
+   8.85–9.62  S4b CLICK  cursor returns, clicks the first card
+   9.62–12.85 S6 FLOW-RUN skeleton app; the tooltip walks three anchors
+   12.85–14.7 S5 STING   logo lands center then drifts up; headline slams in
+                         with the hook's own type treatment
+   then       freeze on end frame — stop recording whenever
+   ═══════════════════════════════════════════════════════════════════════ */
+:root {
+  --ink: #1F1F32;
+  --cream: #F4F3EF;
+  --card-border: #E8E7E2;
+  --text: #1F1F32;
+  --muted: #75738A;
+  --blue: #0975D7;
+  --orange: #E45913;
+  --green: #1EA357;
+  --ease-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-quint: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-glide: cubic-bezier(0.33, 0, 0.15, 1);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; background: #000; overflow: hidden; }
+body { font-family: 'Inter', -apple-system, sans-serif; -webkit-font-smoothing: antialiased; }
+
+#fit { position: absolute; top: 50%; left: 50%; width: 1920px; height: 1080px; transform-origin: center; }
+#stage { position: absolute; inset: 0; background: var(--cream); overflow: hidden; }
+
+#hint {
+  position: absolute; inset: 0; z-index: 60; background: #000;
+  display: flex; align-items: center; justify-content: center;
+  color: rgba(255,255,255,0.4); font-size: 26px; font-weight: 500; letter-spacing: 0.02em;
+}
+.play #hint { display: none; }
+
+.a { opacity: 0; }
+
+/* ── Camera: punch on the click, slow pull on the payoff ────────────────── */
+#cam-pull, #cam-punch { position: absolute; inset: 0; }
+.play #cam-punch { animation: camPunch 1.0s var(--ease-quint) 5.30s both; }
+@keyframes camPunch {
+  0% { transform: scale(1); } 35% { transform: scale(1.07); }
+  70% { transform: scale(1.07); } 100% { transform: scale(1); }
+}
+.play #cam-pull { animation: camPull 2.0s var(--ease-quint) 7.10s both; }
+@keyframes camPull { from { transform: scale(1.045); } to { transform: scale(1); } }
+
+/* ═══ S1 · HOOK ══════════════════════════════════════════════════════════ */
+#hook {
+  position: absolute; inset: 0; z-index: 40; background: var(--ink);
+  display: flex; align-items: center; justify-content: center;
+}
+.play #hook { animation: hookExit 0.22s cubic-bezier(0.7, 0, 0.84, 0) 1.45s forwards; }
+@keyframes hookExit { to { transform: translateY(-103%); filter: blur(5px); } }
+.headline {
+  font-size: 116px; font-weight: 800; color: #fff; letter-spacing: -0.035em;
+  text-align: center; line-height: 1.12; max-width: 1500px;
+}
+.headline .w { display: inline-block; opacity: 0; }
+.headline .accent { color: var(--orange); }
+.play #hook .w1 { animation: wordSlam 0.5s var(--ease-expo) 0.30s both; }
+.play #hook .w2 { animation: wordSlam 0.5s var(--ease-expo) 0.42s both; }
+.play #hook .w3 { animation: wordSlam 0.5s var(--ease-expo) 0.54s both; }
+.play #hook .w4 { animation: wordSlamTilt 0.55s var(--ease-expo) 0.72s both; }
+@keyframes wordSlam {
+  from { opacity: 0; transform: scale(3.1); filter: blur(16px); }
+  to   { opacity: 1; transform: scale(1); filter: blur(0); }
+}
+@keyframes wordSlamTilt {
+  from { opacity: 0; transform: scale(3.4) rotate(0deg); filter: blur(18px); }
+  60%  { opacity: 1; transform: scale(0.97) rotate(-2deg); filter: blur(0); }
+  to   { opacity: 1; transform: scale(1) rotate(-2deg); }
+}
+
+/* ═══ S2+S3 · COMPOSER ══════════════════════════════════════════════════ */
+/* No .a on the group — its only animation is the 5.8s exit; a base opacity:0
+   would hide every child for the whole first half (learned the hard way). */
+#composer-group { position: absolute; left: 50%; top: 54%; transform: translate(-50%, -50%); }
+.play #composer-group { animation: composerUp 0.45s var(--ease-quint) 5.80s forwards; }
+@keyframes composerUp { to { opacity: 0; transform: translate(-50%, -64%); } }
+
+#composer {
+  width: 940px; background: #fff; border: 2px solid var(--card-border); border-radius: 28px;
+  padding: 26px 28px 22px;
+  box-shadow: 0 2px 6px rgba(20,18,50,0.04), 0 30px 70px -30px rgba(20,18,50,0.25);
+}
+.play #composer { animation: rise 0.55s var(--ease-expo) 1.60s both, dropGlow 0.8s ease 3.12s; }
+@keyframes rise {
+  from { opacity: 0; transform: translateY(36px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes dropGlow {
+  0% { border-color: var(--card-border); box-shadow: 0 2px 6px rgba(20,18,50,0.04), 0 30px 70px -30px rgba(20,18,50,0.25); }
+  35% { border-color: var(--blue); box-shadow: 0 0 0 8px rgba(9,117,215,0.14), 0 30px 70px -30px rgba(20,18,50,0.25); }
+  100% { border-color: var(--card-border); box-shadow: 0 2px 6px rgba(20,18,50,0.04), 0 30px 70px -30px rgba(20,18,50,0.25); }
+}
+
+#chip {
+  display: inline-flex; align-items: center; gap: 12px;
+  background: #F6F5F2; border: 1.5px solid var(--card-border); border-radius: 14px;
+  padding: 12px 18px; margin-bottom: 18px;
+  font-size: 22px; font-weight: 600; color: var(--text);
+}
+.play #chip { animation: chipPop 0.45s var(--ease-expo) 3.20s both; }
+@keyframes chipPop {
+  from { opacity: 0; transform: scale(0.6); }
+  60%  { opacity: 1; transform: scale(1.06); }
+  to   { opacity: 1; transform: scale(1); }
+}
+#chip .pdfbadge {
+  background: #D4452F; color: #fff; font-size: 13px; font-weight: 800;
+  letter-spacing: 0.06em; border-radius: 6px; padding: 4px 8px;
+}
+
+/* Prompt — real typewriter (JS fills #typed), caret gated by one long anim. */
+#prompt { min-height: 52px; font-size: 34px; font-weight: 500; color: var(--text); letter-spacing: -0.01em; position: relative; }
+#prompt .placeholder { color: #B9B7C2; position: absolute; }
+.play #prompt .placeholder { animation: fadeOut 0.2s ease 3.42s forwards; }
+@keyframes fadeOut { to { opacity: 0; } }
+/* Gate wrapper controls WHEN the caret exists (3.45s–5.65s of a 12s master);
+   the caret itself just blinks. Splitting the two avoids fighting fills. */
+#caret-gate { display: inline-block; opacity: 0; }
+.play #caret-gate { animation: caretGate 12s linear both; }
+@keyframes caretGate {
+  0% { opacity: 0; } 28.7% { opacity: 0; } 28.8% { opacity: 1; }
+  47.0% { opacity: 1; } 47.2% { opacity: 0; } 100% { opacity: 0; }
+}
+#caret {
+  display: inline-block; width: 3px; height: 38px; margin-left: 3px;
+  background: var(--text); vertical-align: -6px;
+  animation: blink 0.9s step-end infinite;
+}
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+#comp-row { display: flex; align-items: center; justify-content: space-between; margin-top: 22px; }
+.iconbtn {
+  width: 52px; height: 52px; border-radius: 50%; border: 1.5px solid var(--card-border);
+  display: flex; align-items: center; justify-content: center; color: #8C899F;
+}
+#build-pill {
+  display: inline-flex; align-items: center; gap: 10px;
+  background: var(--blue); color: #fff; border-radius: 999px;
+  padding: 15px 30px; font-size: 25px; font-weight: 700; letter-spacing: -0.01em;
+  box-shadow: 0 2px 6px rgba(9,117,215,0.3), 0 12px 28px -10px rgba(9,117,215,0.55);
+}
+.play #build-pill { animation: pillIn 0.4s var(--ease-expo) 4.90s both, pillDip 0.24s ease 5.60s; }
+@keyframes pillIn {
+  from { opacity: 0; transform: scale(0.7); }
+  60%  { opacity: 1; transform: scale(1.05); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes pillDip { 0% { transform: scale(1); } 45% { transform: scale(0.93); } 100% { transform: scale(1); } }
+#pill-ring { position: absolute; inset: -6px; border-radius: 999px; border: 3px solid var(--blue); opacity: 0; }
+.play #pill-ring { animation: ring 0.5s ease-out 5.62s; }
+@keyframes ring { from { opacity: 0.8; transform: scale(0.9); } to { opacity: 0; transform: scale(1.35); } }
+
+/* ── Dragged PDF icon + cursor ──────────────────────────────────────────── */
+#drag-group { position: absolute; left: 50%; top: 54%; margin-left: -60px; margin-top: -190px; }
+.play #drag-group {
+  animation: dragIn 1.25s var(--ease-glide) 1.95s both, dragFade 0.32s ease 3.22s forwards;
+}
+/* Smooth arc: one gentle curve, slight lift-scale mid-flight, settles flat. */
+@keyframes dragIn {
+  0%   { opacity: 0; transform: translate(660px, -320px) scale(1.02) rotate(4deg); }
+  10%  { opacity: 1; }
+  55%  { transform: translate(200px, -95px) scale(1.08) rotate(-5deg); }
+  100% { opacity: 1; transform: translate(0, 120px) scale(1) rotate(0deg); }
+}
+/* Fades toward the chip slot it "becomes". */
+@keyframes dragFade { to { opacity: 0; transform: translate(-270px, 45px) scale(0.45); } }
+/* Lift shadow: big while airborne, snaps tight on landing. */
+#pdf-svg { filter: drop-shadow(0 8px 12px rgba(20,18,50,0.22)); }
+.play #pdf-svg { animation: iconLift 1.25s var(--ease-glide) 1.95s both; }
+@keyframes iconLift {
+  0%   { filter: drop-shadow(0 30px 34px rgba(20,18,50,0.32)); }
+  80%  { filter: drop-shadow(0 26px 30px rgba(20,18,50,0.30)); }
+  100% { filter: drop-shadow(0 8px 12px rgba(20,18,50,0.22)); }
+}
+
+#cursor { position: absolute; left: 50%; top: 54%; margin-left: 30px; margin-top: -75px; z-index: 50; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.3)); }
+.play #cursor {
+  animation:
+    dragIn 1.25s var(--ease-glide) 1.95s both,
+    cursorToPill 0.6s var(--ease-quint) 4.95s forwards,
+    cursorGone 0.3s ease 5.95s forwards;
+}
+@keyframes cursorToPill { to { transform: translate(306px, 142px); } }
+@keyframes cursorGone { to { opacity: 0; } }
+
+/* ═══ S4 · PAYOFF ════════════════════════════════════════════════════════ */
+#payoff { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 760px; }
+
+#shimmer { font-size: 27px; font-weight: 600; text-align: center; margin-bottom: 44px; height: 34px; position: relative; }
+#shimmer span {
+  position: absolute; left: 0; right: 0;
+  background: linear-gradient(90deg, #9A98A6 0%, #1F1F32 40%, #9A98A6 80%);
+  background-size: 200% 100%; -webkit-background-clip: text; background-clip: text; color: transparent;
+  animation: sweep 1.4s linear infinite; opacity: 0;
+}
+@keyframes sweep { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+.play #shimmer .s1 { animation: sweep 1.4s linear infinite, holdIn 0.35s var(--ease-quint) 5.95s both, fadeOut 0.22s ease 6.75s forwards; }
+.play #shimmer .s2 { animation: sweep 1.4s linear infinite, holdIn 0.35s var(--ease-quint) 6.90s both, fadeOut 0.25s ease 8.15s forwards; }
+@keyframes holdIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+.fcard {
+  display: flex; align-items: center; gap: 22px;
+  background: #fff; border: 1.5px solid var(--card-border); border-radius: 20px;
+  padding: 24px 28px; margin-bottom: 18px;
+  box-shadow: 0 2px 5px rgba(20,18,50,0.04), 0 22px 48px -24px rgba(20,18,50,0.28);
+}
+.play .fc1 { animation: cardPop 0.6s var(--ease-expo) 7.15s both, fcPress 0.26s ease 9.42s; }
+.play .fc2 { animation: cardPop 0.6s var(--ease-expo) 7.60s both; }
+.play .fc3 { animation: cardPop 0.6s var(--ease-expo) 8.05s both; }
+@keyframes cardPop {
+  from { opacity: 0; transform: translateY(26px) scale(0.94); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.fcard .tile {
+  width: 64px; height: 64px; border-radius: 16px; flex-shrink: 0;
+  background: #EFF6FD; color: var(--blue);
+  display: flex; align-items: center; justify-content: center;
+}
+.fcard .body { flex: 1; }
+.fcard .title { font-size: 28px; font-weight: 700; color: var(--text); letter-spacing: -0.015em; }
+.fcard .meta { font-size: 19px; color: var(--muted); margin-top: 5px; display: flex; align-items: center; gap: 8px; }
+.fcard .meta .ok { color: var(--green); font-weight: 700; display: inline-flex; align-items: center; gap: 5px; opacity: 0; }
+.play .fc1 .meta .ok { animation: okIn 0.3s var(--ease-expo) 7.75s both; }
+.play .fc2 .meta .ok { animation: okIn 0.3s var(--ease-expo) 8.20s both; }
+.play .fc3 .meta .ok { animation: okIn 0.3s var(--ease-expo) 8.62s both; }
+@keyframes okIn { from { opacity: 0; transform: scale(0.5); } to { opacity: 1; transform: scale(1); } }
+
+.state { width: 44px; height: 44px; position: relative; flex-shrink: 0; }
+.state .spin {
+  position: absolute; inset: 4px; border-radius: 50%;
+  border: 4px solid #DCE7F5; border-top-color: var(--blue);
+  animation: rot 0.8s linear infinite;
+}
+@keyframes rot { to { transform: rotate(360deg); } }
+.play .fc1 .spin { animation: rot 0.8s linear infinite, fadeOut 0.15s ease 7.75s forwards; }
+.play .fc2 .spin { animation: rot 0.8s linear infinite, fadeOut 0.15s ease 8.20s forwards; }
+.play .fc3 .spin { animation: rot 0.8s linear infinite, fadeOut 0.15s ease 8.62s forwards; }
+.state .tick {
+  position: absolute; inset: 0; border-radius: 50%; background: var(--green);
+  display: flex; align-items: center; justify-content: center; opacity: 0;
+}
+.play .fc1 .tick { animation: tickPop 0.4s var(--ease-expo) 7.75s both; }
+.play .fc2 .tick { animation: tickPop 0.4s var(--ease-expo) 8.20s both; }
+.play .fc3 .tick { animation: tickPop 0.4s var(--ease-expo) 8.62s both; }
+@keyframes tickPop {
+  from { opacity: 0; transform: scale(0.4); }
+  60%  { opacity: 1; transform: scale(1.15); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* ═══ S5 · STING ═════════════════════════════════════════════════════════ */
+#sting {
+  position: absolute; inset: 0; z-index: 45; background: var(--ink);
+  transform: translateY(103%);
+}
+.play #sting { animation: stingIn 0.24s cubic-bezier(0.7, 0, 0.84, 0) 12.85s forwards; }
+@keyframes stingIn { to { transform: translateY(0); } }
+
+/* Logo lands dead center at 400%, then drifts up to hand the stage to the
+   headline — the drift is what makes the ending read as choreography. */
+#logo {
+  position: absolute; left: 50%; top: 50%; width: 460px;
+  margin-left: -230px; margin-top: -115px; opacity: 0;
+}
+.play #logo {
+  animation:
+    logoLand 0.62s var(--ease-expo) 13.05s both,
+    logoRise 0.55s var(--ease-quint) 13.75s forwards;
+}
+@keyframes logoLand {
+  0%  { opacity: 0; transform: scale(4); filter: blur(22px); }
+  55% { opacity: 1; transform: scale(0.98); filter: blur(0); }
+  75% { transform: scale(1.015); }
+  100%{ opacity: 1; transform: scale(1); }
+}
+@keyframes logoRise { to { transform: scale(0.62) translateY(-390px); } }
+
+/* Headline in the hook's exact treatment — same size, same slam, orange
+   tilted payoff on its own line. */
+#sting .headline {
+  position: absolute; left: 50%; top: 56%; transform: translate(-50%, -50%);
+  width: 1500px;
+}
+.play #sting .sw1 { animation: wordSlam 0.5s var(--ease-expo) 13.88s both; }
+.play #sting .sw2 { animation: wordSlam 0.5s var(--ease-expo) 14.00s both; }
+.play #sting .sw3 { animation: wordSlamTilt 0.55s var(--ease-expo) 14.18s both; }
+
+/* ═══ S4b · CLICK + S6 · FLOW-RUN ═══════════════════════════════════════ */
+/* Cursor returns to click the first card. */
+#cursor2 { position: absolute; left: 0; top: 0; z-index: 50; opacity: 0; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.3)); }
+.play #cursor2 {
+  animation:
+    c2In 0.55s var(--ease-quint) 8.85s both,
+    c2Press 0.22s ease 9.40s,
+    c2Gone 0.2s ease 9.60s forwards;
+}
+@keyframes c2In {
+  from { opacity: 0; transform: translate(1520px, 980px); }
+  to   { opacity: 1; transform: translate(952px, 430px); }
+}
+@keyframes c2Press {
+  0%   { transform: translate(952px, 430px) scale(1); }
+  45%  { transform: translate(952px, 430px) scale(0.88); }
+  100% { transform: translate(952px, 430px) scale(1); }
+}
+@keyframes c2Gone { to { opacity: 0; } }
+@keyframes fcPress {
+  0%   { transform: scale(1); }
+  45%  { transform: scale(0.972); }
+  100% { transform: scale(1); }
+}
+
+/* The skeleton application — generic, calm, believable. Whips in from the
+   right after the card click. */
+#appscene {
+  position: absolute; inset: 0; z-index: 30; background: #EDECEA;
+  transform: translateX(103%);
+}
+.play #appscene { animation: appIn 0.26s cubic-bezier(0.7, 0, 0.84, 0) 9.62s forwards; }
+@keyframes appIn { to { transform: translateX(0); } }
+
+#app-top {
+  position: absolute; left: 0; top: 0; right: 0; height: 76px;
+  background: #fff; border-bottom: 1.5px solid #E3E1DB;
+  display: flex; align-items: center; padding: 0 34px; gap: 26px;
+}
+#app-top .logo-dot { width: 34px; height: 34px; border-radius: 10px; background: var(--blue); }
+#app-top .navpill { width: 110px; height: 16px; border-radius: 8px; background: #E9E8E3; }
+#app-top .avatar { margin-left: auto; width: 40px; height: 40px; border-radius: 50%; background: #DCD9D2; }
+
+#app-side {
+  position: absolute; left: 0; top: 76px; bottom: 0; width: 300px;
+  background: #FAFAF8; border-right: 1.5px solid #E8E7E2; padding: 26px 22px;
+}
+#app-side .search { height: 46px; border-radius: 12px; background: #fff; border: 1.5px solid #E8E7E2; margin-bottom: 24px; }
+#app-side .srow { display: flex; align-items: center; gap: 12px; padding: 13px 12px; border-radius: 10px; }
+#app-side .srow .dot { width: 20px; height: 20px; border-radius: 6px; background: #DCD9D2; }
+#app-side .srow .bar { height: 13px; border-radius: 7px; background: #E5E3DD; flex: 1; }
+#app-side .srow.on { background: #EAF2FB; }
+#app-side .srow.on .dot { background: var(--blue); }
+#app-side .srow.on .bar { background: #BFD8F0; }
+
+#app-main {
+  position: absolute; left: 300px; top: 76px; right: 0; bottom: 0; padding: 40px 60px;
+}
+#app-title { font-size: 30px; font-weight: 700; color: var(--text); letter-spacing: -0.02em; }
+#app-crumb { width: 210px; height: 12px; border-radius: 6px; background: #DCD9D2; margin-top: 10px; }
+/* Anchor 1 — the primary button, top right of the header row. */
+#a1 {
+  position: absolute; left: 1010px; top: 42px; width: 190px; height: 58px;
+  background: var(--blue); border-radius: 14px; color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 21px; font-weight: 700;
+  box-shadow: 0 2px 6px rgba(9,117,215,0.25), 0 10px 22px -10px rgba(9,117,215,0.5);
+}
+#app-panel {
+  position: absolute; left: 60px; top: 150px; width: 1200px; bottom: 60px;
+  background: #fff; border: 1.5px solid #E8E7E2; border-radius: 22px; padding: 38px 44px;
+  box-shadow: 0 2px 6px rgba(20,18,50,0.03), 0 20px 50px -30px rgba(20,18,50,0.15);
+}
+#app-panel .h { width: 300px; height: 20px; border-radius: 10px; background: #E9E8E3; margin-bottom: 34px; }
+#app-panel .frow { display: flex; gap: 26px; margin-bottom: 26px; align-items: center; }
+#app-panel .lbl { width: 170px; height: 15px; border-radius: 8px; background: #E5E3DD; flex-shrink: 0; }
+#app-panel .inp { flex: 1; max-width: 420px; height: 54px; border-radius: 12px; background: #FBFBF9; border: 1.5px solid #E3E1DB; }
+/* Anchor 2 — one real-ish input row. */
+#a2 { position: absolute; left: 104px; top: 428px; width: 560px; height: 64px;
+  background: #fff; border: 2px solid #D8E4F5; border-radius: 14px;
+  display: flex; align-items: center; padding: 0 20px;
+}
+#a2 .ph { width: 260px; height: 15px; border-radius: 8px; background: #DCE4F0; }
+/* Anchor 3 — a toggle row lower in the panel. */
+#a3 { position: absolute; left: 700px; top: 560px; width: 380px; height: 56px;
+  display: flex; align-items: center; gap: 14px;
+}
+#a3 .knob { width: 64px; height: 36px; border-radius: 999px; background: var(--blue); position: relative; flex-shrink: 0; }
+#a3 .knob::after { content: ''; position: absolute; right: 4px; top: 4px; width: 28px; height: 28px; border-radius: 50%; background: #fff; }
+#a3 .txt { font-size: 19px; font-weight: 600; color: var(--muted); white-space: nowrap; }
+
+/* Halos — the Whatfix highlight around each anchored element. */
+.halo { position: absolute; border: 3px solid var(--blue); border-radius: 18px; opacity: 0;
+  box-shadow: 0 0 0 6px rgba(9,117,215,0.14), 0 0 26px rgba(9,117,215,0.35); }
+.play #h1 { animation: haloIn 0.35s var(--ease-expo) 9.95s both, haloPulse 1.6s ease 10.3s infinite, fadeOut 0.25s ease 10.95s forwards; }
+.play #h2 { animation: haloIn 0.35s var(--ease-expo) 11.30s both, haloPulse 1.6s ease 11.6s infinite, fadeOut 0.25s ease 11.85s forwards; }
+.play #h3 { animation: haloIn 0.35s var(--ease-expo) 12.20s both, haloPulse 1.6s ease 12.5s infinite; }
+@keyframes haloIn { from { opacity: 0; transform: scale(1.15); } to { opacity: 1; transform: scale(1); } }
+@keyframes haloPulse {
+  0%, 100% { box-shadow: 0 0 0 6px rgba(9,117,215,0.14), 0 0 26px rgba(9,117,215,0.35); }
+  50%      { box-shadow: 0 0 0 11px rgba(9,117,215,0.07), 0 0 34px rgba(9,117,215,0.45); }
+}
+#h1 { left: 1298px; top: 106px; width: 214px; height: 82px; }
+#h2 { left: 452px; top: 642px; width: 584px; height: 88px; }
+#h3 { left: 1046px; top: 774px; width: 408px; height: 80px; }
+
+/* The tooltip — pops at anchor 1, then TRAVELS to 2 and 3. One element,
+   three explicit transforms; travel sells "a flow is walking the page". */
+#tip {
+  position: absolute; left: 0; top: 0; width: 400px; min-height: 178px;
+  background: #fff; border-radius: 18px; opacity: 0;
+  box-shadow: 0 4px 12px rgba(20,18,50,0.10), 0 30px 60px -20px rgba(20,18,50,0.35);
+}
+#tip .ptr {
+  position: absolute; left: 28px; top: -9px; width: 18px; height: 18px;
+  background: #fff; transform: rotate(45deg); border-radius: 3px;
+}
+.play #tip {
+  animation:
+    tipIn 0.45s var(--ease-expo) 10.05s both,
+    tipMove2 0.55s var(--ease-quint) 10.95s forwards,
+    tipMove3 0.55s var(--ease-quint) 11.85s forwards;
+}
+@keyframes tipIn {
+  from { opacity: 0; transform: translate(1368px, 196px) scale(0.82); }
+  to   { opacity: 1; transform: translate(1368px, 196px) scale(1); }
+}
+@keyframes tipMove2 {
+  from { transform: translate(1368px, 196px); }
+  to   { transform: translate(707px, 738px); }
+}
+@keyframes tipMove3 {
+  from { transform: translate(707px, 738px); }
+  to   { transform: translate(1213px, 862px); }
+}
+.tc { position: absolute; left: 26px; right: 26px; top: 22px; opacity: 0; }
+.tc .chip {
+  display: inline-block; background: #EAF2FB; color: var(--blue);
+  font-size: 13px; font-weight: 800; letter-spacing: 0.08em;
+  border-radius: 7px; padding: 5px 10px; margin-bottom: 10px;
+}
+.tc .t { font-size: 24px; font-weight: 700; color: var(--text); letter-spacing: -0.015em; }
+.tc .b { font-size: 17px; color: var(--muted); line-height: 1.45; margin-top: 6px; }
+.play #tc1 { animation: holdIn 0.3s ease 10.25s both, fadeOut 0.18s ease 10.95s forwards; }
+.play #tc2 { animation: holdIn 0.3s ease 11.30s both, fadeOut 0.18s ease 11.85s forwards; }
+.play #tc3 { animation: holdIn 0.3s ease 12.20s both; }
+#tip .next {
+  position: absolute; right: 20px; bottom: 18px;
+  background: var(--blue); color: #fff; border-radius: 999px;
+  padding: 9px 22px; font-size: 17px; font-weight: 700;
+}
+</style>
+</head>
+<body>
+<div id="fit">
+  <div id="stage">
+    <div id="cam-pull"><div id="cam-punch">
+
+      <!-- S2+S3: floating composer -->
+      <div id="composer-group">
+        <div id="composer">
+          <div id="chip" class="a">
+            <span class="pdfbadge">PDF</span>
+            Procure-to-Pay SOP.pdf
+          </div>
+          <div id="prompt">
+            <span class="placeholder">Ask First Draft…</span>
+            <span id="typed"></span><span id="caret-gate"><span id="caret"></span></span>
+          </div>
+          <div id="comp-row">
+            <div class="iconbtn">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+            </div>
+            <div style="position:relative">
+              <div id="build-pill" class="a">
+                Build flows
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+              </div>
+              <div id="pill-ring"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dragged PDF icon + cursor -->
+      <div id="drag-group" class="a">
+        <svg id="pdf-svg" width="120" height="140" viewBox="0 0 96 112">
+          <path d="M10 12 C10 5.4 15.4 0 22 0 H62 L86 24 V100 c0 6.6 -5.4 12 -12 12 H22 c-6.6 0 -12 -5.4 -12 -12 Z" fill="#fff" stroke="#E3E1DB" stroke-width="2"/>
+          <path d="M62 0 L86 24 H68 c-3.3 0 -6 -2.7 -6 -6 Z" fill="#EDEBE5" stroke="#E3E1DB" stroke-width="1.5" stroke-linejoin="round"/>
+          <rect x="14" y="30" width="40" height="7" rx="3.5" fill="#DCE4F0"/>
+          <rect x="14" y="44" width="56" height="7" rx="3.5" fill="#DCE4F0"/>
+          <rect x="4" y="60" width="76" height="34" rx="10" fill="#D4452F"/>
+          <text x="42" y="84" font-family="Inter, Arial, sans-serif" font-size="21" font-weight="800" fill="#fff" text-anchor="middle" letter-spacing="2">PDF</text>
+        </svg>
+      </div>
+      <div id="cursor" class="a">
+        <svg width="42" height="42" viewBox="0 0 24 24">
+          <path d="M5.5 3.2v16.2l4.1-4.0 2.4 5.6 2.6-1.1-2.4-5.5 5.8-0.6z" fill="#1F1F32" stroke="#fff" stroke-width="1.4" stroke-linejoin="round"/>
+        </svg>
+      </div>
+
+      <!-- S4: payoff deck -->
+      <div id="payoff">
+        <div id="shimmer">
+          <span class="s1">Reading document…</span>
+          <span class="s2">Drafting steps…</span>
+        </div>
+        <div class="fcard fc1 a">
+          <div class="tile"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="19" r="3"/><circle cx="18" cy="5" r="3"/><path d="M12 19h4.5a3.5 3.5 0 0 0 0-7h-9a3.5 3.5 0 0 1 0-7H12"/></svg></div>
+          <div class="body">
+            <div class="title">Raise a Purchase Requisition</div>
+            <div class="meta"><span>5 steps</span><span class="ok">· ✓ Ready</span></div>
+          </div>
+          <div class="state"><div class="spin"></div><div class="tick"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.4"><path d="M4.5 12.5l5 5 10-11"/></svg></div></div>
+        </div>
+        <div class="fcard fc2 a">
+          <div class="tile"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="19" r="3"/><circle cx="18" cy="5" r="3"/><path d="M12 19h4.5a3.5 3.5 0 0 0 0-7h-9a3.5 3.5 0 0 1 0-7H12"/></svg></div>
+          <div class="body">
+            <div class="title">Verify Vendor Bank Details</div>
+            <div class="meta"><span>5 steps</span><span class="ok">· ✓ Ready</span></div>
+          </div>
+          <div class="state"><div class="spin"></div><div class="tick"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.4"><path d="M4.5 12.5l5 5 10-11"/></svg></div></div>
+        </div>
+        <div class="fcard fc3 a">
+          <div class="tile"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="19" r="3"/><circle cx="18" cy="5" r="3"/><path d="M12 19h4.5a3.5 3.5 0 0 0 0-7h-9a3.5 3.5 0 0 1 0-7H12"/></svg></div>
+          <div class="body">
+            <div class="title">Generate a Purchase Order</div>
+            <div class="meta"><span>4 steps</span><span class="ok">· ✓ Ready</span></div>
+          </div>
+          <div class="state"><div class="spin"></div><div class="tick"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.4"><path d="M4.5 12.5l5 5 10-11"/></svg></div></div>
+        </div>
+      </div>
+
+      <!-- S4b: the cursor that clicks card 1 -->
+      <div id="cursor2">
+        <svg width="42" height="42" viewBox="0 0 24 24">
+          <path d="M5.5 3.2v16.2l4.1-4.0 2.4 5.6 2.6-1.1-2.4-5.5 5.8-0.6z" fill="#1F1F32" stroke="#fff" stroke-width="1.4" stroke-linejoin="round"/>
+        </svg>
+      </div>
+
+      <!-- S6: skeleton app + walking tooltip -->
+      <div id="appscene">
+        <div id="app-top">
+          <div class="logo-dot"></div>
+          <div class="navpill"></div><div class="navpill"></div><div class="navpill"></div>
+          <div class="avatar"></div>
+        </div>
+        <div id="app-side">
+          <div class="search"></div>
+          <div class="srow on"><div class="dot"></div><div class="bar"></div></div>
+          <div class="srow"><div class="dot"></div><div class="bar"></div></div>
+          <div class="srow"><div class="dot"></div><div class="bar"></div></div>
+          <div class="srow"><div class="dot"></div><div class="bar"></div></div>
+          <div class="srow"><div class="dot"></div><div class="bar"></div></div>
+        </div>
+        <div id="app-main">
+          <div id="app-title">Procurement</div>
+          <div id="app-crumb"></div>
+          <div id="a1">New Request</div>
+          <div id="app-panel">
+            <div class="h"></div>
+            <div class="frow"><div class="lbl"></div><div class="inp"></div></div>
+            <div class="frow"><div class="lbl"></div><div class="inp"></div></div>
+            <div class="frow"><div class="lbl"></div><div class="inp" style="max-width:280px"></div></div>
+            <div class="frow"><div class="lbl"></div><div class="inp"></div></div>
+            <div id="a2"><div class="ph"></div></div>
+            <div id="a3"><div class="knob"></div><div class="txt">Auto-approve under $500</div></div>
+          </div>
+        </div>
+        <div id="h1" class="halo"></div>
+        <div id="h2" class="halo"></div>
+        <div id="h3" class="halo"></div>
+        <div id="tip">
+          <div class="ptr"></div>
+          <div class="tc" id="tc1"><span class="chip">1 OF 5</span><div class="t">Click New Request</div><div class="b">Start a new purchase requisition from here.</div></div>
+          <div class="tc" id="tc2"><span class="chip">2 OF 5</span><div class="t">Fill the item details</div><div class="b">Add what you need, quantity, and cost centre.</div></div>
+          <div class="tc" id="tc3"><span class="chip">3 OF 5</span><div class="t">Submit for approval</div><div class="b">Routing sends it to the right approver.</div></div>
+          <div class="next">Next</div>
+        </div>
+      </div>
+
+      <!-- S1: hook -->
+      <div id="hook">
+        <h1 class="headline">
+          <span class="w w1">Still</span>
+          <span class="w w2">building</span>
+          <span class="w w3">flows</span>
+          <span class="w w4 accent">manually?</span>
+        </h1>
+      </div>
+
+      <!-- S5: sting -->
+      <div id="sting">
+        <img id="logo" src="brand/whatfix-logo.png" alt="Whatfix" />
+        <h1 class="headline">
+          <span class="w sw1">Documents</span>
+          <span class="w sw2">in.</span><br/>
+          <span class="w sw3 accent">Flows out.</span>
+        </h1>
+      </div>
+
+    </div></div>
+    <div id="hint">Press Space to play</div>
+  </div>
+</div>
+
+<script>
+function fit() {
+  const s = Math.min(innerWidth / 1920, innerHeight / 1080);
+  document.getElementById('fit').style.transform =
+    `translate(-50%, -50%) scale(${s})`;
+}
+fit();
+addEventListener('resize', fit);
+
+// Typewriter — JS so the reveal is per-character with a live caret. The CSS
+// timeline and this schedule share one clock: both start at the keypress.
+const PROMPT_TEXT = 'Analyze this doc and create flows';
+const TYPE_START = 3480;   // ms — after the chip lands and the glow settles
+const TYPE_EVERY = 40;     // ms per character (~25 cps, human-quick)
+let typeTimers = [];
+
+addEventListener('keydown', (e) => {
+  if (e.code !== 'Space' && e.code !== 'Enter') return;
+  e.preventDefault();
+
+  // Reset both clocks: the CSS timeline and the typewriter schedule.
+  typeTimers.forEach(clearTimeout);
+  typeTimers = [];
+  const typed = document.getElementById('typed');
+  typed.textContent = '';
+
+  const b = document.body;
+  b.classList.remove('play');
+  void b.offsetWidth;
+  b.classList.add('play');
+
+  for (let i = 0; i < PROMPT_TEXT.length; i++) {
+    typeTimers.push(setTimeout(() => {
+      typed.textContent = PROMPT_TEXT.slice(0, i + 1);
+    }, TYPE_START + i * TYPE_EVERY));
+  }
+});
+</script>
+</body>
+</html>

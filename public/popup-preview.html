@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>First Draft — early access</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════════════════════
+   Popup preview — a shareable page that shows the real popup, centered on
+   the kind of surface it will actually appear over.
+
+   Design notes:
+   · Full-bleed video at the top, flush to the sheet's rounded corners. Its
+     native ratio is 3840×2148 (16:8.95), so the padding-top hack uses that
+     exact number — a 16:9 box would letterbox by ~3px and read as a bug.
+   · One card, no nested boxes. The bullet list is the only structure inside.
+   · Type scale is 4 steps (28 / 16 / 15 / 13). Anything more reads as a
+     landing page rather than an in-product moment.
+   ═══════════════════════════════════════════════════════════════════════ */
+:root {
+  --ink: #1F1F32;
+  --text: #26263A;
+  --muted: #6B697B;
+  --hair: #ECEBE6;
+  --orange: #C74900;
+  --orange-hover: #9E4100;
+  --page: #EFEEEB;
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  min-height: 100vh;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  background: var(--page);
+  color: var(--text);
+  display: flex; flex-direction: column; align-items: center;
+  padding: 56px 24px 72px;
+}
+
+/* Soft ambient wash so the sheet feels lit rather than pasted on. */
+body::before {
+  content: ''; position: fixed; inset: 0; pointer-events: none;
+  background:
+    radial-gradient(60% 45% at 50% 0%, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0) 70%),
+    radial-gradient(50% 40% at 85% 100%, rgba(199,73,0,0.05) 0%, rgba(199,73,0,0) 70%);
+}
+
+/* ── Context strip above the sheet ─────────────────────────────────────── */
+.kicker {
+  position: relative; text-align: center; margin-bottom: 30px;
+  animation: rise 0.6s var(--ease) both;
+}
+.kicker .eyebrow {
+  display: inline-block; margin-bottom: 9px;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase;
+  color: var(--orange);
+}
+.kicker h1 {
+  font-size: 19px; font-weight: 600; letter-spacing: -0.015em; color: var(--ink);
+}
+.kicker p { margin-top: 6px; font-size: 14px; color: var(--muted); }
+
+/* ── The popup sheet ───────────────────────────────────────────────────── */
+.sheet {
+  position: relative; width: 100%; max-width: 720px;
+  background: #fff; border-radius: 22px; overflow: hidden;
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.7) inset,
+    0 2px 6px rgba(20,18,50,0.05),
+    0 28px 64px -22px rgba(20,18,50,0.30);
+  animation: rise 0.7s var(--ease) 0.08s both;
+}
+@keyframes rise {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Full-bleed video at its exact native ratio (3840×2148 → 55.9375%).
+   Deliberately NOT zoomed: measured content bounds show the composer and
+   payoff scenes occupy a narrow vertical band, but the app-walkthrough scene
+   spans 118–1020px of the 1080 frame. Any upscale clips its tooltip. The
+   subject is made readable by widening the sheet instead of cropping. */
+.media {
+  position: relative; width: 100%; padding-top: 55.9375%;
+  background: #1F1F32; overflow: hidden;
+}
+.media video {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%; object-fit: cover; display: block;
+}
+/* Hairline under the video so it and the copy read as two zones. */
+.media::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 1px;
+  background: rgba(31,31,50,0.07);
+}
+
+/* Media controls — sound + replay, over the artwork. */
+.vcontrols {
+  position: absolute; right: 12px; bottom: 12px; z-index: 2;
+  display: flex; align-items: center; gap: 8px;
+}
+.vbtn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 13px 7px 10px; border: none; border-radius: 999px;
+  background: rgba(12,14,32,0.55); color: rgba(255,255,255,0.94);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer;
+  transition: opacity 180ms ease, background 160ms ease;
+}
+.vbtn:hover { background: rgba(12,14,32,0.78); }
+/* Replay is incidental — it waits for hover. The sound toggle must be
+   visible at rest, or nobody discovers there is audio at all. */
+#replay { opacity: 0; }
+.media:hover #replay { opacity: 1; }
+#sound .off { display: none; }
+#sound.is-on .on { display: none; }
+#sound.is-on .off { display: inline; }
+/* A soft nudge on the sound pill for the first few seconds. */
+@keyframes soundHint {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); }
+  50%      { box-shadow: 0 0 0 5px rgba(255,255,255,0.16); }
+}
+#sound { animation: soundHint 2.4s ease 1s 3; }
+
+.body { padding: 32px 38px 30px; }
+
+.title {
+  font-size: 26px; line-height: 1.3; font-weight: 700;
+  letter-spacing: -0.021em; color: var(--ink);
+}
+.desc {
+  margin-top: 12px; font-size: 15.5px; line-height: 1.62; color: var(--muted);
+  max-width: 60ch;
+}
+.desc strong { color: var(--text); font-weight: 600; }
+
+.ask {
+  margin-top: 18px; font-size: 15px; font-weight: 600;
+  letter-spacing: -0.008em; color: var(--ink);
+}
+
+/* Bullets — leading dashes, not icon chips. Quieter and faster to scan. */
+.points { list-style: none; margin-top: 12px; }
+.points li {
+  position: relative; padding-left: 22px; margin-top: 11px;
+  font-size: 15px; line-height: 1.55; color: var(--text);
+}
+.points li::before {
+  content: ''; position: absolute; left: 2px; top: 11px;
+  width: 9px; height: 1.5px; border-radius: 1px; background: #C9C6BE;
+}
+
+.closing {
+  margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--hair);
+  font-size: 14.5px; line-height: 1.6; color: var(--muted);
+}
+.closing strong { color: var(--ink); font-weight: 600; }
+
+/* ── Actions ───────────────────────────────────────────────────────────── */
+.actions { margin-top: 22px; display: flex; gap: 10px; }
+.actions .btn-primary { flex: 1.35; }
+.actions .btn-secondary { flex: 1; }
+.btn {
+  width: 100%; border-radius: 12px; padding: 13px 18px;
+  font-family: inherit; font-size: 15px; font-weight: 600;
+  letter-spacing: -0.008em; cursor: pointer; text-align: center;
+  text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  transition: background 160ms ease, border-color 160ms ease, color 160ms ease, transform 120ms ease;
+}
+.btn-primary {
+  background: var(--orange); border: none; color: #fff;
+  box-shadow: 0 1px 2px rgba(199,73,0,0.22), 0 8px 18px -9px rgba(199,73,0,0.5);
+}
+.btn-primary:hover { background: var(--orange-hover); }
+.btn-primary:active { transform: scale(0.988); }
+.btn-primary .arrow { transition: transform 200ms var(--ease); }
+.btn-primary:hover .arrow { transform: translateX(3px); }
+.btn-secondary { background: #fff; border: 1px solid var(--hair); color: var(--muted); }
+.btn-secondary:hover { border-color: #C4C3BD; background: #FAFAF8; color: var(--ink); }
+.btn-secondary:active { transform: scale(0.988); }
+
+/* Dismissed state — the sheet steps back, message replaces it. */
+.sheet.gone { animation: dropAway 0.4s var(--ease) both; pointer-events: none; }
+@keyframes dropAway {
+  to { opacity: 0; transform: translateY(10px) scale(0.97); }
+}
+.dismissed {
+  display: none; position: relative; text-align: center;
+  max-width: 720px; padding: 40px 24px;
+}
+.dismissed.show { display: block; animation: rise 0.45s var(--ease) 0.18s both; }
+.dismissed p { font-size: 15px; color: var(--muted); }
+.dismissed button {
+  margin-top: 14px; background: none; border: none; cursor: pointer;
+  font-family: inherit; font-size: 14px; font-weight: 600; color: var(--orange);
+  text-decoration: underline; text-underline-offset: 3px;
+}
+
+.footnote {
+  position: relative; margin-top: 26px; text-align: center;
+  font-size: 12.5px; color: #96939F;
+  animation: rise 0.7s var(--ease) 0.16s both;
+}
+
+@media (max-width: 720px) {
+  body { padding: 32px 16px 48px; }
+  .body { padding: 22px 22px 20px; }
+  .title { font-size: 20px; }
+  .actions { flex-direction: column; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+</head>
+<body>
+
+  <div class="kicker">
+    <span class="eyebrow">Concept preview</span>
+    <h1>Document-to-Flows</h1>
+    <p>An in-product popup we're proposing for early-access recruitment.</p>
+  </div>
+
+  <div class="sheet" id="sheet">
+    <div class="media">
+      <video id="vid" autoplay muted loop playsinline preload="auto">
+        <source src="product-video.mp4" type="video/mp4" />
+      </video>
+      <div class="vcontrols">
+        <button class="vbtn" id="sound" type="button" aria-label="Toggle sound">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 9v6h4l5 4V5L8 9H4z"/>
+            <path class="on" d="M17.5 8.5a5 5 0 0 1 0 7"/>
+            <path class="off" d="M17 9.5l4 5M21 9.5l-4 5"/>
+          </svg>
+          <span class="on">Sound on</span><span class="off">Sound off</span>
+        </button>
+        <button class="vbtn" id="replay" type="button">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+            <path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/>
+          </svg>
+          Replay
+        </button>
+      </div>
+    </div>
+
+    <div class="body">
+      <h2 class="title">50 Flows to build? What if your documents built them for you?</h2>
+
+      <p class="desc">
+        We're building an AI capability that reads your existing documents — SOPs,
+        training guides, help articles — and drafts Whatfix Flows for you.
+        You just <strong>review, edit, and approve</strong>.
+      </p>
+
+      <p class="ask">Does any of this sound like your team?</p>
+
+      <ul class="points">
+        <li>A migration or new rollout is coming, and dozens of processes need guidance fast.</li>
+        <li>A digital transformation is underway: new applications, new ways of working.</li>
+        <li>Documentation is ready, bandwidth isn't. No time or team to build Flows one by one.</li>
+      </ul>
+
+      <p class="closing">
+        If that's you, we'd love <strong>30 minutes</strong> of your input, and you'll get
+        <strong>early access</strong> in return.
+      </p>
+
+      <div class="actions">
+        <a class="btn btn-primary" href="#survey" id="cta">
+          Count me in
+          <span class="arrow" aria-hidden="true">→</span>
+        </a>
+        <button class="btn btn-secondary" type="button" id="dismiss">Not right now</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="dismissed" id="dismissed">
+    <p>Dismissed. That's the whole interaction.</p>
+    <button type="button" id="reset">Show the popup again</button>
+  </div>
+
+  <p class="footnote">Concept only — not live in product. Feedback welcome.</p>
+
+<script>
+const sheet = document.getElementById('sheet');
+const dismissed = document.getElementById('dismissed');
+const vid = document.getElementById('vid');
+
+const soundBtn = document.getElementById('sound');
+
+// The video autoplays muted because browsers block unmuted autoplay outright.
+// This is the one click that turns the music on; from then on it stays on,
+// including through Replay and re-open.
+soundBtn.addEventListener('click', () => {
+  vid.muted = !vid.muted;
+  soundBtn.classList.toggle('is-on', !vid.muted);
+  soundBtn.style.animation = 'none';
+  if (vid.paused) vid.play().catch(() => {});
+});
+
+document.getElementById('replay').addEventListener('click', () => {
+  vid.currentTime = 0;
+  vid.play();
+});
+
+document.getElementById('dismiss').addEventListener('click', () => {
+  sheet.classList.add('gone');
+  setTimeout(() => {
+    sheet.style.display = 'none';
+    dismissed.classList.add('show');
+  }, 340);
+});
+
+document.getElementById('reset').addEventListener('click', () => {
+  dismissed.classList.remove('show');
+  sheet.style.display = '';
+  sheet.classList.remove('gone');
+  vid.currentTime = 0;
+  vid.play();
+});
+
+// Autoplay can be blocked when the tab loads in the background; retry on the
+// first interaction so the sheet is never sitting on a frozen first frame.
+document.addEventListener('click', function once() {
+  if (vid.paused) vid.play().catch(() => {});
+  document.removeEventListener('click', once);
+});
+</script>
+</body>
+</html>
